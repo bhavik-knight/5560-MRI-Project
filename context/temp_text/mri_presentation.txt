@@ -1,0 +1,165 @@
+MRI
+Presentation
+R ED U CE I D L E T I ME O F MR I
+MACHINES BET W EEN SCANS
+
+Soundarya Venkataraman
+Zilong Wang
+Bhavik Bhagat
+
+Improving MRI Department Efficiency
+Problem:
+
+The MRI scanner sits idle 31% of the time during hours of operation (42% idle with no allotted 5minute gap)
+
+Goal:
+
+If we take the steps to decrease the idle time, we can solve the wait time issue for MRI scans in
+Halifax
+
+Modeling / Optimization Steps:
+•
+
+Step 1: Defining Staff Roles
+o
+
+Establish clear responsibilities for the 6-staff model
+
+o 2 scan techs, 2 backup techs, an administration TA, and the dedicated MRI porter.
+
+•
+
+•
+
+Step 2: Identify Idle Time Drivers
+o
+
+Lay out all steps that each staff member and patient perform
+
+o
+
+Tie up resources and delay patient movement/create idle time.
+
+o
+
+Include a backup staff member to cover breaks and low-probability events.
+
+Step 3: Workflow Creation
+o Create an effective workflow
+o
+
+•
+
+MRI safety zones and patient movement.
+
+Step 4: Testing and Adjustment
+o Test out the workflow model and make adjustments based on staff comments, patient comments
+o Time it takes for staff and patients to perform each step
+
+Current System Modelling
+• Arena Simulator:
+
+Modelling Results (Stats)
+• Arena Simulator:
+
+I guess the utilization of MRI machine is around 30%
+
+Optimization Techniques
+• Spatial and Flow Optimization (Zones)
+• Structural Optimization (Roles)
+
+Spatial and Flow Optimization (Zones)
+• Use Zone 1 to your advantage o Patients can take their time filling out the screening form here, as they do not need to be supervised.
+o This prevents them from taking up resources in the main department.
+
+• Utilize the Prep Room (Zone 2) as the Ideal Wait Area o The patient is screened here to ensure they are fully prepared for their scan or ready to switch magnets if needed.
+
+o Limit Patients in Zone 2
+o Maintain a maximum of 3 patients in Zone 2: 2 patients being prepped and 1 exiting the magnet, to manage flow without
+
+creating bottlenecks.
+
+• Focus on High-Time Tasks:
+o Time for patient preparation ~ 16 mins,
+
+o Time to complete scan ~ 30 mins.
+
+Structural Optimization (Roles)
+•
+
+Scan Tech
+o
+
+•
+
+•
+
+•
+
+•
+
+Follows the current patient through their care until scanning is complete.
+
+Backup Tech
+o
+
+Priority is to prep the next patient.
+
+o
+
+Assists with patient set up, finishes paperwork [~ is available for administration questions?]
+
+Administrative TA
+o
+
+Manages the clinical calendar, handles inpatient appointments, outpatient fluctuations
+
+o
+
+Facility calls, freeing up technologists for clinical tasks.
+
+Dedicated Porter
+o
+
+Communicates with the administrative TA to transport patients to and from the MRI department.
+
+o
+
+Handles stocking, cleaning, and initial patient instructions (should be allocated some more TA tasks post scan)
+
+Staffing Model:
+o
+
+Ensure patients are not waiting for resources [change rooms, bathrooms, lockers, and prep rooms]
+
+o
+
+Prepped for the scan before it is ready for them.
+
+Key Takeaways for Efficiency
+• Spatial (Zone) optimization and Structural Optimization
+• Especially in a 2-bay suite which handles double the patients and staff
+• Operational Success Factors
+o Consistency in data collection is vital for successful workflow improvement
+
+• Workflow improvements must account for the fact that the type of exam changes the workflow
+•
+
+MRI Staff Scheduling Optimization and MRI Patient Scheduling Optimization
+
+Alternative Technology to run Simulation
+• SimPy – For Simulation
+o Environment
+o Entity - Events - States
+o Processes (wait, interrupt)
+o Resources (allocation, release) – Resources Container
+
+• Streamlit – For FE/Visualization and Deploy
+• Statistics Collection – Warm Up Period (To avoid Bias)
+o KPIs – Cycle time, Wait time, Throughput Rate
+o Mean, SD for various Simulation
+
+Thank you!
+Any Questions?!
+
+

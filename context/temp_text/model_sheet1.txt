@@ -1,0 +1,459 @@
+Column 1
+
+Task
+
+Space Occupied
+
+Role
+
+Support Role
+
+Time to Complete Task
+
+1
+
+Manage oupatients ready for appointment
+
+TA office
+
+TA
+
+Back Up Tech
+
+Variable/constant
+
+Probability of Action
+100.00%
+
+2
+
+Patient registration detected (PPF or WLM Dicom scanner)
+
+TA office
+
+TA
+
+Back Up Tech
+
+Variable/constant
+
+100.00%
+
+3
+
+Scan tech/TA notify of patient arrival
+
+TA office
+
+TA, Scan Tech
+
+Porter
+
+Variable/constant
+
+100.00%
+
+4
+
+Patient fills out safety screening form
+
+Zone 1
+
+None
+
+None
+
+3m 33 s
+
+100.00%
+
+5
+
+Patient escorted to zone 2 waiting with directions to change
+
+Zone 2
+
+TA, Scan Tech
+
+Porter
+
+1m 7s
+
+100.00%
+
+6
+
+Start Millenium
+
+TA office
+
+TA
+
+Back Up Tech
+
+variable/constant
+
+100.00%
+
+7
+
+Patient changes
+
+Zone 2 change room None
+
+None
+
+3m 38s
+
+100.00%
+
+8
+
+Patient washroom
+
+Zone 2 washroom
+
+None
+
+None
+
+2m 30s
+
+100.00%
+
+9
+
+Patient stores personal belongings
+
+Zone 2 lockers
+
+None
+
+None
+
+25.2s
+
+100.00%
+
+10
+
+Patient changed and form checked and moved to prep room
+
+Zone 2 waiting
+
+Scan Tech
+
+TA
+
+16s
+
+100.00%
+
+11
+
+Patient interview (safety, process to expect)
+
+Prep room 1or 2
+
+Scan Tech
+
+Back Up Tech
+
+3m 16s
+
+100.00%
+
+a
+
+Patient complicated device lookup
+
+Prep room 1or 2
+
+Scan Tech
+
+Back Up Tech
+
+??
+
+1.00%
+
+12
+
+Patient IV setup
+
+Prep room 1or 2
+
+Scan Tech
+
+Back Up Tech
+
+2m 20s
+
+33.00%
+
+a
+
+Patient injected in prep room
+
+Prep room 1or 2
+
+Scan Tech
+
+Back Up Tech
+
+b
+
+Difficult IV
+
+Prep room 1or 2
+
+Scan Tech
+
+Back Up Tech
+
+1: 7m 48s
+
+13
+
+Patient brough to scan room and setup
+
+Zone 2 & 3
+
+Scan Tech
+
+Back Up Tech
+
+4m 43s
+
+TOTAL TIME IN ZONE II
+
+Zone 2
+
+0.10%
+100.00%
+
+18m 48s
+
+a
+
+Patient IV setup in scan room
+
+Zone 3
+
+Scan Tech
+
+Back Up Tech
+
+1: 8m 42s (entire set up)
+
+14
+
+Execute scan
+
+Scan room 3T or 1.5TScan Tech
+
+Back Up Tech
+
+Alternate calculation
+
+100.00%
+
+a
+
+Claustrophobia
+
+Scan room 3T or 1.5TScan Tech, Back Up Tech
+
+Back Up Tech #2
+
+???
+
+10.00%
+
+b
+
+Contrast Reaction
+
+Scan room 3T or 1.5TScan Tech, Back Up Tech, Radiologist
+
+Back Up Tech #2
+
+???
+
+15
+
+Exit patient from magnet
+
+Scan room 3T or 1.5TBack Up Tech, Scan Tech
+
+Back Up Tech #2
+
+2m 25s
+
+100.00%
+
+16
+
+Patient supported in exiting facility
+
+Zone 3
+
+Scan Tech
+
+Back Up Tech
+
+???
+
+100.00%
+
+17
+
+Perform bed flip/setup for next pt.
+
+Scan room 3T or 1.5TScan Tech
+
+Back Up Tech
+
+59.8 s
+
+100.00%
+
+18
+
+Scan paperwork to PACS, ensure data pushes
+
+Zone 3
+
+Back Up Tech
+
+1m 8s
+
+100.00%
+
+19
+
+Patient in change room
+
+Zone 2 change room None
+
+None
+
+2m 58s
+
+100.00%
+
+20
+
+Patient in washroom
+
+Zone 2 washroom
+
+None
+
+None
+
+4m 40s
+
+100.00%
+
+21
+
+Patient at lockers
+
+Zone 2 lockers
+
+None
+
+None
+
+23.3 s
+
+100.00%
+
+22
+
+Patient exits facility
+
+Zone 1-2
+
+None
+
+None
+
+38.62 s
+
+100.00%
+
+TOTAL TIME IN ZONE II
+
+Zone 2
+
+Answer facility calls
+Provide instruction to porter
+Maintain clinical calendar
+Manage clinical inventory ordering/stocking
+Manage cleaning inventory
+Coordinate incoming inpatients with Float Tech /Porter
+Transport emerg/inpatients to zone 2
+Late show coordination
+No show coordination
+
+TA office
+TA office
+TA office
+TA office
+ta office
+Scan room 1 or 2
+In patient holding
+TA office
+TA office
+
+Alternate Tasks
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+Scan Tech
+
+9m 12s
+TA
+TA
+TA
+TA
+TA
+TA
+Porter
+TA
+TA
+
+Back Up Tech, Porter
+Back Up Tech
+Back Up Tech
+Back Up Tech, Porter
+Back Up Tech, Porter
+Back Up Tech
+Alternate Porter
+None
+None
+
+Variable/constant
+Variable/constant
+Variable/constant
+variable/constant
+variable/constant
+variable/constant
+variable/constant
+variable/constant
+variable/constant
+
+20.00%
+
+5.00%
+
+

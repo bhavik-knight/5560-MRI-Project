@@ -1,0 +1,153 @@
+Tasks
+
+March 6th, 2025
+
+March 13th, 2025
+
+Patient fills out safety screening form
+
+1m 80s
+
+2m 12s, 5m 09s
+
+3m 38s, 3m 47s, 2m 05s
+
+Patient escorted to zone 2 waiting with directions to change
+20.98 s, 1m 04s, 2m 01s, 49.87s
+
+51.40s, 1m 35s, 1m 18s
+
+28.37s, 1m 02s, 1m 08s, 47.61s
+
+Patient changes
+
+5m 44s, 3m 02s, 1m 32s, 3m 39s
+
+5m 47s, 2m 06s
+
+1m 54s, 2m 52s, 2m 19s, 2m 46s
+
+Patient washroom
+
+1m 20s, 49.02s
+
+1m 18s, 3m 48s, 5m 14s
+
+2m 11s, 1m 12s
+
+Patient stores personal belongings
+
+26.95s, 31.06s, 24.43s, 29.12s, 11.94s, 51.32s
+
+22.55s, 7.77s
+
+21.92s, 13.48s, 56.31s, 43.71s,
+
+Patient changed and form checked and moved to prep 7.82s,
+room 21.59s, 20.10s
+Patient interview (safety, process to expect)
+
+March 24th,2025
+
+31.53s, 5m 32s, 58. 27s
+
+31.87s, 3m 23s, 2m 60s, 2m 46s, 3m 15s, 2m 10s
+
+5m 41s, 5m 48s
+
+56.80s, 17.82s, 17.09s, 2m 62s, 54.76s
+
+2m 23s, 2m 48s, 2m 09s, 2m 48s
+
+1m 32s
+
+4m 05s, 2m 41s, 2m 02s
+
+Patient complicated device lookup
+Patient IV setup
+Patient injected in prep room
+
+1m 39s
+
+Difficult IV
+
+7m 48s
+
+Patient brough to scan room and set up
+
+2m 56s, 4m 48s, 4m 9s, 3m 36s, 6m 19s
+
+7m 29s, 5m 15s
+
+2m 27s, 3m 28s, 2m 01s, 1m 31s, 3m 34s
+
+TOTAL TIME IN ZONE II
+
+12m 1s, 8m 4s
+
+25m 12s, 29m 57s
+
+10m 43s, 11m 32s, 20m 08s
+
+Patient IV setup in scan room
+
+8m 42s
+
+1m 52s, 4m 16s, 2m 26s, 3m 11s
+
+2m 25s
+
+4m 06s, 4m 31s, 1m 12s, 1m 18s, 20,9s
+
+1m 20s, 35s, 51.77s
+
+1m 13s
+
+46,81s, 2m 48s, 32.10s, 1m 28s
+
+57.36s, 1m 20s
+
+27.1s, 1m 09s
+
+3m 24s, 1m 45s
+
+4m 41s, 1m 48s, 1m 45s
+
+3m 48s, 5m 32s
+
+2m 21s, 2m 81s, 2m 14s
+
+55.26s
+
+49.33s, 14.25s
+
+Execute scan
+Claustrophobia
+Contrast Reaction
+Exit patient from magnet
+Patient supported in exiting facility
+Perform bed flip/setup for next pt.
+Scan paperwork to PACS, ensure data pushes
+Patient in change room
+
+3m 25s, 2m 07s
+
+Patient in washroom
+Patient at lockers
+
+15.78s, 21.97s, 2m 54s
+
+Patient exits facility
+
+38.62s
+
+TOTAL TIME IN ZONE II
+
+8m 25s, 6m 7s
+
+28.03s, 15.94s, 16.85s, 29.53s
+13m 06s
+
+8m 19s
+
+

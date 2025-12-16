@@ -1,0 +1,141 @@
+Step #
+4
+5
+7
+8
+9
+10
+11
+12
+12a
+12b
+13
+13a
+15
+17
+18
+19
+20
+21
+22
+
+Task
+Patient fills out safety screening form
+Patient escorted to zone 2 waiting with directions to change
+Patient changes
+Patient washroom
+Patient stores personal belongings
+Patient changed and form checked and moved to prep room
+Patient interview (safety, process to expect)
+Patient IV setup
+Patient injected in prep room
+Difficult IV
+Patient brought to scan room and set up
+Total time in Zone 2 pre-scan
+Patient IV setup in scan room
+Exit patient from magnet
+Perform bed flip/setup for next pt.
+Scan paperwork to PACS, ensure data pushes
+Patient in change room
+Patient in washroom
+Patient at lockers
+Patient exits facility
+Total time in Zone 2 post-scan
+
+N
+6
+11
+10
+7
+12
+
+Mean
+191.83
+62.38
+190.10
+136.00
+28.38
+
+6
+13
+8
+1
+1
+12
+7
+1
+10
+8
+4
+7
+5
+6
+5
+4
+
+78.55
+147.95
+153.50
+99.00
+468.00
+237.75
+1008.14
+522.00
+153.79
+71.84
+58.37
+165.00
+207.20
+55.10
+25.79
+539.25
+
+Min
+125
+21
+92
+49.02
+8
+
+Max
+309
+121
+347
+314
+56
+
+8
+17
+92
+99
+468
+91
+484
+522
+20.90
+32
+27
+105
+134
+14
+15.94
+367.00
+
+332
+348
+245
+99
+468
+449
+1797
+522
+271.00
+168
+80
+281
+332
+174
+38.62
+786.00
+
+

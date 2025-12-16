@@ -1,0 +1,358 @@
+Solving the MRI Wait List
+Transcribed by TurboScribe.ai. Go Unlimited to remove this message.
+Welcome everyone to our latest Biotic Science Rounds. Chris is going to be presenting first
+about solving the MRI wait list with math. Go ahead, Chris.
+All right, yes, very exciting, I know, as a topic. It is actually very exciting, and I hope to show you
+a couple ideas as to what we think we can actually make progress and why I've taken on some
+of this sort of a problem. I think a lot of you know of me as an MRI physicist, so a lot of my
+efforts are around the technical aspects of making an MRI scanner work, but that I think
+everybody would kind of appreciate is not fundamentally the biggest problem with MRI
+healthcare in Nova Scotia.
+There's other factors at play, so I want to kind of get at that. So the MRI wait list, I think of it not
+as an administrative problem in terms of specifically management or a resource problem in
+terms of number of MRIs or a staffing problem and not having enough technologists. It's
+certainly all of these things, but I think there's a reason that of late with developments that
+have been happening around analytics in this province that we should be thinking of it as a
+math problem.
+So I want to kind of break that down a little bit. So we have very simply a wait list equation. So
+there are two wait lists you can think of as a prospective wait list.
+That means if I, Chris Bowen, get a requisition for an MRI exam of some type, like a shoulder
+exam today, how many days am I going to have to wait till I actually get that exam? Then what
+patients know when they show up and finally get an exam is the retrospective wait list. I got a
+scan today. I waited 378 days for that.
+The website says it should have been 60 days. What's going on? So mostly I'm going to focus on
+the prospective wait list. This is the one involving planning and kind of give you some sort of
+sense for, in its simplest form, the wait list generally in the number of days you wait for an
+exam is the number of exams you have to do divided by your supply or the exams per day you
+can deliver with your MRI systems throughout the area where you have control.
+But there's not really one wait list. There's really, I call it N sub I because there's roughly, and I'll
+get into this a bit more shortly, 140 different kinds of MRI exams you could have in central zone
+here. We have five different subspecialties, more really.
+Neuro, body, MSK for shoulders and knees. We've got cardiac, we've got chest. So there's lots of
+different sections and each of them have dozens of protocols.
+So it's about 140 in general. So N sub I, there's really 140 wait lists, one for each protocol. But it
+really isn't just 140 because the other thing when you get coded, when a doctor sends in a rec
+
+and the radiologist says, he needs a prostate MRI exam, they can put a priority, what we call P1,
+P2, P3 and P4.
+So ostensibly that's how important is it to do this on a certain time scale. I almost forget what
+the actual priority specified times are versus what we actually deliver. I think in theory P1s are
+same day, P2s are kind of like same week, it might be shorter.
+P3s are supposed to be a month, P4s like every two months, but in reality, it's grossly, grossly
+worse than that. But there's really 140 times four wait lists. And of course, the last part, a little
+bit of summation is we don't really have a constant supply of prostate MRIs that we do every
+day.
+So if you want to know how many days you have to wait to deliver your supply, you have to
+integrate each day what your supply for each protocol and each priority is. So okay, so fair
+enough. Math, if you like math, that's pretty easy equation.
+If you don't, you ask, why am I talking about this? It's because really the opportunity that's
+recently only come around in just the last few years is sort of analytics. And there's two types of
+analytic systems specifically that I'm going to draw attention to. And really the analytics is what
+gives us the numbers, lets us do any math.
+The first one I'm going to show you is an analytic system called iCenter provided by GE. So what
+you're looking at here from GE's iCenter is our 3T MRIs efficiency. And it was for the month of
+April.
+And I've done an analysis between 8am and 9pm. We operate from 7am to 10pm on this
+scanner clinically. And exams, definitions are important, are defined from when a tech first
+opens an exam to when the last series completes.
+So if you kind of look, it's basically here we are in April, you can see the first day, Monday was a
+holiday, so I didn't include that. But white is when we're scanning, yellow is when we're not. So
+yellow is wasted dead time.
+So you can kind of see, despite the fact that we are at a unique crushing MRI shortage in this
+province, the busiest MRI in the province doing the most work is idle 42% of the time. Now,
+that's not entirely fair in that you cannot instantly have a new patient appear where the other
+one was. So you have to give some reasonable sort of delay.
+So I've had discussions with different radiologists at other sites have looked at efficiency, some
+say three minutes, some say five minutes is a suitable time to clean a bed and what they call flip
+a bed, clean it, change the coil, get it ready for the next patient. Even then, though, you can see
+the yellow bars, it's still basically 31 to 42%, still a third of the time the scanner is sort of empty.
+You can see some patterns in the middle of the day, there's a lot of yellow, gets better in the
+evening, kind of like where there's a little more white.
+
+We know what these are. These are not a surprise to techs or administrators who kind of do
+that. But, you know, essentially, what we want to look at here, and I just have a little bit of a
+cartoon, essentially, of what an organization that prioritizes this minimizing dead time or
+wasted time is.
+So this is a Mercedes double pit crew, where they basically have one car in, other car out. And
+you can see the everybody here has a specific job and a specific purpose. It's deeply organized,
+guys change tires, some have the jacks, some have the bolts and the lug nuts.
+Nobody's on the phone, nobody's doing administrative tasks, nobody's wondering why the
+other car didn't show up. Nobody's wondering, I thought we were doing trucks today. Like, you
+know, there's a mission oriented, isolated focus on what is the critical rate limiting step to
+efficiency.
+And in this case, there's millions of dollars involved. But of course, our healthcare system
+spends about six billion a year in Nova Scotia. So like efficiency is important, and we know
+waste is a big part of it.
+So this is one aspect, what I call the Formula One problem. How can we reduce the sort of dead
+time? And by the way, it's not entirely all of anyone's fault. It's a function of the systems and the
+design of the facilities we have.
+And I'm going to get into that in a few minutes, how that'll be improved. But the other thing
+analytics can do is look at the exact exam. So what exams are we doing? And how long are they
+taking? So what you're looking, again, on the 3T, and this is, again, April, I've got here the
+number of exams by description, and how many I did.
+So we did 139, what we call MR brain non-enhanced. That basically means brain scans without
+contrast. And then combined is brain scans with contrast.
+So these are, unfortunately, with the GE analytics, they organize around what we feed into the
+system, which is really a billing code. So you can think of each of these not as a specific single
+protocol, but they're a envelope of protocols that fit the same billing code. So non-enhanced
+could be an MS brain scan.
+It could be a routine brain scan. Somebody bumped their head. They're just generally trying to
+get a first glance at what's going on.
+It's an envelope. And unfortunately, that kind of spoils our ability to very precisely understand
+how long protocols are taking. But you can see the potential.
+The MR brain non-enhanced, although that is an envelope of protocols, it is mostly MS brain, by
+the way. It just happens to be that's what we run a lot of on the 3T. We consumed 53 hours of
+time, and the average protocol was 23 minutes.
+
+So you can see there's information here. There's other information, too. Although there's 140
+protocols, five of them were two-thirds of the exams and 86% of the scan time.
+So they're the big elephants in the room that if you focus on to start with, there's low-hanging
+fruit. If you make those go fast, various ideas to do that, you're probably going to get a pretty
+quick return on investment. The main issue, as I alluded to here, is that I need to have sorting
+by protocol with the average exam length, the idle time pre and post, and the number of exams
+monthly to design efficient measures.
+It's not good enough to have billing codes. I need protocols. So fortunately, we have that
+opportunity.
+One of the strengths of Nova Scotia, which is unique in North America as far as I can tell, is we
+have a single database, PACS, that is every MRI, CT, ultrasound that every patient in Nova Scotia
+largely has their imaging on. So we have a single accessible database, and we have the ability to
+attach analytics to that so we can make measurements. So let me give you a little example of
+what you're looking at just for fun.
+So here's the 10 MRIs in the province. HIMR2 is the code for our 3T. This is the trailer MRI, just
+to give an example.
+And this is sort of monthly. You can kind of see exam counts, and we've ramped up with the
+trailers. We got desperate, basically, and shut down some of the other.
+So you can get snapshot views of how many exams you're doing monthly. And this is easy to
+program. This is in a program offered by Google called Looker.
+And BI for business intelligence is something that Agfa, the company that provides our PACS,
+has made available to us. So you can create dashboards without coding experience rather
+quickly. So I just put these together in just a few minutes, just on quick things I was interested
+in.
+But it's very powerful. It can reproduce kind of what GE did, which is by billing code for each of
+the three scanners, how many exams do we did. So the 3T did a whole lot of MR brain nonenhanced.
+Whereas on the trailer, we can see we do a lot of GAD brains, and we do a lot of abdomen scans
+as well, liver scans. So you get that kind of, but this is what I'm really after. I can pull specific
+tags that maybe people don't realize when they look at an MRI image, but there's a huge, rich
+header that's associated with it, which has the obvious patient names, weights, but what
+protocol the tech run, what tech ran it, when the order came in to do it.
+There's all kinds of information that if we can customize, pull these tags, we can sort as we want
+and make all kinds of measurements. So in this case, I've started to sort how many exams do
+we do on the 3T, the trailer and the VG as sorted by prostate. So for example, we did 67
+
+prostates on the 3T in April.
+What I'm missing is the scan time. So I don't actually know how long it is. So I'm working
+essentially with the Agfa Looker people to do that.
+We were also exploring other options. We now have cloud-based with Microsoft Azure rich
+analytics systems that also can access PACS and other databases. It's a whole separate
+conversation, roll out systems for our AI tools in that cloud, but we also have very powerful
+analytics offered by Microsoft Azure as well.
+So we may be developing that there as well. So it's not sure which system we're going to use,
+but we are getting full support. We've had meetings with all the relevant parties to kind of do
+this.
+So we're going to get there on this. So let's say we do, what can we do with this? So I just
+wanted to, one of the obvious things that seems painfully obvious as we could start by seeing if
+the time we actually do a protocol matches the times we actually book a protocol. So you can
+kind of see, this is an example of the cheat sheet, an Excel file, and here are the body exams
+that are shown.
+And you can sort of see like adenal mass protocol. That's one of the 33 protocols that you can
+run on body. So there's also tabs for cardiac, MSK, neural, and vascular, and the billing code is
+here.
+And you can sort of see how MR abdomen combined can be various different protocols, and
+they're not always the same length of time. This is the amount of time to book them. So we very
+manually just book in these kinds of very coarse slots.
+And it's way too coarse, 15 minute granularity when we're looking for five minute or three
+minute bed flips. And we know that it's 23 minutes. So what you observe is a mismatch between
+the time it takes to book, between the booking time and the operation time, what I call a
+bleeding to death kind of problem.
+We've got 10 or five spare minutes at the end of every exam that sometimes the techs use to
+catch up because they're late, because they have too many administrative tasks to do. But
+oftentimes they don't. It's lost time.
+You can't do anything with six extra minutes. So we need to, but the first step to do any of this
+is to measure. You have to measure, then you can think about how can I organize myself better
+around that.
+So the main thing about this protocol is, this sort of system is, we need to match booking to
+protocol time, but we also have constraints. I have five MRIs in this central zone area. They
+don't all do all of the same exams, like cardiac's not done at Bear's Lake, and they don't all take
+the exact same amount of time to run the same protocol.
+
+Advanced technologies make some scanners operate faster to deliver, say, a routine brain than
+other ones. So it's a complicated problem as to how to sort of sort this out. So I wanted to kind
+of show you a little bit like, in addition to matching protocol length to booking length, which
+seems somewhat obvious, is we are about to, in one month with the 1.5 and in two months
+with the 3T, unveil a completely new sort of arrangement.
+This is the floor plan for the new Siemens 1.5T and the 3T, where we'll be doing a lot of
+research. So some of you may know the old corridor, which has been inaccessible for a while.
+This is the public corridor.
+This is a modern design two-bay suite. We have none of these in the province. The advantage of
+these side by side is we can share what we call zone two and three between the two magnets
+and find lots of efficiencies.
+So if you're an outpatient coming for your knee exam, you come in through this door, you sit
+here. What's labeled as a change room will be an administrative area where we can have
+people who sort of run the floor, more or less, and look at things. You've got a couple of change
+rooms, a couple of bathrooms, and then you've got three essentially prep rooms where
+patients can come in and get changed into gowns.
+After they've been changed into gowns, they can maybe get an IV set up, have a safety screen.
+So they can sit and wait for their exam. Right now in the 3T, one of the reasons for all the yellow
+bar is we are a one patient per zone three operation.
+We have no privacy. So if we're doing an inpatient, complicated support required from
+anesthesiology, for up to two hours, the entire magnet's tied up. We can't do anything else,
+even though the scan might be only 20 minutes, 30 minutes.
+We have the ability to plan around all of that. That patient could be in holding transfer, using
+one of our spare beds where they're transferred off their hospital bed onto that. I don't want to
+get into too much details of the workflow.
+My main point of the analytics is we can separate, we can actually measure these workflow
+changes that we might propose. And we can separate what techs are doing now, way too much
+administration, by providing this kind of administrative support. An ideal system in my mind is
+a tech does not even know that there's a patient ready for them until they're gowned, sitting,
+filled out their forms.
+Then a tech comes out, does their part that's mandatory safety screening, and gets them into
+their magnet. They're not calling, negotiating when patients can come down from the floor.
+They're not wondering why the porter's not there.
+So anyway, there's a lot to be thought of. And I think separation of an administrative boss for
+the floor from the techs is a key part to anti-deficiency. So the other part is, instead of the
+bleed-to-death model, more like safety valve model.
+
+Run flat out for three hours with tightly booked protocols, then give an hour gap where you can
+do whatever is required. Catch up because you're running late. You can use other patients that
+are low priority that have come into, who have agreed to kind of wait and sit around.
+There's different ideas you can imagine using. You could run somebody who is a last minute
+inpatient and pull them down, have a porter bring them down. Point is, I think running flat out
+and having a system, because if you don't have any of these safety valves, what happens is the
+techs get behind, they get frustrated, and essentially like this quench here, everything kind of
+blows up.
+It's just a very bad day. It creates a lot of sort of stress. The other part, no-show management.
+There's been a lot of discussion around how do we make people not show. And you know,
+electronic systems where you get texts and reminders, those are all great, but it's been proven
+over and over again anywhere from the hairdressers who have these systems for a decade, our
+hospitals just now getting to some of this in some areas. People, it doesn't matter if you're like
+Taylor Swift and George Clooney show up in a chariot, you're just not going to get some people
+to show up in their exams.
+There's just no way to kind of avoid this problem. So what you need to do is define a system
+that accommodates it. So for example, this is an example of a picture at Whistler of the main
+wait list.
+Essentially it's pretty good analogy to our health care system waiting for the gondola, but you
+also have a shorter list, the singles line. So these are people who may have no guarantee of
+ever getting on a chair if group eight after eight kind of keep showing up. But in reality, of
+course, that's the fastest line everybody who skis know is the singles line because you're going
+to have incomplete groups.
+So if you were a person, and some of you have probably been in this situation where you have a
+knee exam, it's a priority four, you know you're going to wait two to three years. Would you be
+willing to come in in a month, sit for up to four hours, wait your turn and look for one of these
+gaps? Because they know you have a simple exam, no GAD, 12 minutes table time. That's the
+kind of thing.
+We have now a floor where we could sit you out in this waiting, and when the floor boss kind of
+identified it was your turn, guess what? You're in, you're gowned, and you're ready to go on a
+short list. These are ideas rather than fight the no-show, live with it. And it's amplified when you
+have a two-bay, twice the probability that somebody's not going to show.
+So when you look at this kind of a problem, there's lots of work to be done administratively. I
+just want to give a sampling of what kind of ideas you might explore. But mathematically, what
+is it from an optimization standpoint? It's basically a scheduling system that you require
+optimized around waitlist.
+
+So what are the constraints? So for those of us who do sort of minimization, the constraints are
+in central zone, I have five MRIs. There's two of them are new. Bayer's Lake just opened,
+Dartmouth a few months ago, the new Siemens 3T HI here for 3T and 1.5, and then of course
+we have the VG.
+They're each, we know in advance, usually two months in advance, they know what their staff is
+based on how frustrated or angry the techs are, how many have quit or found new jobs in IT,
+that basically how it kind of goes from month to month to figure out. But they come up and
+plan eight-hour shifts on each of the magnets. And each of those magnets also has constraints.
+You can't run every type of exam. You can't run every exam for certain hours. Daytime, you
+could run stuff with RAD support that you can't run at night.
+And each magnet in theory has different protocol length. So it's kind of, these are constraints
+and values. And what do we want to do? We want to optimize.
+Fundamentally, we want to optimize the waitlist. That's the target, minimize it. So you can have
+essentially these 140 protocols with these different priorities and minimize.
+So for example, if cardiac P3s are 500 days and the target is, you know, you want to make it say
+300 days or something for all P3s, then you can have the various 140 protocols drive towards
+300 days with a square penalty. So it's a very common cost function to kind of make sure the
+outliers are prioritized and jammed towards the mean. And so you can think a lot about how
+you want to set your priorities.
+You can customize priorities. Say I just come hell or high water, cardiac's got to get down. You
+could make that a goal.
+Point is you have control. If you have a constraint optimization problem, you can set that up. So
+I just give an example here.
+I don't want to get into the details of how one might do it, but Matt, there's a lot of scheduling
+software out there. I looked into some of it for this problem, but it's kind of, in some sense, I
+almost think it might be better for us to in-house some of this with MATLAB. It's very easy.
+So this is a classic mixed integer constraint minimization. It's sort of where you have, it's kind of
+hard to see, and I don't intend for people to sort of see, but if you want to create alloy of metal
+and you got like four different lumps of metal or ingots, which have a certain proportion of
+carbon and molybdenum, and you also have alloys, which are mixed, and you got some scrap
+metal, which is its own carbon, and you need to make a certain mass with a certain mix as
+cheap as possible. Then you just basically set up the optimization problem with what variables.
+In our case, our variables are not metals, but they are like how many prostate exams are you
+going to do, that are P3. And our constraints are what is the wait list for that specific exam
+using our input data of our supply and demand balance, which comes from our analytics. So it's
+
+pretty simple, really.
+It takes less than a second to run these things, but this is what I envision might be a useful idea.
+Have MATLAB set up a constraint minimization for our 140 protocols, our four different
+priorities, feed the data from the analytics into it, and design a schedule as an output that is
+optimized across the five magnets based on the staffing. That's so hard for a single person to
+do.
+We had Dylan just trying, who's the lead MR tech here, trying to schedule just techs for a
+month, and it takes him up to 20 or 30 hours a month to schedule, because there's so many
+vacation requests. It's just very complicated to schedule. So scheduling is a big problem.
+So I'm just going to kind of close out by stating some of the challenges that I kind of see going
+forward. So first of all, wait lists, they are a balance between MRI supply, that's the exams you
+deliver monthly, and the MRI demand, that's the requisitions that come in monthly, and
+accounting for backlog. So I'm going to get new exams, and I'm going to have unfinished
+exams I didn't get to last month.
+That's basically the supply demand balance. The supply analytics are fantastic, probably some
+of the best in North America. We are the only place I know where province wide there's a single
+database PACS, and we now have some analytic tools to access it so we can pull data.
+We're going to have a pretty good handle how many MRI exams we're doing, and all the
+magnets, and how long they're taking. What is catastrophically bad is our understanding of
+demand. It's because we are in a fax environment where paper recs are faxed and faxed again,
+because I don't, they didn't know if the first fax went in, and they send them to Truro, Halifax,
+they shop around to all the different zones with recs, because whichever one gets in first, that's
+great, and all the rest, whatever, that's a no-show, that's something they can deal with.
+We need an electronic system, and we have one. Ocean has been adopted, but unfortunately
+only about 15 percent of recs that are currently in our system are in Ocean, but we're getting
+there. We're going to have a full electronic system, so the demand side will improve.
+I think, though, one thing I have looked at looking at this horrible system is the actual number
+of recs that they have tracked for the six months prior to decommissioning the 1.5T and the HI,
+and the six months after, it's less than one percent variable. It's actually, so they thought for
+some purposes that there was a spike in our demand for recs, but really not. It's actually pretty
+stable.
+The problem that's made our waitlist go a little haywire lately is our supply has gone way down.
+Instead of having an efficient in-hospital MRI, we have a trailer. We take 15 minutes to walk a
+patient to and from it.
+I'm not going to get into the details, but our demand has gone down 18 percent, our supply has
+changed not at all, but we can assume demand is stable until we get better systems coming in
+
+to build waitlist models. The other challenges are administrative adoption. It's constantly a
+discussion with leadership, and I've had these conversations with Pearl and James and others
+who are supportive in general of this, but they're leery.
+Obviously, whenever you do something big like change how we handle and manage our clinical
+floors, there's a lot of potential for people who are set in their ways of being concerned about
+what you're going to break, and we will break things. There's no doubt this is going to have
+problems. We're going to need to have continuous support and evaluation to find and fix as we
+go.
+I think the other big piece, and I've talked to Judy, who's essentially a radiologist in charge of a
+lot of the IT infrastructure for the province, we need scheduling. We can't have Dylan spending
+half his time scheduling, but we need linkage between the schedules of the RADs, the techs,
+and the scanner itself, so we can coordinate such that if I want to fix a prostate protocol, I have
+the right radiologist, like Sharon, who is capable of evaluating whether there are good changes,
+the tech that's responsible for body MR exam, protocol development, which I believe is going to
+be Xena, and also some scan time given to them so they can actually book eight prostates in a
+row and kind of look at that. So that's just so impossible to manually do to coordinate that.
+You'd spend all day just setting that up. So I think scheduling and AI scheduling is part of it, but
+I think there's a real appetite for this. Obviously, waitlists is a very topical problem.
+We've tried to fight it with raw horsepower, with all these MRIs opening, but efficiency, as you
+can see, can probably produce a greater return on investment than one. If I could have an
+efficient system or one more MRI, I would take an efficient system in central zone, and I think
+the analytics support that. So I'm going to leave it there, just if there's any questions, but my
+problem is I need to, I can handle telling the story as to why this is important and
+understanding what analytics are there, but I will probably need to resource how we, I think
+this could be a great student project, honestly, a constraint minimization problem if they're
+given the right data and the right analytics support from data engineers like Jeff can really help
+to kind of feed analytic system information into these models.
+And then a lot of it's around management, who's going to administer the floor to be the floor
+boss, run the schedule, follow the rules to fix things as we trial. There's a lot to be done here,
+but I think there's an appetite to try. Okay, that's it for me.
+Thanks.
+Transcribed by TurboScribe.ai. Go Unlimited to remove this message.
+
+

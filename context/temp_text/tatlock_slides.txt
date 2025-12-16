@@ -1,0 +1,300 @@
+Improving MRI
+Department Efficiency:
+Enhancing Productivity and
+Reducing Wait Times
+Isabella Tatlock, 4th year Dalhousie Radiologic
+Technology & MRI Student
+
+Table of contents
+
+01
+
+02
+
+03
+
+Facility, idle time,
+wait times
+
+Current project and
+future endeavours
+
+Project Overview
+
+Research Collaboration
+
+05
+
+06
+
+07
+
+Improved workﬂow
+& data collection
+
+Key ﬁndings
+
+Workﬂow
+Improvements
+
+Introduction
+
+Background
+
+04
+
+Staff roles, adjust
+workﬂow, time
+workﬂow
+
+Methodology
+
+04
+
+Results
+
+Discussion
+
+The team that made this
+research project happen
+
+Conclusion
+
+Introduction [2]
+● First 2-bay MRI suite in Nova Scotia (1.5 T and 3 T
+magnets)
+
+An MRI technologist prepares a patient in the prep room at the QEII Health
+Sciences Centre in Halifax. (Nova Scotia Health)
+
+●
+
+This site layout requires more planning and
+administration from the techs
+
+●
+
+The wait time for an MRI is almost 2 years
+
+●
+
+The MRI scanner sits idle 31% of the time
+
+●
+
+If we take the steps to decrease the idle time, we
+can solve the wait time issue for MRI scans in
+Halifax
+
+QEII MRI Wait times [3]
+90% served within: 717 days (2+ years)
+Bones and Joints: 554 days
+Brain: 800 days
+Chest and Abdomen: 744 days
+Heart: 736 days
+
+50% served within: 73 days (2+ months)
+Bones and Joints: 195 days
+Brain: 71 days
+Chest and Abdomen: 40 days
+Heart: 51 days
+
+National Maximum Wait Time
+Access Targets for MRI [1,4]
+The Canadian Association of Radiologists determines:
+Priority 1 (P1) Emergent cases - Life or limb
+immediately threatened
+● Same day- max 24 hours (some less than an
+hour based on clinical team decisions)
+Priority 2 (P2) Urgent- Life or limb not immediately
+threatened. .
+● Max of 7 days or ASAP
+Priority 3 (P3) Semi-urgent- Imaging necessary
+before P4 benchmark.
+● Max 30 days
+Priority 4 (P4) Non-urgent- no negative long-term
+medical outcome related to delay in treatment if
+● Max 60 days
+
+3T Magnet Idle Time
+During the hours of
+operation the 3T magnet
+sat idle for 78/247 hours
+hours creating an idle
+percentage of 31%
+● this percentage
+excludes a 5 minute idle
+gap between cases!
+● 42% idle with no alloted
+gap (103/247 hours)
+
+Background [2,5]
+
+●
+
+4 safety zones monitored by staff due
+to safety concerns
+○
+○
+○
+
+○
+
+●
+
+●
+●
+
+Zone 1: freely accessible to the public
+Zone 2: Patient supervised preparation
+Zone 3: The tech control zone where
+unscreened personnel or ferromagnetic
+items become dangerous
+Zone 4: The MRI scan room which is
+clearly marked and strictly supervised
+
+6 staff model
+○ 4 technologists
+○ 1 TA
+○ 1 dedicated porter
+2 Magnets = double the patient & staff
+Organization and distinct roles are
+required for efficiency
+
+Project Overview
+1.
+
+MRI 2-bay Workﬂow Project (Current Project):
+● Simulate staff/patient tasks through the Siemens 2-bay MRI suite.
+● Collect data to improve efficiency and workﬂow/ for future endeavours
+
+Future Projects
+2. MRI Staff Scheduling Optimization
+3.
+
+MRI Protocol Duration Analytics
+
+4.
+
+MRI Patient Scheduling Optimization (Future)
+
+Research Collaboration
+Facility: Halifax Inﬁrmary MRI department
+Dr. Chris Bowen: Lead MRI Researcher
+Dr. Jennifer Payne: Lead Researcher/Dalhousie Professor
+Dylan LeBlanc: MRI Technologist/Department Team Lead
+SMU health research team: Research/IT
+Kara Doucet: MRI Technologist
+Grayson Porter: NSH Research Coordinator
+HI MRI staff: Support
+Jamie Eliasson: Dalhousie Professor/Radiological Technologist
+
+Methodology
+1. Deﬁning staff roles: 2 scan techs, 2 backup techs, an administration TA,
+and the dedicated MRI porter.
+2. Lay out all steps that each staff member and patients perform that tie
+up resources and delay patient movement/create idle time. Also adding
+in a backup staff member to cover breaks and low-probability events.
+3. Create an effective workﬂow for efficient use of MRI zones and patient
+movement.
+4. Test out the workﬂow model and make adjustments based on staff
+comments, patient comments, and data collection of the time it takes
+for staff and patients to perform each step.
+
+Results: Staff Roles [2]
+●
+
+4 technologist
+○
+○
+○
+
+●
+
+1 dedicated porter
+○
+○
+
+●
+
+2 in each bay switching between scan tech and
+backup tech
+Scan tech: follows patient through care to scanning
+Back-up tech: assists with patient set up, ﬁnishes
+paperwork, available for admin questions, priority
+is to prep next patient
+Communicate with the admin TA to transport
+patients to and from the MRI department
+Stocking, cleaning, and initial patient instructions
+
+1 administrative TA
+○
+
+Manages clinical calendar, inpatient appointments,
+outpatient ﬂuctuations, and facility calls
+
+Control room of the new MRI suite at the QEII Health
+Sciences Centre (Nova Scotia Health)
+
+Halifax Inﬁrmary MRI Department Workﬂow Chart
+
+Pre Scan
+Post Scan
+
+Results
+Zone 1
+Zone 2
+Zone 3
+Zone 4
+Time for patient to be
+prepared for their
+scan with IV:
+14m 27s
+(Top 5 cases require
+contrast= 86% of
+operation time)
+Time for patient to be
+prepared for theirs
+scan without IV:
+11m 37s
+
+Discussion: What I learned
+Things I learned about MRI workﬂow:
+● 3 patients max in Zone 2
+○ 2 patients being prepped and 1 exiting the magnet
+○ With 2 change rooms, 2 bathrooms, many lockers, and 2 prep rooms
+the patients are not waiting for these resources and are able to be
+prepped for the scan before it is ready for them.
+● Use Zone 1 to your advantage!
+○ Patients do not need to be supervised and they can take their time
+ﬁlling out the screening form instead of taking up resources in the
+department
+● The prep room is the ideal place for patients to wait
+○ The patient is screened and has their IV inserted to ensure they are
+fully prepared for their scan or ready to switch magnets if needed.
+
+Conclusion [2]
+● Consistency in data
+● Type of exam changes workﬂow
+● Communication
+● Late/no-show effects
+MRI suite at the QEII Health Sciences Centre in Halifax. (Nova Scotia Health)
+
+Thank You!
+Questions?
+
+References
+[1] Canadian Association of Radiologists. (2013). National Maximum Wait Time Access Targets
+for Medical Imaging (MRI and CT). https://car.ca/patient-care/guides/
+[2] Government of Nova Scotia. (2024, September 16). New MRI suite enhances patient care at
+Halifax Inﬁrmary. Nova Scotia News.
+https://news.novascotia.ca/en/2024/09/16/new-mri-suite-enhances-patient-care-halifax
+-inﬁrmary
+[3] Nova Scotia Health. (n.d.). MRI wait times. Nova Scotia Health Authority.
+https://waittimes.novascotia.ca/procedure/mri-nova-scotia-health-authority
+[4] Weber, M. A., & Biederer, J. (2013). Indications for 24 hours/7 days emergency MRI.
+Magnetom Flash, 2, 2013.
+[5] Westbrook, C., Kaut Roth, C., & Talbot, J. (2019). MRI in Practice, 5th Edition. Oxford:
+Blackwell Publishing Ltd
+
+

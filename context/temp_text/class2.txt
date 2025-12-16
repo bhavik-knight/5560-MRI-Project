@@ -1,0 +1,419 @@
+MCDA 5560
+
+Business Intelligence and
+Data Visualization
+Decision Analytics and
+Process Management
+Michael Zhang
+
+How to use Data to Make Decisions
+Analytical & Critical Thinking (finding meaning in data)
+• Statistical literacy → averages vs. distributions, correlation vs.
+causation.
+• Business problem framing → translating vague questions into data
+queries.
+• Comparative analysis → trends, cohorts, benchmarks, time-series
+analysis.
+• Decision logic → recommending why and what to act on, not just
+what happened.
+• Scenario & sensitivity testing → “What if we change this variable?”
+
+Analytical & Critical Thinking (finding meaning in data)
+• Statistical literacy → averages vs. distributions, correlation vs.
+causation.
+• Business problem framing → translating vague questions into data
+queries.
+• Comparative analysis → trends, cohorts, benchmarks, time-series
+analysis.
+• Decision logic → recommending why and what to act on, not just
+what happened.
+• Scenario & sensitivity testing → “What if we change this variable?”
+
+Measuring
+Primary Care
+Services
+
+Measuring
+Primary Care
+Services
+
+Emergency
+Room
+Resilience
+
+Emergency
+Room
+Resilience
+
+Breakdown of the MRI Project
+1. MRI 2-bay Workflow Project:
+
+• Simulate staff/patient actions through Siemens 2-bay MRI suite.
+• Use sims to identify bottlenecks, staff overtasking and evaluate new patient
+scheduling proposals.
+
+2. MRI Staff Scheduling Optimization:
+
+• Incorporate MRI technologist preferences into staff schedule generation for all
+Halifax MR systems while maintaining operational hours.
+
+3. MRI Protocol Duration Analytics:
+
+• Use metadata from PACs MRI database to calculate protocol duration for 154 MRI
+protocols deployed over MRIs across NS.
+• Useful for tracking efficiency improvements and as future inputs to patient exam
+schedulers.
+
+4. MRI Patient Scheduling Optimization (in progress):
+
+• Use protocol duration data and 2-bay workflow sims to create a patient schedule
+with reduced scanner-idle time (no-shows, late-shows, patient withdraw).
+
+MRI 2-Bay Workflow Project (#1)
+
+3T MRI
+
+• First 2-bay MRI suite in NS
+• 4 safety zone workflow
+• 6 staff operate facility (4
+techs, 1 porter, 1 TA)
+Can you take patient schedule
+and staff workflow step map as
+input and identify
+bottlenecks/staff over-tasking?
+
+Staff Task Itemization
+Task
+Patient Registration Detected (PPF or WLM Dicom
+scanner)
+TA Staff notify Admin Tech of patient arrival
+Patient Sub-waiting detected
+Patient fill out screen form
+Patient brought to Z2 wait
+
+Staff Primary
+involved
+
+Room
+Backup staff occupied
+
+TA
+TA
+TA
+None
+TA
+
+Scan tech
+Porter
+Porter
+None
+Float Tech
+
+Start Millineum
+
+Admin tech
+
+Patient changes (remove jewelry)
+Patient washroom
+Patient stores personal belongings
+Patient checked by TA and moved to a prep room
+
+None
+None
+None
+TA
+
+Patient interview (safety, process to expect)
+
+Float tech
+
+Patient IV setup
+
+Float tech
+
+Patient complicated device lookup
+Float Tech/Scan tech private handover discussion
+
+Float tech
+Float tech
+
+Patient injected in prep room
+
+Float tech
+Float tech + scan
+tech
+
+Patient brough to scan room and setup
+
+Execute scan
+Remove patient from room and perform bed flip
+Scan paperwork to PACS, ensure data pushes
+Patient supported in exiting facility
+Patient in change room
+Patient in bathroom
+Patient at lockers
+Patient leaves Z2
+
+Scan tech
+Scan tech + TA
+Scan tech
+TA
+
+None
+None
+None
+Float Tech
+
+scan tech
+
+Time to execute
+(min)
+
+Z3
+Z2 office
+Sub-wait
+Sub-wait
+Z2 wait
+Z2 admin
+office
+Change room
+Z2
+Bathroom Z2
+Z2 hall locker
+Z2 hallway
+Prep room
+(1of2)
+Prep room
+(1of2)
+Prep
+room(1of2)
+Z3 scanner
+Prep
+room(1of2)
+scan room
+(3T,1.5T)
+scan room
+(3T,1.5T)
+TBD (30 mins)
+
+Z3
+
+Probability of action
+required
+1
+1
+1
+5
+2
+
+100
+100
+100
+100
+
+1
+
+100
+
+5
+5
+3
+2
+
+100
+100
+100
+100
+
+5
+
+100
+
+10
+
+33
+
+60
+2
+
+1
+100
+
+1
+
+0.1
+
+5
+
+100
+
+5
+1
+1
+
+100
+100
+100
+
+• MRI Tech Student Project
+identifying every step in
+process.
+• Each step involves a
+primary staff, backup staff
+if primary unavailable, a
+space in floorplan, and an
+execution time.
+• Simulate scenarios with
+varied probabilities
+(contrast setup, contrast
+reaction emergency,
+implant safety lookup).
+
+Do we have the correct step
+template?
+
+Patient Schedule Inputs (Template)
+• Patient booking staff use these
+templates to create patient
+appointments.
+• Each block represents an exam
+with specified duration
+(Inpatient time varies).
+• Do simulations of different daily
+schedules produce different
+issues (bottlenecks, staff overtasking)?
+• Can simulations be validated
+with floor observational
+measures?
+• Can a better template be
+devised to distribute workload
+more efficiently?
+
+Dicom Headers
+
+•
+•
+•
+
+Monthly Exam counts in CZ increased from ~1050 to ~1250 in July when DG opened.
+DG performs ~450 exams/month offsetting ~250 lost exams in July from Trailer MRI closure.
+Monthly Exam counts ~1700 in November as both Siemens magnets schedule stabilizing.
+
+Protocol Duration – HI Siemens Site
+Siemens 3T Body Protocols – Oct 2024
+
+Siemens 1.5T Cardiac Protocols – Oct 2024
+
+Swimlane Diagram for MRI
+
+• Process refers to a series of
+actions or steps taken to
+achieve a specific goal or
+produce a particular result.
+• A well-defined process helps
+ensure consistency, efficiency,
+and quality in achieving the
+desired outcome.
+
+18
+
+• Process management is the
+discipline of overseeing and
+improving processes to enhance
+efficiency, productivity, and
+quality. It involves identifying,
+analyzing, designing, executing,
+monitoring, and optimizing
+processes within an organization
+or system.
+
+19
+
+Process Flow Chart
+• A flowchart is a picture of the separate
+steps of a process in sequential order. It is a
+generic tool that can be adapted for a wide
+variety of purposes, and can be used to
+describe various processes, such as a
+manufacturing process, an administrative or
+service process, or a project plan. It's a
+common process analysis tool and one of
+the seven basic quality tools.
+• Elements that may be included in a
+flowchart are a sequence of actions,
+materials or services entering or leaving the
+process (inputs and outputs), decisions that
+must be made, people who become
+involved, time involved at each step, and/or
+process measurements.
+
+• To provide an overview of process modeling
+• To understand the basic components of the Arena
+Environment
+
+Objectives
+
+• To be able to perform simple Monte Carlo simulations in
+Arena
+• To be able to recognize and define the characteristics of a
+discrete-event dynamic system (DEDS)
+
+• To be able to develop and read an activity flow diagram
+• To be able to create, run, animate, and examine the results
+of an Arena model of a simple DEDS
+
+Discuss Arena Model
+23
+
+Drive Through Pharmacy
+• Customers arrive at a drive through pharmacy window
+according to a Poisson distribution with a mean of 10 per hour.
+• The time that it takes the pharmacist to serve the customer is
+random and data has indicated that the time is well modeled
+with an exponential distribution with a mean of 3 minutes.
+• Customers who arrive to the pharmacy are served in the order
+of arrival and we assume that enough space is available within
+the parking area of the adjacent grocery store to accommodate
+any waiting customers
+
+Waiting Line of Customers
+
+Pharmacist
+
+Server
+
+Customer being served
+
+CREATE
+Drive-Through
+customer
+TBA~expo(6)
+minutes
+
+Enters Queue
+DriveThrough
+Queue
+Exits Queue if resource is
+available
+
+SEIZE
+
+Starts Activity (if resource
+can be seized)
+Drive-Through Customer
+Service Activity
+Delay ~expo(3) minutes
+
+Pharm
+acist
+
+Ends Activity (releases
+resource)
+
+RELEASE
+
+DISPOSE
+Drive-Through
+customer
+
+
