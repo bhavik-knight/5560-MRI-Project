@@ -26,7 +26,8 @@ def run_experiment(hours=12, iterations=10, output_dir='results'):
             is_parallel = (scenario_name == 'Parallel')
             
             sim = MRISimulation(simulation_hours=hours, parallel_mode=is_parallel)
-            logs = sim.run()
+            results = sim.run()
+            logs = results['patient_logs']
             
             # Enrich logs with iteration info
             for record in logs:

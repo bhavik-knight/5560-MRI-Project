@@ -1,5 +1,7 @@
 
 import simpy
+import pandas as pd
+import random
 from src.config import MRIConfig
 from src.resources import MRIResources
 from src.entities import Patient
@@ -9,7 +11,9 @@ class MRISimulation:
         self.simulation_hours = simulation_hours
         self.parallel_mode = parallel_mode
         self.staff_count = staff_count
-        self.logs = []
+        self.patient_logs = []
+        self.spatial_logs = []
+        self.active_patients = []
         
     def patient_generator(self, env, resources, config):
         """Generates patients based on configured schedule and noise."""
@@ -21,33 +25,11 @@ class MRISimulation:
             inter_arrival = config.ARRIVAL_SCHEDULE # 30 mins
             noise = config.get_arrival_delay()
             
-            # Yield time for next scheduled slot
-            # Note: simplified logic. A proper schedule creates slots. 
-            # Here we just space them by 30 mins + noise? 
-            # Prompt says "loop yielding Patient every 30 mins +/- noise".
-            # The simplest way is to yield 30 mins, then spawn a process that waits (noise) before starting?
-            # Or yield (30 + noise)? If noise is negative, we can't yield negative timeout.
-            
-            # Better Approach:
-            # Yield 30 minutes.
-            # Spawn a patient, but apply "lateness" (noise) to their *effective* arrival time processing?
-            # Step 3 `process_flow` doesn't explicitly wait for arrival, it assumes it starts when called.
-            # Let's yield max(0, 30 + noise) for spacing? 
-            # Or better: yield 30. Then spawn `p.process_flow` with an initial `yield timeout(max(0, noise))`?
-            # Let's do the latter.
-            
             yield env.timeout(inter_arrival)
             
-            # Determine actual arrival time (could be late)
-            # Effectively, patient arrives NOW + Noise.
-            # If Noise is negative (early), they arrived in the past? 
-            # Simpy can't handle negative timeouts. 
-            # Let's assume noise applies to the "Processing Start".
-            
             arrival_offset = max(0, noise) 
-            # Initial time is env.now (which is slot time). Patient arrives at env.now + offset.
-            
             actual_arrival_time = env.now + arrival_offset
+            
             patient = Patient(p_id, actual_arrival_time)
             
             # We need a wrapper to handle the offset delay before process_flow starts
@@ -57,18 +39,66 @@ class MRISimulation:
         if delay > 0:
             yield env.timeout(delay)
         
+        # Add to active list for Monitoring
+        self.active_patients.append(patient)
+        
         yield from patient.process_flow(
             env, 
             resources, 
             config, 
             parallel_mode=self.parallel_mode, 
-            log_records=self.logs
+            log_records=self.patient_logs
         )
+        
+        # Remove from active list? 
+        # Or keep them if we want to track 'Exit' state for a bit?
+        # Monitor logic handles 'Done'.
+        pass
+
+    def monitor_spatial_state(self, env):
+        """
+        Runs every 1 minute to snapshot patient locations.
+        """
+        while True:
+            current_time = env.now
+            
+            for patient in self.active_patients:
+                state = getattr(patient, 'state', 'Unknown')
+                
+                # Default mapping
+                x, y = 0, 0
+                
+                if state == 'Arrived/Waiting':
+                    # Zone 1
+                    x = 0
+                    y = random.uniform(0, 5)
+                elif state in ['Prepping', 'Changed', 'IV Setup']:
+                    # Zone 2 (Wait/Prep)
+                    x = 1
+                    y = random.uniform(0, 5)
+                elif state == 'Scanning':
+                    # Zone 4
+                    x = 2
+                    y = 2
+                elif state == 'Done':
+                    # Exit
+                    x = 3
+                    y = random.uniform(0, 5)
+                
+                self.spatial_logs.append({
+                    'Minute': int(current_time),
+                    'Patient_ID': patient.id,
+                    'State': state,
+                    'X': x,
+                    'Y': y
+                })
+            
+            yield env.timeout(1)
 
     def run(self):
         """
         Initializes and runs the simulation.
-        Returns the logs.
+        Returns a dict containing patient logs and spatial dataframe.
         """
         env = simpy.Environment()
         
@@ -78,7 +108,16 @@ class MRISimulation:
         # Start Generator
         env.process(self.patient_generator(env, resources, MRIConfig))
         
+        # Start Monitor
+        env.process(self.monitor_spatial_state(env))
+        
         # Run
         env.run(until=self.simulation_hours * 60)
         
-        return self.logs
+        # Format Spatial Logs
+        df_spatial = pd.DataFrame(self.spatial_logs)
+        
+        return {
+            "patient_logs": self.patient_logs,
+            "spatial_data": df_spatial
+        }

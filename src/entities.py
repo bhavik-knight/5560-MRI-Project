@@ -10,6 +10,7 @@ class Patient:
         """
         Simulate the patient's journey through the MRI suite.
         """
+        self.state = 'Arrived/Waiting'
         
         # calculate prep times once per patient
         screening_time = config.get_screening_time()
@@ -37,15 +38,26 @@ class Patient:
                 yield req
                 
                 # Magnet Seized. Start Prep.
+                self.state = 'Prepping' # Zone 2/3 (inside room)
                 prep_start = env.now
                 if parallel_mode is False: # Occupying magnet room for prep
                     yield env.timeout(total_prep_time)
                 
                 # Scan
+                self.state = 'Scanning'
                 scan_start = env.now
                 yield env.timeout(scan_time)
                 
                 # Turnaround / Flip
+                # self.state = 'Flip'? or stay Scanning/Done? 
+                # Prompt says "Done -> Exit". 
+                # Keep Scanning during flip? Or 'Done'? 
+                # Prompt mapping: "Done -> Exit". 
+                # Let's switch to Done after scan?
+                # But Flip happens *before* exit in Serial?
+                # Usually patient leaves, then flip.
+                # Let's set to Done.
+                self.state = 'Done'
                 yield env.timeout(bed_flip_time)
                 
                 exit_time = env.now
@@ -59,31 +71,44 @@ class Patient:
             yield req_prep
             
             # 2. Prep
+            self.state = 'Prepping'
             prep_start = env.now
-            # Consume Prep Staff if needed? prompt says "Seize Prep_Room". 
-            # I will assume resources object handles specific constraints if complex, 
-            # but prompt "Refactor Resources" defined prep_rooms.
             yield env.timeout(total_prep_time)
             
-            # 3. Release Prep Room (Patient moves to Wait for Magnet)
+            # 3. Release Prep Room
             resources.prep_rooms.release(req_prep)
             
+            # Patient waiting for Magnet
+            self.state = 'Arrived/Waiting' # Back to Zone 1? Or Zone 2 Waiting?
+            # Prompt says: "Prepping/IV/Changed -> Zone 2". 
+            # "Arrived/Waiting -> Zone 1".
+            # Gowned waiting is technically Zone 2. 
+            # Let's keep it as 'Prepping' or add 'Waiting Gowned'?
+            # Using 'Prepping' keeps them in Zone 2 (X=1).
+            # Using 'Arrived/Waiting' moves them to Zone 1 (X=0).
+            # Logic: They are gowned, so Zone 2.
+            # Let's keep state 'Prepping' or 'Changed'.
+            self.state = 'Changed' 
+
             # 4. Seize Magnet
             req_mag = resources.magnet.request()
             yield req_mag
             
             # 5. Scan
+            self.state = 'Scanning'
             scan_start = env.now
             yield env.timeout(scan_time)
             
             # 6. Turnaround / Flip
+            self.state = 'Done'
             yield env.timeout(bed_flip_time)
             
-            # 7. Release Magnet (Context Exit handles this if using 'with', 
-            # but here we used explicit request/release for prep logic gap)
+            # 7. Release Magnet
             resources.magnet.release(req_mag)
             
             exit_time = env.now
+        
+        self.state = 'Done'
 
         # Logging
         if log_records is not None:
