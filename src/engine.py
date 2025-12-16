@@ -7,10 +7,11 @@ from src.resources import MRIResources
 from src.entities import Patient
 
 class MRISimulation:
-    def __init__(self, simulation_hours=12, parallel_mode=False, staff_count=4):
+    def __init__(self, simulation_hours=12, parallel_mode=False, staff_count=4, bed_flip_time=None):
         self.simulation_hours = simulation_hours
         self.parallel_mode = parallel_mode
         self.staff_count = staff_count
+        self.bed_flip_override = bed_flip_time
         self.patient_logs = []
         self.spatial_logs = []
         self.active_patients = []
@@ -46,7 +47,8 @@ class MRISimulation:
             env, 
             resources, 
             config, 
-            parallel_mode=self.parallel_mode, 
+            parallel_mode=self.parallel_mode,
+            bed_flip_override=self.bed_flip_override,
             log_records=self.patient_logs
         )
         

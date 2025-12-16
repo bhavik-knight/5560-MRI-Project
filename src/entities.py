@@ -6,7 +6,7 @@ class Patient:
         self.id = p_id
         self.arrival_time = arrival_time
         
-    def process_flow(self, env, resources, config, parallel_mode=False, log_records=None):
+    def process_flow(self, env, resources, config, parallel_mode=False, bed_flip_override=None, log_records=None):
         """
         Simulate the patient's journey through the MRI suite.
         """
@@ -23,7 +23,10 @@ class Patient:
         scan_time = config.get_scan_duration()
         
         # Decide Bed Flip Time logic
-        bed_flip_time = config.BED_FLIP_TIME_FUTURE if parallel_mode else config.BED_FLIP_TIME_CURRENT
+        if bed_flip_override is not None:
+            bed_flip_time = bed_flip_override
+        else:
+            bed_flip_time = config.BED_FLIP_TIME_FUTURE if parallel_mode else config.BED_FLIP_TIME_CURRENT
 
         # Timestamps for logging
         prep_start = None
