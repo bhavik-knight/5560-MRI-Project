@@ -102,7 +102,6 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("MRI Digital Twin - Zone 1-4 Layout")
     clock = pygame.time.Clock()
-    font = pygame.font.SysFont(None, 24)
 
     running = True
     while running:
