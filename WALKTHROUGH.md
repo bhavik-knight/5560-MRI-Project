@@ -259,38 +259,226 @@ From GE iCenter analytics and workflow studies:
 - **Noise**: triangular(-5, 0, 5) minutes
 - **Result**: Patients arrive every 25-35 minutes
 
-## 9. Running Experiments
+## 9. Time-Based Simulation Model & Warm-Up Period
+
+### Shift Duration Model (Process Management Best Practice)
+
+**Philosophy:** Model actual operating conditions, not arbitrary patient counts.
+
+**Implementation:**
+```python
+DEFAULT_DURATION = 720      # 12 hours (standard MRI shift)
+WARM_UP_DURATION = 60       # 1 hour (remove empty-system bias)
+```
+
+### Why Time-Based Instead of Patient-Count?
+
+**Old Approach (Count-Based):**
+```python
+# Run until 10 patients complete
+while patients_completed < 10:
+    ...
+```
+
+**Problems:**
+- Arbitrary stopping point
+- Doesn't reflect real operations
+- Variable simulation duration
+- Inconsistent comparisons
+
+**New Approach (Time-Based):**
+```python
+# Run for 12-hour shift
+while env.now < 720:
+    # Patients arrive until shift ends
+    ...
+```
+
+**Benefits:**
+- ✅ Realistic (models actual shift)
+- ✅ Consistent duration across runs
+- ✅ Allows fair scenario comparison
+- ✅ Matches Process Management methodology
+
+### The Warm-Up Period Problem
+
+**The "Empty System" Bias:**
+
+At 7:00 AM (simulation start):
+- No patients in system
+- All staff idle
+- Magnet idle
+- **Result**: First hour shows artificially low utilization
+
+**Impact on Statistics:**
+```
+Without Warm-Up:
+- Hour 1: 0% utilization (empty)
+- Hour 2-12: 85% utilization (steady state)
+- Average: 77% (biased low)
+
+With Warm-Up:
+- Hour 1: Excluded from stats
+- Hour 2-12: 85% utilization
+- Average: 85% (accurate)
+```
+
+### Warm-Up Implementation
+
+**In `src/config.py`:**
+```python
+WARM_UP_DURATION = 60  # 1 hour
+```
+
+**In `src/analysis/tracker.py`:**
+```python
+def log_movement(self, patient_id, zone, timestamp):
+    # Skip logging during warm-up
+    if timestamp < self.warm_up_duration:
+        return
+    
+    # Adjust timestamp (subtract warm-up)
+    self.patient_log.append({
+        'timestamp': timestamp - self.warm_up_duration,
+        ...
+    })
+```
+
+**What Happens:**
+1. **0-60 minutes**: Warm-up phase
+   - Patients arrive and flow through system
+   - System reaches steady state
+   - Stats NOT recorded
+
+2. **60-720 minutes**: Data collection phase
+   - All stats recorded
+   - Timestamps adjusted (subtract 60)
+   - Represents typical operating conditions
+
+3. **After 720 minutes**: Simulation ends
+   - Last patients complete their journey
+   - Final statistics calculated
+
+### Patient Generation Logic
+
+**Time-Based Generator:**
+```python
+def patient_generator(env, ..., duration):
+    p_id = 0
+    while env.now < duration:  # Run until shift ends
+        p_id += 1
+        # Create patient
+        env.process(patient_journey(...))
+        # Wait for next arrival
+        yield env.timeout(inter_arrival + noise)
+```
+
+**Key Points:**
+- Patients arrive continuously until shift ends
+- No artificial patient limit
+- Last patients may still be in system when shift ends
+- Simulation continues until all patients clear
+
+### Simulation Timeline Example
+
+```
+Time (min)  | Event
+------------|--------------------------------------------------
+0           | Simulation starts, Patient 1 arrives
+30          | Patient 2 arrives
+60          | Warm-up ends, stats collection begins
+90          | Patient 4 arrives (first logged patient)
+...
+690         | Patient 24 arrives (last arrival)
+720         | Shift ends, no more arrivals
+750         | Patient 24 completes scan, simulation ends
+```
+
+### Statistics Adjustment
+
+**Timestamp Normalization:**
+- All logged timestamps are relative to end of warm-up
+- Example: Event at sim time 90 → logged as time 30
+- Makes data analysis cleaner (starts from 0)
+
+**Metrics Calculation:**
+```python
+def calculate_utilization(self, total_sim_time):
+    # total_sim_time includes warm-up
+    # But magnet_busy_time only counts post-warm-up
+    busy_pct = (self.magnet_busy_time / (total_sim_time - WARM_UP)) * 100
+```
+
+### Validation of Warm-Up Period
+
+**How to verify warm-up is working:**
+
+1. **Check CSV timestamps:**
+   ```python
+   movements = pd.read_csv('results/mri_digital_twin_movements.csv')
+   print(movements['timestamp'].min())  # Should be 0 or close to 0
+   ```
+
+2. **Compare with/without warm-up:**
+   - Run with WARM_UP_DURATION = 0
+   - Run with WARM_UP_DURATION = 60
+   - Compare average utilization (should be higher with warm-up)
+
+3. **Visual inspection:**
+   - Watch first hour - patients should be flowing
+   - Check sidebar stats - should show activity during warm-up
+   - Stats collection starts after warm-up
+
+### Recommended Warm-Up Duration
+
+**Rule of Thumb:** 
+- Warm-up should be ≥ longest process time
+- Longest process: Scan (22 min) + Prep (8 min) + Change (3.5 min) ≈ 34 min
+- **60 minutes** provides comfortable margin
+
+**Verification:**
+```python
+# Check system state at end of warm-up
+if env.now == WARM_UP_DURATION:
+    print(f"Patients in system: {stats.patients_in_system}")
+    # Should be > 0 (system is primed)
+```
+
+## 10. Running Experiments
 
 ### Command-Line Interface
 
 ```bash
-# Basic run
+# Basic run (default: 720 minutes = 12 hour shift)
 uv run python main.py
 
-# Custom parameters
-uv run python main.py --duration MINUTES --patients COUNT --output DIR
+# Custom duration
+uv run python main.py --duration MINUTES --output DIR
 
 # Examples
-uv run python main.py --duration 60 --patients 5    # Quick test
-uv run python main.py --duration 480 --patients 20  # Full day
+uv run python main.py --duration 120    # 2 hour test
+uv run python main.py --duration 360    # 6 hour shift
+uv run python main.py --duration 720    # Full 12 hour shift
 ```
 
 ### Typical Scenarios
 
-**Baseline (Current Serial Workflow):**
-- Duration: 240 minutes (4 hours)
-- Patients: 15
-- Expected: Low busy %, high occupied %
+**Quick Test:**
+- Duration: 120 minutes (2 hours)
+- Expected patients: ~4
+- Purpose: Verify functionality
 
-**Optimized (Parallel Workflow):**
-- Duration: 240 minutes
-- Patients: 15
-- Expected: High busy %, lower occupied %, higher throughput
+**Half Shift:**
+- Duration: 360 minutes (6 hours)
+- Expected patients: ~12
+- Purpose: Medium-length validation
 
-**Stress Test:**
-- Duration: 480 minutes (8 hours)
-- Patients: 30
-- Observe: Buffer usage, queue buildup
+**Full Shift (Standard):**
+- Duration: 720 minutes (12 hours)
+- Expected patients: ~24
+- Purpose: Realistic operational analysis
+
+**Note:** Patient count is determined by arrival rate (~30 min intervals), not specified directly.
 
 ### Output Files
 
@@ -485,15 +673,20 @@ uv run python -c "import simpy, pygame, pandas; print('✓ Ready')"
 ### Running Standard Experiments
 
 ```bash
-# Experiment 1: Baseline
-uv run python main.py --duration 240 --patients 15 --output exp1_baseline
+# Experiment 1: Quick Test (2 hours)
+uv run python main.py --duration 120 --output exp1_quick
 
-# Experiment 2: Optimized
-uv run python main.py --duration 240 --patients 15 --output exp2_optimized
+# Experiment 2: Half Shift (6 hours)
+uv run python main.py --duration 360 --output exp2_half
 
-# Experiment 3: Stress Test
-uv run python main.py --duration 480 --patients 30 --output exp3_stress
+# Experiment 3: Full Shift (12 hours)
+uv run python main.py --duration 720 --output exp3_full
+
+# Experiment 4: Extended Shift (16 hours)
+uv run python main.py --duration 960 --output exp4_extended
 ```
+
+**Note:** All experiments include 60-minute warm-up period automatically.
 
 ### Data Analysis
 

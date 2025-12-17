@@ -17,15 +17,17 @@ uv sync
 ### Running the Simulation
 
 ```bash
-# Default run (120 minutes, 10 patients)
+# Default run (12 hour shift = 720 minutes)
 uv run python main.py
 
-# Quick test (60 minutes, 5 patients)
-uv run python main.py --duration 60 --patients 5
+# Quick test (2 hours)
+uv run python main.py --duration 120
 
-# Full day simulation
-uv run python main.py --duration 480 --patients 20
+# Half shift (6 hours)
+uv run python main.py --duration 360
 ```
+
+**Note:** The simulation includes a 1-hour warm-up period to remove empty-system bias. Statistics are collected after the warm-up.
 
 ### What You'll See
 
@@ -61,6 +63,13 @@ The simulation tracks the **"Utilization Paradox"**:
 - **Magnet Busy %** - Time actually scanning (value-added)
 - **Magnet Idle %** - True idle time
 - **Throughput** - Patients completed
+
+## Simulation Parameters
+
+- **Default Duration**: 720 minutes (12 hour shift)
+- **Warm-Up Period**: 60 minutes (excluded from statistics)
+- **Data Collection**: 660 minutes (after warm-up)
+- **Patient Arrivals**: Every ~30 minutes until shift ends
 
 ## Requirements
 
