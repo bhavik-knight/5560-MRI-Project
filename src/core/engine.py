@@ -12,7 +12,7 @@ from src.analysis.tracker import SimStats
 from src.analysis.reporter import generate_report, print_summary
 from src.core.workflow import patient_generator
 
-def run_simulation(duration=None, output_dir='results', record=False, video_format='mkv'):
+def run_simulation(duration=None, output_dir='results', record=False, video_format='mp4'):
     """
     Run the MRI Digital Twin simulation using shift duration model.
     

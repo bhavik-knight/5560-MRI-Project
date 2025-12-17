@@ -17,7 +17,7 @@ class RenderEngine:
     Separates visualization from simulation logic.
     """
     
-    def __init__(self, title="MRI Digital Twin", record_video=False, video_format='mkv'):
+    def __init__(self, title="MRI Digital Twin", record_video=False, video_format='mp4'):
         """
         Initialize PyGame window and rendering resources.
         

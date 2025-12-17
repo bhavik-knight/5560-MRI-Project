@@ -48,21 +48,22 @@ Examples:
     )
     
     parser.add_argument(
-        '--format',
-        type=str,
-        choices=['mkv', 'mp4'],
-        default='mkv',
-        help='Video format (default: mkv)'
+        '--mkv',
+        action='store_true',
+        help='Use MKV format instead of MP4 (default: MP4)'
     )
     
     args = parser.parse_args()
+    
+    # Determine video format
+    video_format = 'mkv' if args.mkv else 'mp4'
     
     # Run simulation
     results = run_simulation(
         duration=args.duration,
         output_dir=args.output,
         record=args.record,
-        video_format=args.format
+        video_format=video_format
     )
     
     # Print final summary
