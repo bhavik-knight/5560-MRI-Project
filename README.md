@@ -1,84 +1,183 @@
-# MRI Department Efficiency Digital Twin
+# MRI Digital Twin - Modular Architecture
 
-## Overview
-This project is a **Discrete-Event Simulation (DES)** and **Digital Twin** application designed to analyze and optimize the workflow of an MRI department. It models the flow of patients through the facility to identify bottlenecks and test improvements, specifically comparing the **Current State (Serial Processing)** against a proposed **Future State (Parallel Processing / "Pit Crew" Model)**.
+A real-time agent-based simulation of an MRI department workflow, demonstrating the efficiency gains of parallel processing ("Pit Crew" model) over traditional serial workflows.
 
-The application allows stakeholders to visualize patient flow, conduct sensitivity analysis on staffing levels, and quantify improvements in throughput and magnet utilization.
+## 🎯 Project Overview
 
-## Key Features
+This digital twin simulates patient flow through an MRI suite, visualizing:
+- **Patient movement** through zones (waiting → changing → prep → scanning → exit)
+- **Staff coordination** (porters, backup techs, scan techs)
+- **Resource utilization** (magnets, prep rooms, gowned waiting buffer)
+- **The "Utilization Paradox"** - distinguishing busy time (value-added) from occupied time
 
-### 1. Interactive Digital Twin Dashboard
-A Streamlit-based web application providing real-time control and visualization:
--   **Sensitivity Analysis**: Adjust staff counts and bed flip times on the fly.
--   **Scenario Toggling**: Switch between "Serial" and "Parallel" workflows to see immediate impacts.
--   **Gantt Chart**: Visualizes magnet usage (Scanning vs. Idle/Prep) over a 12-hour shift.
--   **Spatial Animation**: A "Digital Twin" visualization showing patients moving between zones (Waiting, Prepping, Scanning) in real-time.
+## 🏗️ Modular Architecture
 
-### 2. Modular Simulation Engine
-Built on `SimPy`, the simulation logic is decoupled into a robust modular architecture:
--   **Data-Driven**: Configuration based on empirical data (distributions for screening, IV setup, scanning, etc.).
--   **Process Modeling**: Accurate representation of resource seizing, task execution, and release.
--   **Spatiotemporal Tracking**: Records not just *what* happens, but *where* patients are at every minute.
+```
+mri-project/
+├── src/
+│   ├── config.py           # Centralized constants & coordinates
+│   ├── visuals/            # PyGame visualization
+│   │   ├── layout.py       # Static floor plan rendering
+│   │   ├── sprites.py      # Agent classes (Patient, Staff)
+│   │   └── renderer.py     # Window manager
+│   ├── analysis/           # Statistics & reporting
+│   │   ├── tracker.py      # SimStats observer
+│   │   └── reporter.py     # CSV export & reports
+│   └── core/               # SimPy simulation logic
+│       ├── workflow.py     # Patient journey process
+│       └── engine.py       # Main simulation loop
+├── main.py                 # Entry point
+├── extra/                  # Legacy files (old implementations)
+└── results/                # Generated reports & data
+```
 
-### 3. Analytics & Reporting
--   **Throughput Metrics**: Tracks total patients processed per shift.
--   **Resource Utilization**: Calculates "Value-Added" (Scanning) vs. "Non-Value Added" (Idle/Prep) time.
--   **Batch Analysis**: Automated scripts to run multiple iterations (Monte Carlo style) for robust statistical reporting.
+## 🚀 Quick Start
 
-## Installation
+### Prerequisites
+- Python 3.12+
+- `uv` package manager (recommended) or `pip`
 
-This project uses `uv` for dependency management.
+### Installation
 
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd mri_project
+cd mri-project
 
-# Install dependencies
+# Install dependencies with uv
 uv sync
+
+# Or with pip
+pip install -r requirements.txt
 ```
 
-## Usage
+### Running the Simulation
 
-### Run the Dashboard
-To launch the interactive digital twin:
+**Default run (120 minutes, 10 patients):**
 ```bash
-uv run streamlit run src/app.py
+uv run python main.py
 ```
 
-### Run Batch Analysis
-To generate statistical reports and CSV data from multiple simulation runs:
+**Custom parameters:**
 ```bash
-uv run python src/analysis.py
+# Quick test (60 min, 5 patients)
+uv run python main.py --duration 60 --patients 5
+
+# Full day simulation (8 hours, 20 patients)
+uv run python main.py --duration 480 --patients 20
+
+# Specify output directory
+uv run python main.py --output my_results
 ```
 
-### Run Data Collection (Report Scenarios)
-To reproduce the specific scenarios for the project report (Baseline vs. Optimization):
-```bash
-uv run python src/collect_data.py
+### What You'll See
+
+1. **PyGame Window**: Real-time visualization showing:
+   - Color-coded rooms (change rooms, prep rooms, magnets)
+   - Moving agents:
+     - 🔘 **Circles** = Patients (color changes with state)
+     - 🔶 **Triangles** = Porters (orange)
+     - 🟦 **Squares** = Techs (cyan/purple)
+   - Simulation time display
+
+2. **Console Output**: Live statistics and progress
+
+3. **Generated Reports** (in `results/` folder):
+   - `*_movements.csv` - All patient movements
+   - `*_states.csv` - State transition log
+   - `*_gowned_waiting.csv` - Buffer usage data
+   - `*_summary.csv` - Key metrics
+   - `*_report.txt` - Human-readable summary
+
+## 📊 Key Metrics
+
+The simulation tracks the **"Utilization Paradox"**:
+
+- **Magnet Busy %** (Value-Added): Time actually scanning
+- **Magnet Occupied %**: Total time in use (prep + scan in serial)
+- **Magnet Idle %**: True idle time
+
+**Insight**: In serial workflow, high occupied % looks good but hides low efficiency. In parallel workflow, the magnet focuses on scanning (higher busy %).
+
+## 🎨 Visual Legend
+
+### Patient States (Circle Colors)
+- 🔘 **Grey** - Arriving (Zone 1)
+- 🔵 **Teal** - Changing (Change rooms)
+- 🟡 **Yellow** - Prepped (Gowned waiting buffer)
+- 🟢 **Green** - Scanning (Magnet)
+
+### Staff Roles
+- 🔶 **Orange Triangle** - Porter (transports patients)
+- 🟦 **Cyan Square** - Backup Tech (preps patients)
+- 🟪 **Purple Square** - Scan Tech (operates magnet)
+
+### Zones
+- **Zone 1** (Grey) - Public corridor / waiting
+- **Zone 2** (Various) - The Hub (change, prep, gowned waiting)
+- **Zone 3** (Dark Grey) - Control rooms
+- **Zone 4** (Cyan) - MRI magnets (3T and 1.5T)
+
+## 🔬 Workflow Simulation
+
+The simulation implements a realistic patient journey:
+
+1. **Arrival** → Patient appears in Zone 1
+2. **Transport** → Porter escorts to change room
+3. **Changing** → Patient changes into gown (~3.5 min)
+4. **Prep** → Backup tech performs IV setup (~2.5 min)
+5. **Gowned Waiting** → Patient waits in buffer (yellow state)
+6. **Scanning** → Scan tech operates magnet (~22 min)
+7. **Exit** → Patient leaves system
+
+## 📈 Data Analysis
+
+All simulation data is exported to CSV for further analysis:
+
+```python
+# Example: Load and analyze results
+import pandas as pd
+
+summary = pd.read_csv('results/mri_digital_twin_summary.csv')
+print(f"Throughput: {summary['throughput'].values[0]} patients")
+print(f"Magnet Busy: {summary['magnet_busy_pct'].values[0]}%")
 ```
 
-## Project Structure
+## 🛠️ Development
 
-The codebase follows a modular design pattern in the `src/` directory:
+### Project Structure
 
-| Module | Description |
-| :--- | :--- |
-| `config.py` | **Data Layer**. Contains all empirical distributions (Triangular/Normal) and system parameters. |
-| `resources.py` | **Physical Layer**. Defines SimPy resources (Magnet, Prep Rooms, Techs, Porters). |
-| `entities.py` | **Agent Layer**. Defines the `Patient` class and the state-machine logic for their journey. |
-| `engine.py` | **Orchestrator**. Connects agents to resources and runs the simulation loop. |
-| `app.py` | **Presentation Layer**. The Streamlit dashboard code. |
-| `analysis.py` | **Reporting Layer**. Scripts for batch execution and plotting. |
+- **`src/config.py`**: All constants (no dependencies)
+- **`src/visuals/`**: Pure rendering (no simulation logic)
+- **`src/analysis/`**: Observer pattern for stats (no rendering)
+- **`src/core/`**: SimPy processes (coordinates others)
 
-## Simulation Scenarios
+### Key Design Patterns
 
-### Scenario A: Current State (Serial)
--   **Workflow**: The magnet room is seized *before* patient preparation begins.
--   **Consequence**: The expensive MRI machine sits idle while the patient is screened, changed, and cannulated inside the room.
--   **Result**: High "Occupancy" but low "Value-Added" utilization.
+- **Separation of Concerns**: Each module has single responsibility
+- **Observer Pattern**: Stats tracking doesn't clutter simulation
+- **Bridge Pattern**: Engine connects SimPy and PyGame
+- **No Circular Dependencies**: Clean import hierarchy
 
-### Scenario B: Future State (Parallel / Pit Crew)
--   **Workflow**: Patient preparation occurs in a separate "Zone 2" area. The magnet is seized only when the patient is ready to scan.
--   **Consequence**: Magnet idle time is minimized.
--   **Result**: Significantly higher throughput and effective utilization.
+## 📚 References
+
+This simulation is based on empirical data from:
+- MRI department efficiency studies
+- GE iCenter analytics
+- Workflow optimization research
+
+## 🤝 Contributing
+
+See `extra/` folder for legacy implementations and development history.
+
+## 📄 License
+
+[Your License Here]
+
+## 🙏 Acknowledgments
+
+Built with:
+- **SimPy** - Discrete-event simulation
+- **PyGame** - Real-time visualization
+- **Pandas** - Data analysis
+- **Plotly** - Interactive charts (in Streamlit dashboard)
