@@ -7,123 +7,91 @@ SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 FPS = 60
 
+
 # Colors
 WHITE = (255, 255, 255)
 GREY_LIGHT = (220, 220, 220)
 GREY_DARK = (150, 150, 150)
-BLUE_ROOM = (100, 149, 237) # Cornflower Blue
-YELLOW_ROOM = (255, 215, 0) # Gold
+GREY_HOLDING = (180, 180, 180)
+BLUE_TEAL = (0, 128, 128)      # Teal
+PINK_WR = (255, 182, 193)      # Pink
+ORANGE_PREP = (255, 165, 0)    # Light Orange (using Orange)
+CYAN_MAG = (224, 255, 255)     # Light Cyan
+YELLOW_ROOM = (255, 215, 0)    # Gold
 TEXT_COLOR = (0, 0, 0)
+
+def draw_room(surface, rect, color, label_text, font):
+    """
+    Helper to draw a room with a border and centered text.
+    Handles newline characters in label_text.
+    """
+    pygame.draw.rect(surface, color, rect)
+    pygame.draw.rect(surface, (0, 0, 0), rect, 2) # Black border width 2
+    
+    if font:
+        lines = label_text.split('\n')
+        # Calculate total height for vertical centering
+        line_height = font.get_linesize()
+        total_height = len(lines) * line_height
+        start_y = rect.centery - (total_height / 2)
+        
+        for i, line in enumerate(lines):
+            text_surf = font.render(line, True, TEXT_COLOR)
+            text_rect = text_surf.get_rect(centerx=rect.centerx, top=start_y + (i * line_height))
+            surface.blit(text_surf, text_rect)
 
 def draw_floor_plan(screen, font):
     """
-    Renders the MRI Department floor plan based on the provided architectural diagram.
-    Layout:
-    - Zone 1 (Corridor): Bottom full width.
-    - Left Column: Change Rooms (303-305).
-    - Center-Left: Gowned Waiting (302).
-    - Center-Top: IV Prep (308, 309).
-    - Center-Mid: Holding (311).
-    - Right-Center: Zone 3 Control Rooms.
-    - Far Right: Zone 4 Magnets.
+    Renders the MRI Department floor plan based on the precise coordinate map.
     """
     screen.fill(WHITE)
     
-    # Helper to render text if font exists
-    def draw_text(text, x, y, color=TEXT_COLOR, rotate=0, small=False):
-        if font:
-            # Simple scale hack: if small, just use same font but maybe render differently? 
-            # Pygame font size is fixed at init. We'll just print.
-            img = font.render(text, True, color)
-            if rotate != 0:
-                img = pygame.transform.rotate(img, rotate)
-            screen.blit(img, (x, y))
-
     # --- Zone 1 (Public Corridor) ---
-    # Bottom strip
-    zone1_rect = pygame.Rect(0, 620, 1280, 100)
-    pygame.draw.rect(screen, GREY_LIGHT, zone1_rect)
-    pygame.draw.rect(screen, TEXT_COLOR, zone1_rect, 1)
-    draw_text("ZONE 1: Public Corridor (3302)", 500, 660)
+    # Rect: (0, 600, 1280, 120) [Bottom Strip]. Color: Light Grey.
+    draw_room(screen, pygame.Rect(0, 600, 1280, 120), GREY_LIGHT, "ZONE 1: PUBLIC / SUB-WAITING", font)
 
-    # --- Zone 2 (The Hub) ---
+    # --- Zone 4 (The Magnets - Right Side) ---
+    # 3T Magnet (Room 319): (950, 50, 300, 250) [Top Right]
+    draw_room(screen, pygame.Rect(950, 50, 300, 250), CYAN_MAG, "3T MRI\n(Room 319)", font)
     
-    # 1. Change Rooms (Left Wall, Vertical Stack)
-    # Rooms 305 (Top), 304, 303 (Bottom) roughly x=50
-    change_rooms = [
-        ("Change 305", pygame.Rect(50, 100, 120, 80)),
-        ("Change 304", pygame.Rect(50, 180, 120, 60)),
-        ("Change 303", pygame.Rect(50, 240, 120, 60))
-    ]
-    for label, rect in change_rooms:
-        pygame.draw.rect(screen, BLUE_ROOM, rect)
-        pygame.draw.rect(screen, TEXT_COLOR, rect, 1)
-        draw_text(label, rect.x + 5, rect.y + 20)
+    # 1.5T Magnet (Room 315): (950, 350, 300, 250) [Bottom Right]
+    draw_room(screen, pygame.Rect(950, 350, 300, 250), CYAN_MAG, "1.5T MRI\n(Room 315)", font)
 
-    # 2. Gowned Waiting (302)
-    # Large area to the right of Change rooms
-    gowned_rect = pygame.Rect(170, 100, 200, 200)
-    pygame.draw.rect(screen, YELLOW_ROOM, gowned_rect)
-    pygame.draw.rect(screen, TEXT_COLOR, gowned_rect, 1)
-    draw_text("Gowned Waiting", gowned_rect.x + 20, gowned_rect.y + 80)
-    draw_text("(302)", gowned_rect.x + 70, gowned_rect.y + 100)
+    # --- Zone 3 (Control Room - Strip) ---
+    # Rect: (820, 50, 130, 550) [Vertical Strip]. Color: Dark Grey.
+    # Note: Text centering might look odd on narrow vertical strip if text is wide, 
+    # but specific requirement was label "ZONE 3\nCONTROL".
+    draw_room(screen, pygame.Rect(820, 50, 130, 550), GREY_DARK, "ZONE 3\nCONTROL", font)
 
-    # 3. IV Prep (308, 309)
-    # Top Center
-    prep_rooms = [
-        ("IV Prep 308", pygame.Rect(400, 50, 150, 120)),
-        ("IV Prep 309", pygame.Rect(550, 50, 150, 120))
-    ]
-    for label, rect in prep_rooms:
-        pygame.draw.rect(screen, BLUE_ROOM, rect)
-        pygame.draw.rect(screen, TEXT_COLOR, rect, 1)
-        draw_text(label, rect.x + 20, rect.y + 50)
-
-    # 4. Holding Transfer (311)
-    # Center, below Prep
-    holding_rect = pygame.Rect(400, 200, 300, 200)
-    pygame.draw.rect(screen, GREY_LIGHT, holding_rect) # Maybe grey for holding?
-    pygame.draw.rect(screen, TEXT_COLOR, holding_rect, 1)
-    draw_text("Holding / Transfer", holding_rect.x + 60, holding_rect.y + 80)
-    draw_text("(311)", holding_rect.x + 120, holding_rect.y + 100)
-
-    # --- Zone 3 (Control) ---
-    # Strip between holding and magnets
-    # Control 320 (Top) and 314 (Bottom)
-    c_rooms = [
-        ("Control 320", pygame.Rect(800, 50, 100, 250)),
-        ("Control 314", pygame.Rect(800, 350, 100, 250))
-    ]
-    for label, rect in c_rooms:
-        pygame.draw.rect(screen, GREY_DARK, rect)
-        pygame.draw.rect(screen, TEXT_COLOR, rect, 1)
-        # Vertical text?
-        draw_text(label, rect.x + 10, rect.y + 100, color=WHITE, rotate=90)
+    # --- Zone 2 (The Hub - Left/Center) ---
     
-    # Label Zone 3 generally
-    # draw_text("ZONE 3", 830, 310, rotate=90)
+    # Left Wall (Change Rooms)
+    # Change 305 (Big): (20, 20, 120, 100)
+    draw_room(screen, pygame.Rect(20, 20, 120, 100), BLUE_TEAL, "Change\n(Big)", font)
+    
+    # Change 304 (Standard): (20, 120, 80, 70)
+    draw_room(screen, pygame.Rect(20, 120, 80, 70), BLUE_TEAL, "Chg 1", font)
+    
+    # Change 303 (Standard): (20, 190, 80, 70)
+    draw_room(screen, pygame.Rect(20, 190, 80, 70), BLUE_TEAL, "Chg 2", font)
 
+    # Top Wall (Sanitation & Prep)
+    # Washrooms (306/307): (150, 20, 80, 100)
+    draw_room(screen, pygame.Rect(150, 20, 80, 100), PINK_WR, "W/R", font)
+    
+    # IV Prep 308: (300, 20, 150, 120)
+    draw_room(screen, pygame.Rect(300, 20, 150, 120), ORANGE_PREP, "Prep 1\n(308)", font)
+    
+    # IV Prep 309: (460, 20, 150, 120)
+    draw_room(screen, pygame.Rect(460, 20, 150, 120), ORANGE_PREP, "Prep 2\n(309)", font)
 
-    # --- Zone 4 (Magnets) ---
-    # Top Right: 3T MRI (319)
-    mag3t_rect = pygame.Rect(900, 50, 350, 250)
-    pygame.draw.rect(screen, GREY_LIGHT, mag3t_rect)
-    pygame.draw.rect(screen, TEXT_COLOR, mag3t_rect, 2)
-    draw_text("3.0T MRI (319)", 920, 70)
-    draw_text("ZONE 4", 920, 100)
-    # Magnet Box
-    pygame.draw.rect(screen, WHITE, (1050, 100, 100, 150), 1)
-    draw_text("Magnet", 1070, 160)
+    # Center Buffer (The Critical Resource)
+    # Gowned Waiting (302): (150, 200, 250, 150)
+    draw_room(screen, pygame.Rect(150, 200, 250, 150), YELLOW_ROOM, "GOWNED WAIT\n(Buffer 302)", font)
 
-    # Bottom Right: 1.5T MRI (315)
-    mag15t_rect = pygame.Rect(900, 350, 350, 250)
-    pygame.draw.rect(screen, GREY_LIGHT, mag15t_rect)
-    pygame.draw.rect(screen, TEXT_COLOR, mag15t_rect, 2)
-    draw_text("1.5T MRI (315)", 920, 370)
-    draw_text("ZONE 4", 920, 400)
-    # Magnet Box
-    pygame.draw.rect(screen, WHITE, (1050, 400, 100, 150), 1)
-    draw_text("Magnet", 1070, 460)
+    # Center Obstacle
+    # Holding Transfer (311): (350, 350, 200, 200)
+    draw_room(screen, pygame.Rect(350, 350, 200, 200), GREY_HOLDING, "Holding\n(311)", font)
 
 def main():
     pygame.init()
