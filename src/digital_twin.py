@@ -94,18 +94,24 @@ def draw_floor_plan(screen, font_room, font_zone):
 def main():
     pygame.init()
     
-    # Attempt to initialize fonts
+    # Initialize fonts with fallback for Python 3.14 compatibility
     font_room = None
     font_zone = None
     try:
-        if pygame.font:
-            pygame.font.init()
-            # "SysFont('Arial', 16, bold=True) for room labels"
-            font_room = pygame.font.SysFont('Arial', 16, bold=True)
-            # "larger font for Zone labels"
-            font_zone = pygame.font.SysFont('Arial', 24, bold=True) 
-    except (ImportError, TypeError, AttributeError, NotImplementedError) as e:
-        print(f"Warning: Font initialization failed ({e}). Running without text labels.")
+        pygame.font.init()
+        # Try SysFont first (Arial)
+        font_room = pygame.font.SysFont('Arial', 16, bold=True)
+        font_zone = pygame.font.SysFont('Arial', 24, bold=True)
+        print("Fonts loaded successfully (Arial)")
+    except Exception as e:
+        print(f"SysFont failed ({e}), trying default font...")
+        try:
+            # Fallback to default pygame font (None means use default)
+            font_room = pygame.font.Font(None, 20)
+            font_zone = pygame.font.Font(None, 28)
+            print("Fonts loaded successfully (Default)")
+        except Exception as e2:
+            print(f"Warning: All font initialization failed ({e2}). Running without text labels.")
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("MRI Digital Twin - Layout")
