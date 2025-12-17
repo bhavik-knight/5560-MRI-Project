@@ -114,8 +114,8 @@ AGENT_POSITIONS = {
 DEFAULT_DURATION = 720      # 12 hours (standard MRI shift)
 WARM_UP_DURATION = 60       # 1 hour (prime the system, remove empty-state bias)
 
-# Time Scaling
-SIM_SPEED = 0.5  # 1 simulation minute = 0.5 real seconds
+# Time Scaling (Faster for video recording)
+SIM_SPEED = 0.25  # 1 simulation minute = 0.25 real seconds (~3 min video for 12h shift)
 
 # Staffing
 STAFF_COUNT = {
@@ -124,13 +124,23 @@ STAFF_COUNT = {
     'scan_tech': 2,
 }
 
-# Resource Capacities
+# Resource Capacities (Dual-Bay Model)
 RESOURCE_CAPACITY = {
-    'magnet': 1,           # Only 1 patient can scan at a time (per magnet)
+    'magnet': 2,           # 2 magnets total (3T + 1.5T)
     'prep_rooms': 2,       # 2 IV Prep rooms (308, 309)
     'change_rooms': 3,     # 3 Change rooms (303, 304, 305)
     'gowned_waiting': 3,   # Max 3 patients in buffer (Source: Floor Plan)
 }
+
+# Magnet Resources (Dual-Bay Configuration)
+MAGNET_RESOURCES = {
+    '3T': 1,      # One 3T magnet (priority)
+    '1.5T': 1,    # One 1.5T magnet (backup)
+}
+
+# Magnet Locations
+MAGNET_3T_LOC = (950, 160)   # Top scan room
+MAGNET_15T_LOC = (950, 410)  # Bottom scan room (adjusted from original 550)
 
 # Agent Movement
 AGENT_SPEED = {
@@ -163,9 +173,9 @@ PROCESS_TIMES = {
     'bed_flip_current': 5,      # Current state (constant)
     'bed_flip_future': 1,       # Future state goal (constant)
     
-    # Arrival Schedule
-    'inter_arrival': 30,        # New patient every 30 minutes
-    'arrival_noise': (-5, 0, 5),  # Random variation
+    # Arrival Schedule (Poisson Process - Increased Demand)
+    'mean_inter_arrival': 15,   # Mean time between arrivals (minutes)
+    'arrival_noise': (-5, 0, 5),  # Random variation (for non-Poisson fallback)
 }
 
 # Probabilities

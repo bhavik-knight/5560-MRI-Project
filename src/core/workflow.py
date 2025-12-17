@@ -2,12 +2,14 @@
 Workflow Module - Patient Journey SimPy Process
 ================================================
 Implements the swimlane workflow logic for patient flow through MRI department.
+Includes dual-bay magnet routing with Poisson arrivals.
 """
 
 import random
 import simpy
 from src.config import (
-    AGENT_POSITIONS, PROCESS_TIMES, PROBABILITIES
+    AGENT_POSITIONS, PROCESS_TIMES, PROBABILITIES,
+    MAGNET_3T_LOC, MAGNET_15T_LOC
 )
 
 def triangular_sample(params):
@@ -23,6 +25,18 @@ def triangular_sample(params):
     if isinstance(params, (int, float)):
         return params
     return random.triangular(*params)
+
+def poisson_sample(mean):
+    """
+    Sample from exponential distribution (Poisson process inter-arrival times).
+    
+    Args:
+        mean: Mean inter-arrival time
+    
+    Returns:
+        float: Sampled inter-arrival time
+    """
+    return random.expovariate(1.0 / mean)
 
 def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     """
@@ -143,18 +157,40 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     stats.log_movement(p_id, 'gowned_waiting', env.now)
     stats.log_gowned_waiting(p_id, env.now, 'enter')
     
-    # ========== 6. SCANNING (Scan Tech + Magnet) ==========
+    # ========== 6. SCANNING (Dual-Bay Magnet Routing) ==========
     with resources['magnet'].request() as req:
         yield req
         
         stats.log_gowned_waiting(p_id, env.now, 'exit')
         
-        # Find available scan tech
-        scan_tech = next((t for t in staff_dict['scan'] if not t.busy), staff_dict['scan'][0])
+        # Determine which magnet to use (priority to 3T)
+        # Check if 3T scan tech is available
+        scan_tech_3t = staff_dict['scan'][0]  # First scan tech assigned to 3T
+        scan_tech_15t = staff_dict['scan'][1] if len(staff_dict['scan']) > 1 else staff_dict['scan'][0]
+        
+        # Priority routing: prefer 3T, use 1.5T if 3T tech is busy
+        if not scan_tech_3t.busy:
+            # Use 3T magnet
+            scan_tech = scan_tech_3t
+            magnet_target = MAGNET_3T_LOC
+            magnet_name = 'magnet_3t'
+            staging_pos = AGENT_POSITIONS['scan_staging_3t']
+        elif not scan_tech_15t.busy:
+            # Use 1.5T magnet
+            scan_tech = scan_tech_15t
+            magnet_target = MAGNET_15T_LOC
+            magnet_name = 'magnet_15t'
+            staging_pos = AGENT_POSITIONS['scan_staging_15t']
+        else:
+            # Both busy, use whichever becomes available (default to 3T)
+            scan_tech = scan_tech_3t
+            magnet_target = MAGNET_3T_LOC
+            magnet_name = 'magnet_3t'
+            staging_pos = AGENT_POSITIONS['scan_staging_3t']
+        
         scan_tech.busy = True
         
-        # Move to magnet (use 3T for now)
-        magnet_target = AGENT_POSITIONS['magnet_3t_center']
+        # Move to selected magnet
         patient.move_to(*magnet_target)
         scan_tech.move_to(magnet_target[0] - 30, magnet_target[1])
         
@@ -163,7 +199,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         
         patient.set_state('scanning')
         stats.log_state_change(p_id, 'prepped', 'scanning', env.now)
-        stats.log_movement(p_id, 'magnet_3t', env.now)
+        stats.log_movement(p_id, magnet_name, env.now)
         stats.log_magnet_start(env.now, is_scanning=True)
         
         # Scan duration
@@ -177,7 +213,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         stats.log_magnet_end(env.now)
         
         scan_tech.busy = False
-        scan_tech.move_to(*AGENT_POSITIONS['scan_staging_3t'])
+        scan_tech.move_to(*staging_pos)
     
     # ========== 7. EXIT ==========
     patient.move_to(*AGENT_POSITIONS['exit'])
@@ -216,7 +252,6 @@ def patient_generator(env, staff_dict, resources, stats, renderer, duration):
         # Start patient journey
         env.process(patient_journey(env, patient, staff_dict, resources, stats, renderer))
         
-        # Wait for next patient
-        inter_arrival = PROCESS_TIMES['inter_arrival']
-        noise = triangular_sample(PROCESS_TIMES['arrival_noise'])
-        yield env.timeout(inter_arrival + noise)
+        # Wait for next patient (Poisson process - exponential inter-arrival)
+        inter_arrival = poisson_sample(PROCESS_TIMES['mean_inter_arrival'])
+        yield env.timeout(inter_arrival)

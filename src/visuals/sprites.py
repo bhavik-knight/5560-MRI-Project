@@ -144,8 +144,12 @@ class Staff(Agent):
         self.busy = False  # Track if staff is currently assisting a patient
     
     def draw(self, surface):
-        """Draw staff member - shape depends on role."""
-        x, y = int(self.x), int(self.y)
+        """Draw staff member - shape depends on role. Apply offset when busy to avoid Z-fighting."""
+        # Apply visual offset when busy (co-located with patient)
+        offset_x = 15 if self.busy else 0
+        offset_y = 15 if self.busy else 0
+        
+        x, y = int(self.x + offset_x), int(self.y + offset_y)
         
         if self.role == 'porter':
             # Triangle pointing up
