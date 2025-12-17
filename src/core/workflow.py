@@ -66,7 +66,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         
         # Wait for porter to arrive
         while not porter.is_at_target():
-            yield env.timeout(0.1)
+            yield env.timeout(0.01)
         
         # Select change room (random from 1-3)
         change_rooms = ['change_1_center', 'change_2_center', 'change_3_center']
@@ -77,7 +77,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         porter.move_to(*change_target)
         
         while not patient.is_at_target():
-            yield env.timeout(0.1)
+            yield env.timeout(0.01)
         
         stats.log_movement(p_id, 'change_room', env.now)
         
@@ -102,7 +102,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         tech.move_to(patient.x, patient.y)
         
         while not tech.is_at_target():
-            yield env.timeout(0.1)
+            yield env.timeout(0.01)
         
         # Move to prep room
         prep_rooms = ['prep_1_center', 'prep_2_center']
@@ -112,7 +112,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         tech.move_to(*prep_target)
         
         while not patient.is_at_target():
-            yield env.timeout(0.1)
+            yield env.timeout(0.01)
         
         stats.log_movement(p_id, 'prep_room', env.now)
         
@@ -138,7 +138,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     patient.move_to(*AGENT_POSITIONS['gowned_waiting_center'])
     
     while not patient.is_at_target():
-        yield env.timeout(0.1)
+        yield env.timeout(0.01)
     
     stats.log_movement(p_id, 'gowned_waiting', env.now)
     stats.log_gowned_waiting(p_id, env.now, 'enter')
@@ -159,7 +159,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         scan_tech.move_to(magnet_target[0] - 30, magnet_target[1])
         
         while not patient.is_at_target():
-            yield env.timeout(0.1)
+            yield env.timeout(0.01)
         
         patient.set_state('scanning')
         stats.log_state_change(p_id, 'prepped', 'scanning', env.now)
@@ -183,7 +183,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     patient.move_to(*AGENT_POSITIONS['exit'])
     
     while not patient.is_at_target():
-        yield env.timeout(0.1)
+        yield env.timeout(0.01)
     
     stats.log_state_change(p_id, 'scanning', 'exited', env.now)
     stats.log_movement(p_id, 'exit', env.now)

@@ -102,9 +102,11 @@ def run_simulation(duration_minutes=120, max_patients=10, output_dir='results'):
         running = renderer.render_frame(current_stats)
         
         # Advance simulation time
-        # Real time per frame: 1/FPS seconds
-        # Sim time per frame: (1/FPS) / SIM_SPEED minutes
-        delta_sim_time = (1.0 / FPS) / (SIM_SPEED * 60)
+        # Goal: Run simulation faster than real-time for quick results
+        # SIM_SPEED = 0.5 means 1 sim minute takes 0.5 real seconds
+        # So 1 real second = 2 sim minutes = 120 sim seconds
+        # At 60 FPS: 1 frame = 1/60 sec = 2/60 sim minutes = 0.0333 sim minutes
+        delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60  # sim minutes per frame
         
         try:
             env.run(until=env.now + delta_sim_time)

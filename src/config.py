@@ -130,8 +130,8 @@ RESOURCE_CAPACITY = {
 
 # Agent Movement
 AGENT_SPEED = {
-    'patient': 3.0,        # pixels per frame
-    'staff': 4.0,          # pixels per frame (staff move faster)
+    'patient': 5.0,        # pixels per frame (increased for visibility)
+    'staff': 6.0,          # pixels per frame (staff move faster)
 }
 
 # ============================================================================
