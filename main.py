@@ -41,12 +41,19 @@ Examples:
         help='Output directory for reports (default: results)'
     )
     
+    parser.add_argument(
+        '--record',
+        action='store_true',
+        help='Record simulation to video file (results/simulation_video.mkv)'
+    )
+    
     args = parser.parse_args()
     
     # Run simulation
     results = run_simulation(
         duration=args.duration,
-        output_dir=args.output
+        output_dir=args.output,
+        record=args.record
     )
     
     # Print final summary

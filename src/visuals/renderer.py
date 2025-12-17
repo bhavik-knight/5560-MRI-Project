@@ -5,6 +5,9 @@ Manages the PyGame display window and orchestrates frame rendering.
 """
 
 import pygame
+import cv2
+import numpy as np
+import os
 from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, BLACK
 from src.visuals.layout import draw_floor_plan, draw_dashboard
 
@@ -14,12 +17,13 @@ class RenderEngine:
     Separates visualization from simulation logic.
     """
     
-    def __init__(self, title="MRI Digital Twin"):
+    def __init__(self, title="MRI Digital Twin", record_video=False):
         """
         Initialize PyGame window and rendering resources.
         
         Args:
             title: Window title string
+            record_video: If True, records simulation to video file
         """
         pygame.init()
         
@@ -38,6 +42,12 @@ class RenderEngine:
         
         # Sprite group for agents
         self.all_sprites = pygame.sprite.Group()
+        
+        # Video recording setup
+        self.record_video = record_video
+        self.video_writer = None
+        if record_video:
+            self._init_video_writer()
     
     def _init_fonts(self):
         """Initialize fonts with fallback handling."""
@@ -56,6 +66,40 @@ class RenderEngine:
                 print("✓ Fonts loaded successfully (Default)")
             except Exception as e2:
                 print(f"✗ All font initialization failed: {e2}")
+    
+    def _init_video_writer(self):
+        """Initialize OpenCV video writer for recording."""
+        try:
+            # Create results directory if it doesn't exist
+            os.makedirs('results', exist_ok=True)
+            
+            # Video file path
+            video_path = 'results/simulation_video.mkv'
+            
+            # Video codec (XVID for .mkv)
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            
+            # Video parameters
+            fps = 30  # Record at 30 FPS for smoother playback
+            size = (WINDOW_WIDTH, WINDOW_HEIGHT)
+            
+            # Initialize writer
+            self.video_writer = cv2.VideoWriter(video_path, fourcc, fps, size)
+            
+            if self.video_writer.isOpened():
+                print(f"✓ Video recording initialized: {video_path}")
+                print(f"  Resolution: {WINDOW_WIDTH}×{WINDOW_HEIGHT}")
+                print(f"  FPS: {fps}")
+                print(f"  Codec: XVID (.mkv)")
+            else:
+                print("✗ Failed to initialize video writer")
+                self.video_writer = None
+                self.record_video = False
+                
+        except Exception as e:
+            print(f"✗ Video recording setup failed: {e}")
+            self.video_writer = None
+            self.record_video = False
     
     def add_sprite(self, sprite):
         """
@@ -110,13 +154,38 @@ class RenderEngine:
         # 5. Flip display
         pygame.display.flip()
         
-        # 6. Control frame rate
+        # 6. Capture frame for video recording (if enabled)
+        if self.record_video and self.video_writer is not None:
+            try:
+                # Capture screen as numpy array
+                view = pygame.surfarray.array3d(self.screen)
+                
+                # Transpose from (width, height, 3) to (height, width, 3)
+                view = view.transpose([1, 0, 2])
+                
+                # Convert RGB to BGR for OpenCV
+                frame_bgr = cv2.cvtColor(view, cv2.COLOR_RGB2BGR)
+                
+                # Write frame
+                self.video_writer.write(frame_bgr)
+            except Exception as e:
+                print(f"⚠ Frame capture error: {e}")
+        
+        # 7. Control frame rate
         self.clock.tick(self.fps)
         
         return True
     
     def cleanup(self):
-        """Clean up PyGame resources."""
+        """Clean up PyGame and video resources."""
+        # Release video writer if it exists
+        if self.video_writer is not None:
+            try:
+                self.video_writer.release()
+                print("✓ Video saved successfully")
+            except Exception as e:
+                print(f"⚠ Error releasing video writer: {e}")
+        
         pygame.quit()
     
     def get_delta_time(self):
