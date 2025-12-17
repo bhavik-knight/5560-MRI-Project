@@ -43,15 +43,16 @@ class RenderEngine:
         """Initialize fonts with fallback handling."""
         try:
             pygame.font.init()
-            self.font_room = pygame.font.SysFont('Arial', 16, bold=True)
-            self.font_zone = pygame.font.SysFont('Arial', 24, bold=True)
+            # Medical aesthetic: crisp, small fonts (size 14)
+            self.font_room = pygame.font.SysFont('Arial', 14, bold=False)
+            self.font_zone = pygame.font.SysFont('Arial', 18, bold=True)
             print("✓ Fonts loaded successfully (Arial)")
         except Exception as e:
             print(f"⚠ Font loading failed: {e}")
             try:
                 # Fallback to default pygame font
-                self.font_room = pygame.font.Font(None, 20)
-                self.font_zone = pygame.font.Font(None, 28)
+                self.font_room = pygame.font.Font(None, 16)
+                self.font_zone = pygame.font.Font(None, 22)
                 print("✓ Fonts loaded successfully (Default)")
             except Exception as e2:
                 print(f"✗ All font initialization failed: {e2}")
@@ -91,7 +92,7 @@ class RenderEngine:
             if event.type == pygame.QUIT:
                 return False
         
-        # 1. Draw static floor plan
+        # 1. Draw static floor plan (fills background with corridor grey)
         draw_floor_plan(self.screen, self.font_room, self.font_zone)
         
         # 2. Update agent positions
@@ -101,23 +102,15 @@ class RenderEngine:
         for sprite in self.all_sprites:
             sprite.draw(self.screen)
         
-        # 4. Draw dashboard overlay (if stats provided)
-        if stats_dict and self.font_room:
-            draw_dashboard(self.screen, stats_dict, self.font_room)
+        # 4. Draw sidebar with stats and legend
+        if self.font_room:
+            from src.visuals.layout import draw_sidebar
+            draw_sidebar(self.screen, stats_dict, self.font_room)
         
-        # 5. Display sim time (if provided in stats)
-        if stats_dict and 'Sim Time' in stats_dict and self.font_room:
-            time_text = self.font_room.render(
-                f"Sim Time: {stats_dict['Sim Time']} min", 
-                True, 
-                BLACK
-            )
-            self.screen.blit(time_text, (WINDOW_WIDTH - 200, 10))
-        
-        # 6. Flip display
+        # 5. Flip display
         pygame.display.flip()
         
-        # 7. Control frame rate
+        # 6. Control frame rate
         self.clock.tick(self.fps)
         
         return True

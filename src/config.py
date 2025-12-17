@@ -12,8 +12,18 @@ NO DEPENDENCIES - This file should not import any other modules.
 # ============================================================================
 
 WINDOW_WIDTH = 1600
-WINDOW_HEIGHT = 720
+WINDOW_HEIGHT = 800
+SIMULATION_AREA_WIDTH = 1200  # Floor plan area
+SIDEBAR_X = 1200              # Sidebar starts here
+SIDEBAR_WIDTH = 400           # Sidebar width
 FPS = 60
+
+# Medical White Color Scheme
+MEDICAL_WHITE = (255, 255, 255)      # All rooms
+CORRIDOR_GREY = (230, 230, 230)      # Background
+WALL_BLACK = (0, 0, 0)               # Room borders
+LABEL_BLACK = (0, 0, 0)              # Text
+SEPARATOR_BLACK = (0, 0, 0)          # Sidebar divider
 
 # ============================================================================
 # RGB COLORS - Agent States
@@ -49,51 +59,51 @@ YELLOW_ROOM = (255, 215, 0)
 
 ROOM_COORDINATES = {
     # Zone 1: Public Corridor (Bottom)
-    'zone1': (20, 600, 1560, 100),
+    'zone1': (20, 680, 1160, 100),
     
     # Zone 2: The Hub (Left/Center)
-    'change_1': (20, 20, 120, 100),      # Big/Accessible
-    'change_2': (20, 120, 80, 70),       # Standard
-    'change_3': (20, 190, 80, 70),       # Standard
+    'change_1': (20, 20, 100, 90),       # Big/Accessible
+    'change_2': (20, 110, 70, 60),       # Standard
+    'change_3': (20, 170, 70, 60),       # Standard
     
-    'washroom_1': (150, 20, 60, 60),     # Accessible
-    'washroom_2': (220, 20, 60, 60),     # Standard
+    'washroom_1': (130, 20, 50, 50),     # Accessible
+    'washroom_2': (190, 20, 50, 50),     # Standard
     
-    'prep_1': (300, 20, 150, 120),       # IV Prep Room 308
-    'prep_2': (460, 20, 150, 120),       # IV Prep Room 309
+    'prep_1': (250, 20, 130, 100),       # IV Prep Room 308
+    'prep_2': (390, 20, 130, 100),       # IV Prep Room 309
     
-    'gowned_waiting': (150, 200, 250, 150),  # CRITICAL: The Buffer (Room 302)
-    'holding': (350, 350, 200, 200),     # Holding/Transfer (Room 311)
+    'gowned_waiting': (130, 180, 220, 130),  # CRITICAL: The Buffer (Room 302)
+    'holding': (300, 320, 180, 180),     # Holding/Transfer (Room 311)
     
     # Zone 3: Control (Vertical Strip)
-    'control': (820, 50, 130, 550),
+    'control': (700, 50, 110, 480),
     
     # Zone 4: Magnets (Right Side)
-    'magnet_3t': (950, 50, 300, 250),    # 3T MRI (Room 319)
-    'magnet_15t': (950, 350, 300, 250),  # 1.5T MRI (Room 315)
+    'magnet_3t': (820, 50, 260, 220),    # 3T MRI (Room 319)
+    'magnet_15t': (820, 300, 260, 220),  # 1.5T MRI (Room 315)
     
     # Building Border
-    'building': (10, 10, 1580, 700),
+    'building': (10, 10, 1180, 770),
 }
 
 # Agent Spawn/Target Positions (x, y tuples)
 AGENT_POSITIONS = {
-    'zone1_center': (800, 650),
-    'change_1_center': (80, 70),
-    'change_2_center': (60, 155),
-    'change_3_center': (60, 225),
-    'prep_1_center': (375, 80),
-    'prep_2_center': (535, 80),
-    'gowned_waiting_center': (275, 275),
-    'magnet_3t_center': (1100, 175),
-    'magnet_15t_center': (1100, 475),
-    'exit': (1580, 650),
+    'zone1_center': (600, 730),
+    'change_1_center': (70, 65),
+    'change_2_center': (55, 140),
+    'change_3_center': (55, 200),
+    'prep_1_center': (315, 70),
+    'prep_2_center': (455, 70),
+    'gowned_waiting_center': (240, 245),
+    'magnet_3t_center': (950, 160),
+    'magnet_15t_center': (950, 410),
+    'exit': (1180, 730),
     
     # Staff Staging Positions
-    'porter_home': (750, 650),
-    'backup_staging': (325, 275),
-    'scan_staging_3t': (1020, 175),
-    'scan_staging_15t': (1020, 475),
+    'porter_home': (550, 730),
+    'backup_staging': (280, 245),
+    'scan_staging_3t': (870, 160),
+    'scan_staging_15t': (870, 410),
 }
 
 # ============================================================================
