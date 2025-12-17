@@ -3,18 +3,30 @@ Tracker Module - Simulation Statistics Collection
 ==================================================
 Records patient movements, state changes, and resource utilization
 without cluttering the simulation loop.
+
+Includes warm-up period handling to remove empty-system bias.
 """
 
 from datetime import datetime
+from src.config import WARM_UP_DURATION
 
 class SimStats:
     """
     Observer class for tracking simulation statistics.
     Records the 'Utilization Paradox' data - distinguishing between
     busy time (value-added scanning) vs occupied time (prep + scan).
+    
+    Excludes warm-up period from statistics to prevent empty-system bias.
     """
     
-    def __init__(self):
+    def __init__(self, warm_up_duration=None):
+        """
+        Initialize statistics tracking.
+        
+        Args:
+            warm_up_duration: Minutes to exclude from stats (default: from config)
+        """
+        self.warm_up_duration = warm_up_duration if warm_up_duration is not None else WARM_UP_DURATION
         """Initialize statistics tracking."""
         # Patient movement log
         self.patient_log = []
@@ -42,22 +54,28 @@ class SimStats:
     def log_movement(self, patient_id, zone, timestamp):
         """
         Record patient movement to a new zone.
+        Only logs movements after warm-up period.
         
         Args:
             patient_id: Unique patient identifier
             zone: Zone name (e.g., 'zone1', 'change_1', 'magnet_3t')
             timestamp: Simulation time in minutes
         """
+        # Skip logging during warm-up period
+        if timestamp < self.warm_up_duration:
+            return
+            
         self.patient_log.append({
             'patient_id': patient_id,
             'zone': zone,
-            'timestamp': timestamp,
+            'timestamp': timestamp - self.warm_up_duration,  # Adjust timestamp
             'event_type': 'movement'
         })
     
     def log_state_change(self, patient_id, old_state, new_state, timestamp):
         """
         Record patient state transition.
+        Only logs state changes after warm-up period.
         
         Args:
             patient_id: Unique patient identifier
@@ -65,21 +83,25 @@ class SimStats:
             new_state: New state
             timestamp: Simulation time in minutes
         """
-        self.state_changes.append({
-            'patient_id': patient_id,
-            'old_state': old_state,
-            'new_state': new_state,
-            'timestamp': timestamp,
-            'event_type': 'state_change'
-        })
-        
-        # Track system population
+        # Always track system population (even during warm-up)
         if new_state == 'arriving':
             self.patients_arrived += 1
             self.patients_in_system += 1
         elif old_state == 'scanning' and new_state == 'exited':
             self.patients_completed += 1
             self.patients_in_system -= 1
+        
+        # Skip logging state changes during warm-up period
+        if timestamp < self.warm_up_duration:
+            return
+            
+        self.state_changes.append({
+            'patient_id': patient_id,
+            'old_state': old_state,
+            'new_state': new_state,
+            'timestamp': timestamp - self.warm_up_duration,  # Adjust timestamp
+            'event_type': 'state_change'
+        })
     
     def log_magnet_start(self, timestamp, is_scanning=False):
         """

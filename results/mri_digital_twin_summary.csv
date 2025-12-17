@@ -1,2 +1,2 @@
 magnet_busy_pct,magnet_occupied_pct,magnet_idle_pct,throughput,patients_in_system,total_arrivals,avg_gowned_wait_time,max_gowned_wait_time,total_movements,total_state_changes,total_sim_time,timestamp
-0.0,0.0,100.0,0,1,1,0,0,2,2,2.283333333333502,20251217_134327
+57.3,57.3,42.7,3,2,5,0.81,3.24,24,20,120.03333333332908,20251217_135945

@@ -21,24 +21,17 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main.py                              # Default: 120 min, 10 patients
-  python main.py --duration 60 --patients 5   # Quick test
-  python main.py --duration 480 --patients 20 # Full day simulation
+  python main.py                        # Default: 12 hour shift (720 min)
+  python main.py --duration 120         # 2 hour test
+  python main.py --duration 480         # 8 hour shift
         """
     )
     
     parser.add_argument(
         '--duration',
         type=int,
-        default=120,
-        help='Simulation duration in minutes (default: 120)'
-    )
-    
-    parser.add_argument(
-        '--patients',
-        type=int,
-        default=10,
-        help='Maximum number of patients to simulate (default: 10)'
+        default=None,  # Will use DEFAULT_DURATION from config
+        help='Simulation duration in minutes (default: 720 = 12 hours)'
     )
     
     parser.add_argument(
@@ -52,8 +45,7 @@ Examples:
     
     # Run simulation
     results = run_simulation(
-        duration_minutes=args.duration,
-        max_patients=args.patients,
+        duration=args.duration,
         output_dir=args.output
     )
     

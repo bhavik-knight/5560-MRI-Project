@@ -5,35 +5,42 @@ Orchestrates the integration of SimPy, PyGame, and Statistics modules.
 """
 
 import simpy
-from src.config import STAFF_COUNT, AGENT_POSITIONS, SIM_SPEED, FPS
+from src.config import STAFF_COUNT, AGENT_POSITIONS, SIM_SPEED, FPS, DEFAULT_DURATION, WARM_UP_DURATION
 from src.visuals.renderer import RenderEngine
 from src.visuals.sprites import Staff
 from src.analysis.tracker import SimStats
 from src.analysis.reporter import generate_report, print_summary
 from src.core.workflow import patient_generator
 
-def run_simulation(duration_minutes=120, max_patients=10, output_dir='results'):
+def run_simulation(duration=None, output_dir='results'):
     """
-    Run the MRI Digital Twin simulation.
+    Run the MRI Digital Twin simulation using shift duration model.
     
     This is the main entry point that integrates:
     - SimPy (discrete-event simulation)
     - PyGame (real-time visualization)
     - Statistics tracking (data collection)
     
+    Uses time-based termination (shift duration) instead of patient count.
+    Includes warm-up period to remove empty-system bias.
+    
     Args:
-        duration_minutes: Total simulation time in minutes
-        max_patients: Maximum number of patients to simulate
+        duration: Total simulation time in minutes (default: 720 = 12 hours)
         output_dir: Directory for output files
     
     Returns:
         dict: Simulation results including stats and file paths
     """
+    # Use default duration if not specified
+    if duration is None:
+        duration = DEFAULT_DURATION
+    
     print("=" * 60)
     print("MRI DIGITAL TWIN - Starting Simulation")
     print("=" * 60)
-    print(f"Duration: {duration_minutes} minutes")
-    print(f"Max Patients: {max_patients}")
+    print(f"Shift Duration: {duration} minutes ({duration/60:.1f} hours)")
+    print(f"Warm-Up Period: {WARM_UP_DURATION} minutes ({WARM_UP_DURATION/60:.1f} hours)")
+    print(f"Data Collection: {duration - WARM_UP_DURATION} minutes")
     print(f"Time Scale: 1 sim minute = {SIM_SPEED} real seconds")
     print("=" * 60 + "\n")
     
@@ -79,18 +86,17 @@ def run_simulation(duration_minutes=120, max_patients=10, output_dir='results'):
     
     # ========== START SIMULATION ==========
     
-    # Start patient generator
-    env.process(patient_generator(env, staff_dict, resources, stats, renderer, max_patients))
+    # Start patient generator (runs until duration)
+    env.process(patient_generator(env, staff_dict, resources, stats, renderer, duration))
     
     # ========== MAIN LOOP (The Bridge) ==========
     
     running = True
-    target_sim_time = duration_minutes
     
     print("Starting simulation loop...")
     print("Close the window to end early.\n")
     
-    while running and env.now < target_sim_time:
+    while running and env.now < duration:
         # Prepare stats for display
         current_stats = {
             'Sim Time': int(env.now),
@@ -148,5 +154,5 @@ def run_simulation(duration_minutes=120, max_patients=10, output_dir='results'):
 
 if __name__ == "__main__":
     # Quick test run
-    results = run_simulation(duration_minutes=60, max_patients=5)
+    results = run_simulation(duration=120)  # 2 hour test
     print("\n✓ Simulation engine test complete")

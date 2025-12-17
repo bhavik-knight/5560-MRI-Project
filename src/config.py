@@ -110,6 +110,10 @@ AGENT_POSITIONS = {
 # SIMULATION CONSTANTS
 # ============================================================================
 
+# Time-Based Simulation (Shift Duration Model)
+DEFAULT_DURATION = 720      # 12 hours (standard MRI shift)
+WARM_UP_DURATION = 60       # 1 hour (prime the system, remove empty-state bias)
+
 # Time Scaling
 SIM_SPEED = 0.5  # 1 simulation minute = 0.5 real seconds
 

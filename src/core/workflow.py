@@ -191,9 +191,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     # Remove patient from rendering
     renderer.remove_sprite(patient)
 
-def patient_generator(env, staff_dict, resources, stats, renderer, max_patients=10):
+def patient_generator(env, staff_dict, resources, stats, renderer, duration):
     """
-    Generate patients at scheduled intervals.
+    Generate patients at scheduled intervals until shift ends.
     
     Args:
         env: SimPy environment
@@ -201,12 +201,12 @@ def patient_generator(env, staff_dict, resources, stats, renderer, max_patients=
         resources: Dict of SimPy resources
         stats: SimStats object
         renderer: RenderEngine object
-        max_patients: Maximum number of patients to generate
+        duration: Simulation duration in minutes (patients arrive until this time)
     """
     from src.visuals.sprites import Patient
     
     p_id = 0
-    while p_id < max_patients:
+    while env.now < duration:
         p_id += 1
         
         # Create patient sprite
