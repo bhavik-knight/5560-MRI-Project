@@ -47,14 +47,12 @@ def draw_floor_plan(screen, font_room, font_zone):
     """
     screen.fill(WHITE)
     
-    # 4. Draw 'Building' Border
+    # Draw 'Building' Border
     # Encapsulates Zones 1, 2, 3, 4 into a single 'Building'.
     # Width=5. Rect: (10, 10, 1260, 700)
     pygame.draw.rect(screen, BLACK, (10, 10, 1260, 700), 5)
 
     # --- Zone 1 (Public Corridor) ---
-    # Rect: (0, 600, 1280, 120) [Bottom Strip]. Color: Light Grey.
-    # Adjusted to fit nicely within/around border or overlap it cleanly.
     draw_room(screen, pygame.Rect(20, 600, 1240, 100), GREY_LIGHT, "ZONE 1: PUBLIC CORRIDOR", font_zone)
 
     # --- Zone 4 (The Magnets - Right Side) ---
@@ -65,39 +63,61 @@ def draw_floor_plan(screen, font_room, font_zone):
     draw_room(screen, pygame.Rect(950, 350, 300, 250), CYAN_MAG, "1.5T MRI", font_room)
 
     # --- Zone 3 (Control Room - Strip) ---
-    # Rect: (820, 50, 130, 550) [Vertical Strip]. Color: Dark Grey.
     draw_room(screen, pygame.Rect(820, 50, 130, 550), GREY_DARK, "CONTROL", font_zone)
 
     # --- Zone 2 (The Hub - Left/Center) ---
     
     # Left Wall (Change Rooms)
-    # Change 305 (Big): (20, 20, 120, 100) -> "Change 1" (Assuming top-down order 305, 304, 303 for 1, 2, 3?)
-    # Prompt says: Change 305... Label: "Change 1"
     draw_room(screen, pygame.Rect(20, 20, 120, 100), BLUE_TEAL, "Change 1", font_room)
-    
-    # Change 304 (Standard): (20, 120, 80, 70) -> "Change 2"
     draw_room(screen, pygame.Rect(20, 120, 80, 70), BLUE_TEAL, "Change 2", font_room)
-    
-    # Change 303 (Standard): (20, 190, 80, 70) -> "Change 3"
     draw_room(screen, pygame.Rect(20, 190, 80, 70), BLUE_TEAL, "Change 3", font_room)
 
-    # Top Wall (Sanitation & Prep)
-    # Washrooms (306/307): (150, 20, 80, 100)
-    draw_room(screen, pygame.Rect(150, 20, 80, 100), PINK_WR, "W/R", font_room)
+    # Top Wall (Sanitation & Prep) - UPDATED WITH TWO WASHROOMS
+    # Washroom 306 (Accessible): Right of Change Rooms
+    draw_room(screen, pygame.Rect(150, 20, 60, 80), PINK_WR, "WR 1", font_room)
     
-    # IV Prep 308: (300, 20, 150, 120) -> "IV Prep 1"
-    draw_room(screen, pygame.Rect(300, 20, 150, 120), ORANGE_PREP, "IV Prep 1", font_room)
+    # Washroom 307 (Standard): Right of WR 1
+    draw_room(screen, pygame.Rect(220, 50, 50, 50), PINK_WR, "WR 2", font_room)
     
-    # IV Prep 309: (460, 20, 150, 120) -> "IV Prep 2"
-    draw_room(screen, pygame.Rect(460, 20, 150, 120), ORANGE_PREP, "IV Prep 2", font_room)
+    # IV Prep 308: Shifted right to accommodate washrooms
+    draw_room(screen, pygame.Rect(280, 20, 150, 120), ORANGE_PREP, "IV Prep 1", font_room)
+    
+    # IV Prep 309: Shifted right
+    draw_room(screen, pygame.Rect(440, 20, 150, 120), ORANGE_PREP, "IV Prep 2", font_room)
 
     # Center Buffer (The Critical Resource)
-    # Gowned Waiting (302): (150, 200, 250, 150) -> "GOWNED WAIT\n(Max 3)"
     draw_room(screen, pygame.Rect(150, 200, 250, 150), YELLOW_ROOM, "GOWNED WAIT\n(Max 3)", font_room)
 
     # Center Obstacle
-    # Holding Transfer (311): (350, 350, 200, 200)
     draw_room(screen, pygame.Rect(350, 350, 200, 200), GREY_HOLDING, "Holding", font_room)
+    
+    # --- Business Intelligence Legend (Top-Left) ---
+    # Draw legend panel
+    legend_rect = pygame.Rect(620, 20, 180, 120)
+    pygame.draw.rect(screen, WHITE, legend_rect)
+    pygame.draw.rect(screen, BLACK, legend_rect, 2)
+    
+    if font_room:
+        # Title
+        title_surf = font_room.render("Patient States:", True, BLACK)
+        screen.blit(title_surf, (legend_rect.x + 10, legend_rect.y + 5))
+        
+        # Legend items (dot + text)
+        legend_items = [
+            ((180, 180, 180), "Arriving"),      # Grey
+            ((0, 128, 128), "Changing"),        # Blue (Teal)
+            ((255, 215, 0), "Prepped (Zone 2)"), # Yellow
+            ((0, 255, 0), "Scanning (Zone 4)")  # Green
+        ]
+        
+        y_offset = 30
+        for color, label in legend_items:
+            # Draw dot
+            pygame.draw.circle(screen, color, (legend_rect.x + 20, legend_rect.y + y_offset), 5)
+            # Draw text
+            text_surf = font_room.render(label, True, BLACK)
+            screen.blit(text_surf, (legend_rect.x + 35, legend_rect.y + y_offset - 8))
+            y_offset += 22
 
 def main():
     pygame.init()
