@@ -9,7 +9,8 @@ import random
 import simpy
 from src.config import (
     AGENT_POSITIONS, PROCESS_TIMES, PROBABILITIES,
-    MAGNET_3T_LOC, MAGNET_15T_LOC
+    MAGNET_3T_LOC, MAGNET_15T_LOC,
+    ZONE1_SUBWAITING_AREA, GOWNED_WAITING_AREA
 )
 
 def triangular_sample(params):
@@ -38,6 +39,19 @@ def poisson_sample(mean):
     """
     return random.expovariate(1.0 / mean)
 
+def get_random_pos(area_tuple):
+    """
+    Get random position within a rectangular area.
+    
+    Args:
+        area_tuple: (x_min, x_max, y_min, y_max)
+    
+    Returns:
+        tuple: (x, y) random position within area
+    """
+    x_min, x_max, y_min, y_max = area_tuple
+    return (random.randint(x_min, x_max), random.randint(y_min, y_max))
+
 def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     """
     SimPy process defining a single patient's journey through the MRI suite.
@@ -61,9 +75,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     """
     p_id = patient.p_id
     
-    # ========== 1. ARRIVAL (Zone 1) ==========
+    # ========== 1. ARRIVAL (Zone 1 Subwaiting) ==========
     patient.set_state('arriving')
-    patient.move_to(*AGENT_POSITIONS['zone1_center'])
+    # Patient already spawned at random position in ZONE1_SUBWAITING_AREA
     stats.log_state_change(p_id, None, 'arriving', env.now)
     stats.log_movement(p_id, 'zone1', env.now)
     
@@ -149,7 +163,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         tech.move_to(*AGENT_POSITIONS['backup_staging'])
     
     # ========== 5. GOWNED WAITING (The Critical Buffer) ==========
-    patient.move_to(*AGENT_POSITIONS['gowned_waiting_center'])
+    # Move to random position in gowned waiting area (prevents stacking)
+    gowned_pos = get_random_pos(GOWNED_WAITING_AREA)
+    patient.move_to(*gowned_pos)
     
     while not patient.is_at_target():
         yield env.timeout(0.01)
@@ -245,8 +261,9 @@ def patient_generator(env, staff_dict, resources, stats, renderer, duration):
     while env.now < duration:
         p_id += 1
         
-        # Create patient sprite
-        patient = Patient(p_id, *AGENT_POSITIONS['zone1_center'])
+        # Create patient sprite at random position in Zone 1 subwaiting area
+        spawn_pos = get_random_pos(ZONE1_SUBWAITING_AREA)
+        patient = Patient(p_id, *spawn_pos)
         renderer.add_sprite(patient)
         
         # Start patient journey

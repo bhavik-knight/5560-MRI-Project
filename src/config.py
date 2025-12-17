@@ -106,6 +106,10 @@ AGENT_POSITIONS = {
     'scan_staging_15t': (870, 410),
 }
 
+# Waiting Areas (Rectangles for spatial scatter: x_min, x_max, y_min, y_max)
+ZONE1_SUBWAITING_AREA = (1000, 1150, 720, 780)  # Bottom-right edge of Zone 1
+GOWNED_WAITING_AREA = (260, 360, 480, 560)      # Yellow box in Zone 2
+
 # ============================================================================
 # SIMULATION CONSTANTS
 # ============================================================================
