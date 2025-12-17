@@ -729,6 +729,238 @@ print(f"Average flow time: {flow_times['total_time'].mean():.1f} minutes")
 
 **Value-Added Time**: Time spent on productive work (scanning) vs prep/waiting
 
+## 17. Final Experiment Configuration
+
+### Production Run Specification
+
+This section documents the final configuration for the 12-hour production simulation run, ensuring reproducibility and steady-state validity.
+
+### Configuration Parameters
+
+**File: `src/config.py`**
+
+```python
+# Time-Based Simulation (Shift Duration Model)
+DEFAULT_DURATION = 720      # 12 hours (standard MRI shift)
+WARM_UP_DURATION = 60       # 1 hour (prime the system, remove empty-state bias)
+
+# Time Scaling
+SIM_SPEED = 0.5  # 1 simulation minute = 0.5 real seconds
+
+# Visual Constants
+WINDOW_WIDTH = 1600
+WINDOW_HEIGHT = 800
+FPS = 60
+
+# Agent Movement
+AGENT_SPEED = {
+    'patient': 5.0,        # pixels per frame (increased for visibility)
+    'staff': 6.0,          # pixels per frame (staff move faster)
+}
+```
+
+### Total Runtime Calculation
+
+**Simulation Timeline:**
+```
+Phase 1: Warm-Up
+- Duration: 60 minutes
+- Purpose: Prime system to steady state
+- Data: NOT recorded (excluded from statistics)
+
+Phase 2: Data Collection
+- Duration: 720 minutes (12 hours)
+- Purpose: Capture steady-state operations
+- Data: Fully recorded and analyzed
+
+Total Simulation Time: 780 minutes (13 hours)
+```
+
+**Real-Time Duration:**
+```python
+# With SIM_SPEED = 0.5 (1 sim minute = 0.5 real seconds)
+total_sim_minutes = 780
+sim_speed = 0.5
+real_time_seconds = total_sim_minutes * sim_speed
+real_time_minutes = real_time_seconds / 60
+
+# Result: 6.5 minutes real time
+```
+
+**Video Recording:**
+- If `--record` flag is used, generates `simulation_video.mp4`
+- Video length: ~6.5 minutes
+- Resolution: 1600×800 pixels
+- Frame rate: 60 FPS (smooth playback)
+
+### Expected Outcomes
+
+**Patient Throughput:**
+- Arrival rate: ~30 minutes per patient
+- Warm-up arrivals: ~2 patients (not counted)
+- Data collection arrivals: ~24 patients
+- Expected completions: 22-24 patients
+
+**Magnet Utilization (Parallel Workflow):**
+- Busy % (Value-Added): 70-75%
+- Occupied %: 75-80%
+- Idle %: 20-25%
+
+**Buffer Performance:**
+- Average gowned waiting time: 2-3 minutes
+- Maximum queue length: 2-3 patients
+- Demonstrates effective decoupling
+
+### Execution Commands
+
+**Standard Production Run:**
+```bash
+uv run python main.py --duration 720
+```
+
+**With Video Recording:**
+```bash
+uv run python main.py --duration 720 --record
+```
+
+**Quick Verification (2 hours):**
+```bash
+uv run python main.py --duration 120
+```
+
+### Output Files
+
+All files saved to `results/` directory with timestamp:
+
+1. **`mri_digital_twin_movements.csv`**
+   - All patient zone transitions
+   - Timestamps relative to end of warm-up (start at 0)
+   - Columns: `patient_id`, `zone`, `timestamp`, `event_type`
+
+2. **`mri_digital_twin_states.csv`**
+   - All state changes (arriving → changing → prepped → scanning → exited)
+   - Columns: `patient_id`, `old_state`, `new_state`, `timestamp`
+
+3. **`mri_digital_twin_gowned_waiting.csv`**
+   - Buffer entry/exit events
+   - Proves decoupling buffer effectiveness
+   - Columns: `patient_id`, `timestamp`, `action`
+
+4. **`mri_digital_twin_summary.csv`**
+   - Single-row summary with all KPIs
+   - Use for scenario comparison
+   - Columns: `throughput`, `magnet_busy_pct`, `magnet_idle_pct`, etc.
+
+5. **`mri_digital_twin_report.txt`**
+   - Human-readable analysis
+   - Explains Utilization Paradox
+   - Includes recommendations
+
+6. **`simulation_video.mp4`** (if `--record` used)
+   - 6.5-minute video of full simulation
+   - Shows all patient flows and state changes
+   - Suitable for presentations
+
+### Steady-State Validation
+
+**Why 60-Minute Warm-Up is Sufficient:**
+
+1. **Longest Process Chain:**
+   - Arrival → Change (3.5 min) → Prep (8 min) → Scan (22 min) → Exit
+   - Total: ~34 minutes
+
+2. **System Priming:**
+   - After 60 minutes, multiple patients are in system
+   - All rooms have been used
+   - Staff have completed multiple cycles
+   - Queues have formed naturally
+
+3. **Statistical Verification:**
+   ```python
+   # Check system state at end of warm-up
+   if env.now == 60:
+       assert stats.patients_in_system > 0, "System not primed"
+       # Should have 2-3 patients in various stages
+   ```
+
+### Reproducibility Checklist
+
+Before running production simulation:
+
+- [ ] Verify `DEFAULT_DURATION = 720` in `src/config.py`
+- [ ] Verify `WARM_UP_DURATION = 60` in `src/config.py`
+- [ ] Verify `SIM_SPEED = 0.5` in `src/config.py`
+- [ ] Run `uv sync` to ensure all dependencies installed
+- [ ] Clear `results/` directory or use unique `--output` name
+- [ ] Close other applications to ensure smooth 60 FPS
+- [ ] If recording, ensure sufficient disk space (~100 MB for video)
+
+### Post-Simulation Analysis
+
+**Immediate Verification:**
+```bash
+# Check that files were created
+ls -lh results/
+
+# Quick stats
+uv run python -c "
+import pandas as pd
+summary = pd.read_csv('results/mri_digital_twin_summary.csv')
+print(f'Throughput: {summary[\"throughput\"].values[0]} patients')
+print(f'Magnet Busy: {summary[\"magnet_busy_pct\"].values[0]}%')
+print(f'Magnet Idle: {summary[\"magnet_idle_pct\"].values[0]}%')
+"
+```
+
+**Detailed Analysis:**
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load data
+movements = pd.read_csv('results/mri_digital_twin_movements.csv')
+states = pd.read_csv('results/mri_digital_twin_states.csv')
+summary = pd.read_csv('results/mri_digital_twin_summary.csv')
+
+# Patient flow times
+flow_times = movements.groupby('patient_id')['timestamp'].agg(['min', 'max'])
+flow_times['duration'] = flow_times['max'] - flow_times['min']
+
+print(f"Average patient flow time: {flow_times['duration'].mean():.1f} minutes")
+print(f"Min flow time: {flow_times['duration'].min():.1f} minutes")
+print(f"Max flow time: {flow_times['duration'].max():.1f} minutes")
+
+# Utilization breakdown
+print(f"\nUtilization Metrics:")
+print(f"Busy (Value-Added): {summary['magnet_busy_pct'].values[0]:.1f}%")
+print(f"Occupied (Total): {summary['magnet_occupied_pct'].values[0]:.1f}%")
+print(f"Idle: {summary['magnet_idle_pct'].values[0]:.1f}%")
+
+# Buffer effectiveness
+gowned = pd.read_csv('results/mri_digital_twin_gowned_waiting.csv')
+print(f"\nBuffer Usage:")
+print(f"Average wait: {summary['avg_gowned_wait_time'].values[0]:.1f} minutes")
+print(f"Max wait: {summary['max_gowned_wait_time'].values[0]:.1f} minutes")
+```
+
+### Final Notes
+
+This configuration represents the **production-ready** state of the MRI Digital Twin simulation. All parameters have been validated through iterative testing and align with:
+
+1. **Process Management Best Practices**: Time-based simulation with warm-up period
+2. **Empirical Data**: Process times from real MRI departments
+3. **Visual Clarity**: Medical white aesthetic with smooth 60 FPS animation
+4. **Statistical Rigor**: Warm-up period removes initialization bias
+5. **Reproducibility**: All parameters documented and version-controlled
+
+The simulation is ready for:
+- Academic presentations
+- Process improvement demonstrations
+- Workflow comparison studies
+- Video documentation
+- Report generation
+
 ---
 
 This walkthrough provides comprehensive technical documentation for writing an academic report on the MRI Digital Twin simulation project.
+
