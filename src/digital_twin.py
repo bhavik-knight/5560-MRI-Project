@@ -20,43 +20,42 @@ CYAN_MAG = (224, 255, 255)     # Light Cyan
 YELLOW_ROOM = (255, 215, 0)    # Gold
 TEXT_COLOR = (0, 0, 0)
 
-def draw_simple_text(surface, text, x, y, color=BLACK, size='small'):
+def get_contrasting_text_color(bg_color):
     """
-    Draws simple text using pygame without font module.
-    This is a workaround for Python 3.14 font compatibility issues.
+    Returns WHITE or BLACK text color based on background luminance.
+    Uses relative luminance formula for better contrast.
     """
-    # Since pygame.font is broken, we'll just draw the room rectangles
-    # and skip text rendering for now. The layout will still be visible.
-    pass
+    r, g, b = bg_color
+    # Calculate relative luminance (perceived brightness)
+    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    
+    # Return white text for dark backgrounds, black for light backgrounds
+    return WHITE if luminance < 0.5 else BLACK
 
 def draw_room(surface, rect, color, label_text, font):
     """
     Helper to draw a room with a border and centered text.
     Handles newline characters in label_text.
+    Text color automatically adjusts for contrast based on background.
     """
-    # 1. Draw filled rectangle
     pygame.draw.rect(surface, color, rect)
+    pygame.draw.rect(surface, BLACK, rect, 2) # Black border width 2
     
-    # 2. Draw black border
-    pygame.draw.rect(surface, BLACK, rect, 2)
-    
-    # 3. Draw text (if font is available)
     if font and label_text:
-        try:
-            lines = label_text.split('\n')
-            line_height = font.get_linesize()
-            total_height = len(lines) * line_height
-            
-            # Center the block of text
-            start_y = rect.centery - (total_height / 2)
-            
-            for i, line in enumerate(lines):
-                text_surf = font.render(line, True, TEXT_COLOR)
-                text_rect = text_surf.get_rect(centerx=rect.centerx, top=start_y + (i * line_height))
-                surface.blit(text_surf, text_rect)
-        except:
-            # If font rendering fails, just skip text
-            pass
+        # Choose text color based on background for optimal contrast
+        text_color = get_contrasting_text_color(color)
+        
+        lines = label_text.split('\n')
+        line_height = font.get_linesize()
+        total_height = len(lines) * line_height
+        
+        # Center the block of text
+        start_y = rect.centery - (total_height / 2)
+        
+        for i, line in enumerate(lines):
+            text_surf = font.render(line, True, text_color)
+            text_rect = text_surf.get_rect(centerx=rect.centerx, top=start_y + (i * line_height))
+            surface.blit(text_surf, text_rect)
 
 def draw_floor_plan(screen, font_room, font_zone):
     """
@@ -111,12 +110,24 @@ def draw_floor_plan(screen, font_room, font_zone):
 def main():
     pygame.init()
     
-    # Font initialization disabled due to Python 3.14 / pygame.font compatibility issue
-    # The layout will render without text labels
+    # Initialize fonts with fallback for Python 3.14 compatibility
     font_room = None
     font_zone = None
-    print("Note: Text labels disabled due to pygame.font compatibility issue with Python 3.14")
-    print("The floor plan layout will still be visible with color-coded rooms.")
+    try:
+        pygame.font.init()
+        # Try SysFont first (Arial)
+        font_room = pygame.font.SysFont('Arial', 16, bold=True)
+        font_zone = pygame.font.SysFont('Arial', 24, bold=True)
+        print("Fonts loaded successfully (Arial)")
+    except Exception as e:
+        print(f"SysFont failed ({e}), trying default font...")
+        try:
+            # Fallback to default pygame font (None means use default)
+            font_room = pygame.font.Font(None, 20)
+            font_zone = pygame.font.Font(None, 28)
+            print("Fonts loaded successfully (Default)")
+        except Exception as e2:
+            print(f"Warning: All font initialization failed ({e2}). Running without text labels.")
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("MRI Digital Twin - Layout")
