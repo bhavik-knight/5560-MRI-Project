@@ -17,13 +17,14 @@ class RenderEngine:
     Separates visualization from simulation logic.
     """
     
-    def __init__(self, title="MRI Digital Twin", record_video=False):
+    def __init__(self, title="MRI Digital Twin", record_video=False, video_format='mkv'):
         """
         Initialize PyGame window and rendering resources.
         
         Args:
             title: Window title string
             record_video: If True, records simulation to video file
+            video_format: Video format ('mkv' or 'mp4')
         """
         pygame.init()
         
@@ -45,6 +46,7 @@ class RenderEngine:
         
         # Video recording setup
         self.record_video = record_video
+        self.video_format = video_format
         self.video_writer = None
         if record_video:
             self._init_video_writer()
@@ -73,11 +75,13 @@ class RenderEngine:
             # Create results directory if it doesn't exist
             os.makedirs('results', exist_ok=True)
             
-            # Video file path
-            video_path = 'results/simulation_video.mkv'
-            
-            # Video codec (XVID for .mkv)
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            # Video file path and codec based on format
+            if self.video_format == 'mp4':
+                video_path = 'results/simulation_video.mp4'
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            else:  # mkv (default)
+                video_path = 'results/simulation_video.mkv'
+                fourcc = cv2.VideoWriter_fourcc(*'XVID')
             
             # Video parameters
             fps = 30  # Record at 30 FPS for smoother playback
@@ -90,7 +94,7 @@ class RenderEngine:
                 print(f"✓ Video recording initialized: {video_path}")
                 print(f"  Resolution: {WINDOW_WIDTH}×{WINDOW_HEIGHT}")
                 print(f"  FPS: {fps}")
-                print(f"  Codec: XVID (.mkv)")
+                print(f"  Codec: {'mp4v' if self.video_format == 'mp4' else 'XVID'} (.{self.video_format})")
             else:
                 print("✗ Failed to initialize video writer")
                 self.video_writer = None

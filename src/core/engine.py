@@ -12,7 +12,7 @@ from src.analysis.tracker import SimStats
 from src.analysis.reporter import generate_report, print_summary
 from src.core.workflow import patient_generator
 
-def run_simulation(duration=None, output_dir='results', record=False):
+def run_simulation(duration=None, output_dir='results', record=False, video_format='mkv'):
     """
     Run the MRI Digital Twin simulation using shift duration model.
     
@@ -27,6 +27,7 @@ def run_simulation(duration=None, output_dir='results', record=False):
     Args:
         duration: Total simulation time in minutes (default: 720 = 12 hours)
         output_dir: Directory for output files
+        video_format: Video format ('mkv' or 'mp4')
         record: If True, records simulation to video file
     
     Returns:
@@ -44,7 +45,7 @@ def run_simulation(duration=None, output_dir='results', record=False):
     print(f"Data Collection: {duration - WARM_UP_DURATION} minutes")
     print(f"Time Scale: 1 sim minute = {SIM_SPEED} real seconds")
     if record:
-        print(f"Video Recording: ENABLED (results/simulation_video.mkv)")
+        print(f"Video Recording: ENABLED (results/simulation_video.{video_format})")
     print("=" * 60 + "\n")
     
     # ========== INITIALIZE COMPONENTS ==========
@@ -53,7 +54,9 @@ def run_simulation(duration=None, output_dir='results', record=False):
     env = simpy.Environment()
     
     # 2. Rendering Engine (PyGame)
-    renderer = RenderEngine(title="MRI Digital Twin - Modular Architecture", record_video=record)
+    renderer = RenderEngine(title="MRI Digital Twin - Modular Architecture", 
+                           record_video=record, 
+                           video_format=video_format)
     
     # 3. Statistics Tracker
     stats = SimStats()

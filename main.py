@@ -44,7 +44,15 @@ Examples:
     parser.add_argument(
         '--record',
         action='store_true',
-        help='Record simulation to video file (results/simulation_video.mkv)'
+        help='Record simulation to video file'
+    )
+    
+    parser.add_argument(
+        '--format',
+        type=str,
+        choices=['mkv', 'mp4'],
+        default='mkv',
+        help='Video format (default: mkv)'
     )
     
     args = parser.parse_args()
@@ -53,7 +61,8 @@ Examples:
     results = run_simulation(
         duration=args.duration,
         output_dir=args.output,
-        record=args.record
+        record=args.record,
+        video_format=args.format
     )
     
     # Print final summary
