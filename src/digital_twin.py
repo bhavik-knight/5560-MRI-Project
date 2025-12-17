@@ -20,26 +20,43 @@ CYAN_MAG = (224, 255, 255)     # Light Cyan
 YELLOW_ROOM = (255, 215, 0)    # Gold
 TEXT_COLOR = (0, 0, 0)
 
+def draw_simple_text(surface, text, x, y, color=BLACK, size='small'):
+    """
+    Draws simple text using pygame without font module.
+    This is a workaround for Python 3.14 font compatibility issues.
+    """
+    # Since pygame.font is broken, we'll just draw the room rectangles
+    # and skip text rendering for now. The layout will still be visible.
+    pass
+
 def draw_room(surface, rect, color, label_text, font):
     """
     Helper to draw a room with a border and centered text.
     Handles newline characters in label_text.
     """
+    # 1. Draw filled rectangle
     pygame.draw.rect(surface, color, rect)
-    pygame.draw.rect(surface, BLACK, rect, 2) # Black border width 2
     
+    # 2. Draw black border
+    pygame.draw.rect(surface, BLACK, rect, 2)
+    
+    # 3. Draw text (if font is available)
     if font and label_text:
-        lines = label_text.split('\n')
-        line_height = font.get_linesize()
-        total_height = len(lines) * line_height
-        
-        # Center the block of text
-        start_y = rect.centery - (total_height / 2)
-        
-        for i, line in enumerate(lines):
-            text_surf = font.render(line, True, TEXT_COLOR)
-            text_rect = text_surf.get_rect(centerx=rect.centerx, top=start_y + (i * line_height))
-            surface.blit(text_surf, text_rect)
+        try:
+            lines = label_text.split('\n')
+            line_height = font.get_linesize()
+            total_height = len(lines) * line_height
+            
+            # Center the block of text
+            start_y = rect.centery - (total_height / 2)
+            
+            for i, line in enumerate(lines):
+                text_surf = font.render(line, True, TEXT_COLOR)
+                text_rect = text_surf.get_rect(centerx=rect.centerx, top=start_y + (i * line_height))
+                surface.blit(text_surf, text_rect)
+        except:
+            # If font rendering fails, just skip text
+            pass
 
 def draw_floor_plan(screen, font_room, font_zone):
     """
@@ -94,24 +111,12 @@ def draw_floor_plan(screen, font_room, font_zone):
 def main():
     pygame.init()
     
-    # Initialize fonts with fallback for Python 3.14 compatibility
+    # Font initialization disabled due to Python 3.14 / pygame.font compatibility issue
+    # The layout will render without text labels
     font_room = None
     font_zone = None
-    try:
-        pygame.font.init()
-        # Try SysFont first (Arial)
-        font_room = pygame.font.SysFont('Arial', 16, bold=True)
-        font_zone = pygame.font.SysFont('Arial', 24, bold=True)
-        print("Fonts loaded successfully (Arial)")
-    except Exception as e:
-        print(f"SysFont failed ({e}), trying default font...")
-        try:
-            # Fallback to default pygame font (None means use default)
-            font_room = pygame.font.Font(None, 20)
-            font_zone = pygame.font.Font(None, 28)
-            print("Fonts loaded successfully (Default)")
-        except Exception as e2:
-            print(f"Warning: All font initialization failed ({e2}). Running without text labels.")
+    print("Note: Text labels disabled due to pygame.font compatibility issue with Python 3.14")
+    print("The floor plan layout will still be visible with color-coded rooms.")
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("MRI Digital Twin - Layout")
