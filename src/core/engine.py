@@ -72,9 +72,8 @@ def run_simulation(duration=None, output_dir='results', record=False):
     staff_dict = {
         'porter': Staff('porter', *AGENT_POSITIONS['porter_home']),
         'backup': [
-            Staff('backup', AGENT_POSITIONS['backup_staging'][0] + i*30, 
-                  AGENT_POSITIONS['backup_staging'][1])
-            for i in range(STAFF_COUNT['backup_tech'])
+            Staff('backup', *AGENT_POSITIONS[f'prep_{i+1}_center'])
+            for i in range(min(2, STAFF_COUNT['backup_tech']))
         ],
         'scan': [
             Staff('scan', *AGENT_POSITIONS['scan_staging_3t']),

@@ -142,6 +142,12 @@ class Staff(Agent):
         super().__init__(x, y, color, speed=AGENT_SPEED['staff'])
         self.role = role
         self.busy = False  # Track if staff is currently assisting a patient
+        self.home_x = x
+        self.home_y = y
+    
+    def return_home(self):
+        """Move staff back to their assigned home position."""
+        self.move_to(self.home_x, self.home_y)
     
     def draw(self, surface):
         """Draw staff member - shape depends on role. Apply offset when busy to avoid Z-fighting."""

@@ -72,7 +72,7 @@ ROOM_COORDINATES = {
     'prep_1': (350, 50, 150, 150),       # IV Prep Room 308
     'prep_2': (520, 50, 150, 150),       # IV Prep Room 309
     
-    'gowned_waiting': (200, 250, 250, 200),  # Original Hub Buffer
+    'waiting_room': (200, 250, 250, 200),  # Original Hub Buffer
     
     # Zone 3: Control (Vertical Strip)
     'control': (750, 50, 100, 520),
@@ -93,7 +93,7 @@ AGENT_POSITIONS = {
     'change_3_center': (87, 282),
     'prep_1_center': (425, 125),
     'prep_2_center': (595, 125),
-    'gowned_waiting_center': (325, 350),
+    'waiting_room_center': (325, 350),
     'magnet_3t_center': (995, 175),
     'magnet_15t_center': (995, 445),
     'exit': (1180, 675),
@@ -108,8 +108,8 @@ AGENT_POSITIONS = {
 # Waiting Areas (Rectangles for spatial scatter: x_min, x_max, y_min, y_max)
 ZONE1_TOP_Y = 600
 ZONE1_SUBWAITING_AREA = (900, 1050, 620, 730)
-GOWNED_WAITING_AREA = (220, 430, 270, 430)
-GOWNED_WAITING_LOC = (325, 350)
+WAITING_ROOM_AREA = (220, 430, 270, 430)
+WAITING_ROOM_LOC = (325, 350)
 
 # ============================================================================
 # SIMULATION CONSTANTS
@@ -134,7 +134,7 @@ RESOURCE_CAPACITY = {
     'magnet': 2,           # 2 magnets total (3T + 1.5T)
     'prep_rooms': 2,       # 2 IV Prep rooms (308, 309)
     'change_rooms': 3,     # 3 Change rooms (303, 304, 305)
-    'gowned_waiting': 3,   # Max 3 patients in buffer (Source: Floor Plan)
+    'waiting_room': 3,   # Max 3 patients in buffer (Source: Floor Plan)
 }
 
 # Magnet Resources (Dual-Bay Configuration)
@@ -201,7 +201,7 @@ ROOM_LABELS = {
     'washroom_2': 'WR 2',
     'prep_1': 'IV Prep 1',
     'prep_2': 'IV Prep 2',
-    'gowned_waiting': 'GOWNED WAIT\n(Max 3)',
+    'waiting_room': 'WAITING ROOM\n(Max 3)',
     'control': 'CONTROL',
     'magnet_3t': '3T MRI',
     'magnet_15t': '1.5T MRI',

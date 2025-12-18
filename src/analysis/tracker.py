@@ -53,7 +53,7 @@ class SimStats:
         self.count_15t = 0
         
         # Queue tracking
-        self.gowned_waiting_log = []  # Track buffer usage
+        self.waiting_room_log = []  # Track buffer usage
 
         
     def log_movement(self, patient_id, zone, timestamp):
@@ -151,16 +151,16 @@ class SimStats:
             self._magnet_start_time = None
             self._magnet_state = 'idle'
     
-    def log_gowned_waiting(self, patient_id, timestamp, action='enter'):
+    def log_waiting_room(self, patient_id, timestamp, action='enter'):
         """
-        Record patient entering/leaving gowned waiting buffer.
+        Record patient entering/leaving waiting room buffer.
         
         Args:
             patient_id: Unique patient identifier
             timestamp: Simulation time in minutes
             action: 'enter' or 'exit'
         """
-        self.gowned_waiting_log.append({
+        self.waiting_room_log.append({
             'patient_id': patient_id,
             'timestamp': timestamp,
             'action': action
@@ -218,23 +218,23 @@ class SimStats:
         """
         utilization = self.calculate_utilization(total_sim_time)
         
-        # Calculate average time in gowned waiting
-        gowned_times = []
+        # Calculate average time in waiting room
+        wait_times = []
         patient_enter_times = {}
         
-        for log in self.gowned_waiting_log:
+        for log in self.waiting_room_log:
             if log['action'] == 'enter':
                 patient_enter_times[log['patient_id']] = log['timestamp']
             elif log['action'] == 'exit' and log['patient_id'] in patient_enter_times:
                 wait_time = log['timestamp'] - patient_enter_times[log['patient_id']]
-                gowned_times.append(wait_time)
+                wait_times.append(wait_time)
         
-        avg_gowned_wait = sum(gowned_times) / len(gowned_times) if gowned_times else 0
+        avg_wait = sum(wait_times) / len(wait_times) if wait_times else 0
         
         return {
             **utilization,
-            'avg_gowned_wait_time': round(avg_gowned_wait, 2),
-            'max_gowned_wait_time': round(max(gowned_times), 2) if gowned_times else 0,
+            'avg_wait_time': round(avg_wait, 2),
+            'max_wait_time': round(max(wait_times), 2) if wait_times else 0,
             'total_movements': len(self.patient_log),
             'total_state_changes': len(self.state_changes),
         }

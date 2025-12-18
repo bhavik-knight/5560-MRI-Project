@@ -47,7 +47,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     2. Transport to Change Room (Porter)
     3. Changing
     4. Prep (Backup Tech)
-    5. Gowned Waiting (Buffer)
+    5. Waiting Room (Buffer)
     6. Scanning (Scan Tech + Magnet)
     7. Exit
     
@@ -97,7 +97,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         
         # Porter returns
         porter.busy = False
-        porter.move_to(*AGENT_POSITIONS['porter_home'])
+        porter.return_home()
     
     # ========== 3. CHANGING ==========
     patient.set_state('changing')
@@ -118,9 +118,8 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         while not tech.is_at_target():
             yield env.timeout(0.01)
         
-        # Move to prep room
-        prep_rooms = ['prep_1_center', 'prep_2_center']
-        prep_target = AGENT_POSITIONS[random.choice(prep_rooms)]
+        # Move to tech's respective prep room
+        prep_target = (tech.home_x, tech.home_y)
         
         patient.move_to(*prep_target)
         tech.move_to(*prep_target)
@@ -146,16 +145,16 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         stats.log_state_change(p_id, 'changing', 'prepped', env.now)
         
         tech.busy = False
-        tech.move_to(*AGENT_POSITIONS['backup_staging'])
+        tech.return_home()
     
-    # ========== 5. GOWNED WAITING (The Critical Buffer) ==========
-    patient.move_to(*AGENT_POSITIONS['gowned_waiting_center'])
+    # ========== 5. WAITING ROOM (The Critical Buffer) ==========
+    patient.move_to(*AGENT_POSITIONS['waiting_room_center'])
     
     while not patient.is_at_target():
         yield env.timeout(0.01)
     
-    stats.log_movement(p_id, 'gowned_waiting', env.now)
-    stats.log_gowned_waiting(p_id, env.now, 'enter')
+    stats.log_movement(p_id, 'waiting_room', env.now)
+    stats.log_waiting_room(p_id, env.now, 'enter')
     
     # ========== 6. SCANNING (Load Balancing Routing) ==========
     # Select magnet with shortest queue
@@ -175,28 +174,36 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     with resources[resource_key].request() as req:
         yield req
         
-        stats.log_gowned_waiting(p_id, env.now, 'exit')
+        stats.log_waiting_room(p_id, env.now, 'exit')
         
-        # Determine available scan tech
+        # 6a. Escort patient to magnet (using Backup Tech)
+        with resources['backup_techs'].request() as b_req:
+            yield b_req
+            backup_tech = next((t for t in staff_dict['backup'] if not t.busy), staff_dict['backup'][0])
+            backup_tech.busy = True
+            
+            # Move to patient in waiting room
+            backup_tech.move_to(patient.x, patient.y)
+            while not backup_tech.is_at_target():
+                yield env.timeout(0.01)
+                
+            # Escort to magnet room
+            patient.move_to(*magnet_loc)
+            backup_tech.move_to(*magnet_loc)
+            while not patient.is_at_target():
+                yield env.timeout(0.01)
+            
+            # Tech returns to prep room
+            backup_tech.busy = False
+            backup_tech.return_home()
+
+        # 6b. Perform scanning (Scan Tech at terminal)
         scan_tech_3t = staff_dict['scan'][0]
         scan_tech_15t = staff_dict['scan'][1] if len(staff_dict['scan']) > 1 else scan_tech_3t
         
-        # Assign tech based on chosen magnet if possible, or whichever is free
-        if magnet_id == '3T' and not scan_tech_3t.busy:
-            scan_tech = scan_tech_3t
-        elif magnet_id == '1.5T' and not scan_tech_15t.busy:
-            scan_tech = scan_tech_15t
-        else:
-            scan_tech = scan_tech_3t if not scan_tech_3t.busy else scan_tech_15t
-            
+        # Assign tech based on chosen magnet
+        scan_tech = scan_tech_3t if magnet_id == '3T' else scan_tech_15t
         scan_tech.busy = True
-        
-        # Move to selected magnet
-        patient.move_to(*magnet_loc)
-        scan_tech.move_to(magnet_loc[0] - 30, magnet_loc[1])
-        
-        while not patient.is_at_target():
-            yield env.timeout(0.01)
         
         patient.set_state('scanning')
         stats.log_state_change(p_id, 'prepped', 'scanning', env.now)
@@ -212,9 +219,8 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         yield env.timeout(flip_time)
         
         stats.log_magnet_end(env.now)
-        
         scan_tech.busy = False
-        scan_tech.move_to(*staging_pos)
+        # Scan tech remains at staging_pos (console)
     
     # ========== 7. EXIT ==========
     patient.move_to(*AGENT_POSITIONS['exit'])

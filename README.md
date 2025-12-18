@@ -21,7 +21,7 @@ Traditional MRI departments show high equipment "occupied time" (92%) but hide c
 
 **Root Cause:** In serial workflows, patient prep happens *inside* the magnet room, wasting expensive equipment time on low-value tasks.
 
-**Solution:** The "Pit Crew" model moves prep outside, using a **gowned waiting buffer** to stage prepped patients, allowing the magnet to focus exclusively on scanning.
+**Solution:** The "Pit Crew" model moves prep outside, using a **waiting room buffer** to stage prepped patients, allowing the magnet to focus exclusively on scanning.
 
 ## Architecture
 
@@ -78,7 +78,7 @@ mri-project/
 ### 3. Comprehensive Data Collection
 - Patient movement logs (zone transitions)
 - State change logs (arriving → changing → prepped → scanning)
-- Gowned waiting buffer usage
+- Waiting room buffer usage
 - Magnet utilization (busy vs occupied time)
 - Summary statistics (CSV + text reports)
 
@@ -136,14 +136,14 @@ uv run python main.py --record          # Generates simulation_video.mp4
 - Patients (circles) change color by state:
   - Grey → Arriving
   - Teal → Changing
-  - Yellow → Prepped (waiting)
+  - Yellow → Prepped (waiting room)
   - Green → Scanning
 - Staff (triangles/squares) escort patients
 
 **Data Output (in `results/` folder):**
 - `*_movements.csv` - All patient zone transitions
 - `*_states.csv` - State change log
-- `*_gowned_waiting.csv` - Buffer usage
+- `*_waiting_room.csv` - Buffer usage
 - `*_summary.csv` - Key performance indicators
 - `*_report.txt` - Human-readable analysis
 
@@ -160,7 +160,7 @@ uv run python main.py --record          # Generates simulation_video.mp4
 - **Idle %**: True idle time
 
 ### Buffer Performance
-- Average wait time in gowned waiting
+- Average wait time in waiting room
 - Maximum wait time
 - Demonstrates decoupling effect
 
@@ -195,7 +195,7 @@ Watch for these behaviors:
 - ✓ Orange triangle (porter) escorts to change rooms
 - ✓ Patients turn teal while changing
 - ✓ Cyan square (backup tech) escorts to prep
-- ✓ Patients turn yellow in gowned waiting
+- ✓ Patients turn yellow in waiting room
 - ✓ Purple square (scan tech) escorts to magnet
 - ✓ Patients turn green while scanning
 - ✓ Patients exit to the right

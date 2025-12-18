@@ -23,7 +23,7 @@ Traditional metrics show high "occupied time" but hide low "value-added time":
 ### The "Pit Crew" Model
 Inspired by Formula 1 pit stops - parallel processing:
 1. **Prep happens outside** the magnet room
-2. **Gowned Waiting buffer** stages prepped patients
+2. **Waiting Room buffer** stages prepped patients
 3. **Magnet focuses on scanning** only
 4. **Result**: Higher throughput, better efficiency
 
@@ -94,7 +94,7 @@ src/
      * Difficult (15%): triangular(3, 5, 8) minutes
    - State: 'prepped'
 
-5. GOWNED WAITING (The Critical Buffer)
+5. WAITING ROOM (The Critical Buffer)
    - Patient turns YELLOW
    - Moves to yellow box center (325, 350)
    - Waits for magnet availability
@@ -157,7 +157,7 @@ src/
   - 3 Change rooms (teal in legend, white in display)
   - 2 Washrooms
   - 2 IV Prep rooms
-  - Gowned Waiting buffer (yellow box)
+  - Waiting Room buffer (yellow box)
   - Holding area
 - **Zone 3** (vertical strip): Control rooms
 - **Zone 4** (right): 3T and 1.5T MRI magnets
@@ -207,7 +207,7 @@ delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
    - Columns: `patient_id`, `old_state`, `new_state`, `timestamp`
    - Tracks: arriving → changing → prepped → scanning → exited
 
-3. **Gowned Waiting** (`*_gowned_waiting.csv`)
+3. **Waiting Room** (`*_waiting_room.csv`)
    - Columns: `patient_id`, `timestamp`, `action` (enter/exit)
    - Proves buffer usage
 
@@ -228,7 +228,7 @@ delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
 - **Paradox**: Serial shows high occupied but low busy
 
 **Buffer Performance:**
-- Average wait time in gowned waiting
+- Average wait time in waiting room
 - Maximum wait time
 - Queue length over time
 
@@ -489,7 +489,7 @@ uv run python main.py --duration 720    # Full 12 hour shift
 All saved to `results/` directory:
 - `mri_digital_twin_movements.csv` - Movement log
 - `mri_digital_twin_states.csv` - State transitions
-- `mri_digital_twin_gowned_waiting.csv` - Buffer usage
+- `mri_digital_twin_waiting_room.csv` - Buffer usage
 - `mri_digital_twin_summary.csv` - KPIs
 - `mri_digital_twin_report.txt` - Human-readable summary
 
@@ -517,7 +517,7 @@ All saved to `results/` directory:
 
 ### Buffer Effectiveness
 
-- **Gowned Waiting** acts as decoupling buffer
+- **Waiting Room** acts as decoupling buffer
 - Average wait: 2-3 minutes
 - Prevents magnet idle time
 - Enables continuous scanning
@@ -580,7 +580,7 @@ Watch for:
 - ✓ Porter (triangle) escorts to change rooms
 - ✓ Patients turn blue while changing
 - ✓ Backup tech (cyan square) escorts to prep
-- ✓ Patients turn yellow in gowned waiting
+- ✓ Patients turn yellow in waiting room
 - ✓ Scan tech (purple square) escorts to magnet
 - ✓ Patients turn green while scanning
 - ✓ Patients exit to the right
@@ -590,7 +590,7 @@ Watch for:
 Check CSV files:
 - ✓ Movement log shows zone transitions
 - ✓ State log shows color changes
-- ✓ Gowned waiting log shows buffer usage
+- ✓ Waiting room log shows buffer usage
 - ✓ Summary shows reasonable metrics
 
 ## 13. Limitations and Future Work
@@ -649,7 +649,7 @@ Check CSV files:
 3. **Screenshot**: PyGame window with annotations
 4. **Utilization Comparison**: Serial vs Parallel bar chart
 5. **Throughput Graph**: Patients over time
-6. **Buffer Usage**: Gowned waiting queue length
+6. **Buffer Usage**: Waiting room queue length
 
 ### Key Tables
 
@@ -723,7 +723,7 @@ print(f"Average flow time: {flow_times['total_time'].mean():.1f} minutes")
 
 **Discrete-Event Simulation**: Modeling approach where system changes at discrete points in time
 
-**Gowned Waiting**: Buffer area where prepped patients wait for magnet availability
+**Waiting Room**: Buffer area where prepped patients wait for magnet availability
 
 **Pit Crew Model**: Parallel processing approach inspired by Formula 1 pit stops
 
@@ -811,7 +811,7 @@ real_time_minutes = real_time_seconds / 60
 - Idle %: 20-25%
 
 **Buffer Performance:**
-- Average gowned waiting time: 2-3 minutes
+- Average wait time: 2-3 minutes
 - Maximum queue length: 2-3 patients
 - Demonstrates effective decoupling
 
@@ -845,7 +845,7 @@ All files saved to `results/` directory with timestamp:
    - All state changes (arriving → changing → prepped → scanning → exited)
    - Columns: `patient_id`, `old_state`, `new_state`, `timestamp`
 
-3. **`mri_digital_twin_gowned_waiting.csv`**
+3. **`mri_digital_twin_waiting_room.csv`**
    - Buffer entry/exit events
    - Proves decoupling buffer effectiveness
    - Columns: `patient_id`, `timestamp`, `action`
@@ -941,10 +941,10 @@ print(f"Occupied (Total): {summary['magnet_occupied_pct'].values[0]:.1f}%")
 print(f"Idle: {summary['magnet_idle_pct'].values[0]:.1f}%")
 
 # Buffer effectiveness
-gowned = pd.read_csv('results/mri_digital_twin_gowned_waiting.csv')
+waiting_room = pd.read_csv('results/mri_digital_twin_waiting_room.csv')
 print(f"\nBuffer Usage:")
-print(f"Average wait: {summary['avg_gowned_wait_time'].values[0]:.1f} minutes")
-print(f"Max wait: {summary['max_gowned_wait_time'].values[0]:.1f} minutes")
+print(f"Average wait: {summary['avg_wait_time'].values[0]:.1f} minutes")
+print(f"Max wait: {summary['max_wait_time'].values[0]:.1f} minutes")
 ```
 
 ### Final Notes
