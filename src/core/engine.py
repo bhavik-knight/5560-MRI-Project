@@ -135,6 +135,38 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
         renderer.add_sprite(tech)
     renderer.add_sprite(staff_dict['admin'])
     
+    # ========== HELPER FUNCTIONS FOR RESOURCE SELECTION ==========
+    
+    def get_free_change_room():
+        """
+        Immediately check for first available change room.
+        Returns room key if available, None if all occupied.
+        """
+        import random
+        room_keys = ['change_1', 'change_2', 'change_3']
+        random.shuffle(room_keys)
+        for key in room_keys:
+            if resources[key].count < resources[key].capacity:
+                return key
+        return None
+    
+    def get_free_washroom():
+        """
+        Immediately check for first available washroom.
+        Returns room key if available, None if all occupied.
+        """
+        import random
+        room_keys = ['washroom_1', 'washroom_2']
+        random.shuffle(room_keys)
+        for key in room_keys:
+            if resources[key].count < resources[key].capacity:
+                return key
+        return None
+    
+    # Make helpers available to workflow
+    resources['get_free_change_room'] = get_free_change_room
+    resources['get_free_washroom'] = get_free_washroom
+    
     # ========== START SIMULATION ==========
     
     # Start patient generator (runs until duration)

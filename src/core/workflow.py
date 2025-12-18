@@ -174,24 +174,20 @@ def patient_exit_process(env, patient, renderer, stats, p_id, magnet_id, resourc
     patient.move_to(*staging_loc)
     while not patient.is_at_target(): yield env.timeout(0.01)
     
-    # Seize Change Room (competing with incoming patients)
+    # Seize Change Room (competing with incoming patients) - Optimized
     selected_room = None
     selected_req = None
-    change_room_keys = ['change_1', 'change_2', 'change_3']
     
     while selected_room is None:
-        random.shuffle(change_room_keys)
-        for key in change_room_keys:
-             # Can pick any free one
-            if resources[key].count < resources[key].capacity:
-                selected_room = key
-                selected_req = resources[key].request()
-                break
+        # Use helper for immediate availability check
+        available_room = resources['get_free_change_room']()
         
-        if selected_room:
-             yield selected_req
+        if available_room:
+            selected_room = available_room
+            selected_req = resources[selected_room].request()
+            yield selected_req
         else:
-             yield env.timeout(0.1)
+            yield env.timeout(0.1)
              
     # Enter Room
     patient.set_state('changing') # Turn Blue again
@@ -373,33 +369,27 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     # ========== Step 5: Change Loop (Seize Logic) ==========
     # Patient is now at Staging.
     
-    # Seize a SPECIFIC change room
-    change_room_keys = ['change_1', 'change_2', 'change_3']
+    # ========== Step 5: Change Loop (Optimized Check-First Logic) ==========
+    # Patient is now at Staging.
     
     selected_room = None
     selected_req = None
     
+    # Check-First Logic: Only wait if ALL rooms are occupied
     while selected_room is None:
-        # Check for immediate availability
-        # Randomize order to verify all rooms get checked and prevent bias to 1 and 2
-        # (Fix for observed issue where Room 3 was ignored)
-        random.shuffle(change_room_keys)
+        # Use helper to immediately check availability
+        available_room = resources['get_free_change_room']()
         
-        for key in change_room_keys:
-            res = resources[key]
-            # STRICT CHECK: resource count must be 0 (empty)
-            if res.count < res.capacity:
-                selected_room = key
-                selected_req = res.request()
-                break
-        
-        if selected_room:
-            yield selected_req # Seize it
+        if available_room:
+            # Room is available - seize it immediately
+            selected_room = available_room
+            selected_req = resources[selected_room].request()
+            yield selected_req
         else:
-            # All full. Wait at staging.
-            yield env.timeout(0.5) # Check every 30s sim time
+            # All rooms occupied - wait briefly and recheck
+            yield env.timeout(0.5)
             
-    # Move to seized room
+    # Move to seized room (no pause if room was available)
     room_target = AGENT_POSITIONS[f"{selected_room}_center"]
     patient.move_to(*room_target)
     while not patient.is_at_target(): yield env.timeout(0.01)
@@ -469,30 +459,32 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         
     # ========== Step 7: Pre-Scan Buffer & Washroom ==========
     if random.random() < PROB_WASHROOM_USAGE:
-         # Patient decides to use washroom
-         pos_manager.release_pos('waiting_room_right', wr_right_slot) # Leave current slot
+         # Patient decides to use washroom (stay in waiting room while checking)
+         
+         # Seize specific washroom (while still in waiting room)
+         selected_wr = None
+         selected_wr_req = None
+         
+         # Check-First Logic: Only leave waiting room when washroom is available
+         while selected_wr is None:
+             # Use helper to immediately check availability
+             available_wr = resources['get_free_washroom']()
+             
+             if available_wr:
+                 # Washroom available - seize it
+                 selected_wr = available_wr
+                 selected_wr_req = resources[selected_wr].request()
+                 yield selected_wr_req
+             else:
+                 # Wait in waiting room, not in hallway
+                 yield env.timeout(0.1)
+         
+         # NOW we have a washroom - release waiting room slot and go
+         pos_manager.release_pos('waiting_room_right', wr_right_slot)
          
          # Move to Washroom Staging (Zone 2 Hallway)
          patient.move_to(*AGENT_POSITIONS['washroom_staging'])
          while not patient.is_at_target(): yield env.timeout(0.01)
-         
-         # Seize specific washroom (Staging Logic)
-         selected_wr = None
-         selected_wr_req = None
-         washroom_keys = ['washroom_1', 'washroom_2']
-         
-         while selected_wr is None:
-             for key in washroom_keys:
-                 res = resources[key]
-                 if res.count < res.capacity:
-                     selected_wr = key
-                     selected_wr_req = res.request()
-                     break
-             
-             if selected_wr:
-                 yield selected_wr_req
-             else:
-                 yield env.timeout(0.1) # Wait in hallway
          
          # Move into washroom
          wr_target = AGENT_POSITIONS[f"{selected_wr}_center"]
