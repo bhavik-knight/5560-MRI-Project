@@ -217,3 +217,8 @@ __marimo__/
 .antigravity/
 .idea/
  
+
+# ignore video files
+.mkv
+.mp4
+
