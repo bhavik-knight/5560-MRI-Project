@@ -163,6 +163,29 @@ def use_washroom(env, patient, resources, stats, return_pos):
     while not patient.is_at_target():
         yield env.timeout(0.01)
 
+def handle_no_show_gap(env, resources, stats, wait_time):
+    """
+    Simulates a magnet slot lost to a no-show.
+    The slot sits idle for X minutes before staff releases it.
+    """
+    # Request a magnet access slot
+    access_req = resources['magnet_access'].request(priority=1)
+    yield access_req
+    
+    # Take a magnet from the pool
+    magnet_config = yield resources['magnet_pool'].get()
+    m_id = magnet_config['id']
+    
+    # Sits idle
+    yield env.timeout(wait_time)
+    
+    # Log the waste specifically
+    stats.log_magnet_metric(m_id, 'noshow', wait_time)
+    
+    # Release back to pool
+    resources['magnet_access'].release(access_req)
+    yield resources['magnet_pool'].put(magnet_config)
+
 def patient_exit_process(env, patient, renderer, stats, p_id, magnet_id, resources):
     """
     Separate process for patient exit journey (Change back -> Exit).
@@ -237,6 +260,22 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     
     p_id = patient.p_id
     
+    # ========== Step -0.1: Compliance Check (Lateness) ==========
+    if getattr(patient, 'is_late', False) and patient.late_duration > 0:
+        # Scheduled arrival was now
+        # If magnet is currently empty, this person is idling the system
+        magnet_pool_idle_count = len(resources['magnet_pool'].items)
+        if magnet_pool_idle_count == 2: # Both magnets idle
+             stats.log_magnet_metric('3T', 'lateness', patient.late_duration)
+        elif magnet_pool_idle_count == 1:
+             m_config = resources['magnet_pool'].items[0]
+             stats.log_magnet_metric(m_config['id'], 'lateness', patient.late_duration)
+             
+        yield env.timeout(patient.late_duration)
+    
+    # Actually arrive now
+    renderer.add_sprite(patient)
+
     # ========== Step 0: Patient Classification ==========
     is_inpatient = random.random() < config.PROB_INPATIENT
     patient.patient_type = 'inpatient' if is_inpatient else 'outpatient'
@@ -282,11 +321,13 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         while not patient.is_at_target():
              yield env.timeout(0.01)
 
-        # WAIT FOR ADMIN TA TO ARRIVE (Physical Presence Check)
-        admin_sprite = staff_dict['admin'] # Get sprite reference
-        while not admin_sprite.is_at_target(): # Assuming Admin is walking home
-             # Or check distance to home strictly
-             dist_admin = ((admin_sprite.x - admin_x)**2 + (admin_sprite.y - admin_y)**2)**0.5
+        # WAIT FOR ADMIN TA OR COVERING PORTER (Physical Presence Check)
+        staff_mgr = resources.get('staff_mgr')
+        is_covered = getattr(staff_mgr, 'porter_covering_admin', False) if staff_mgr else False
+        active_staff = staff_dict['porter'] if is_covered else staff_dict['admin']
+        
+        while not active_staff.is_at_target():
+             dist_admin = ((active_staff.x - admin_x)**2 + (active_staff.y - admin_y)**2)**0.5
              if dist_admin < 5: break
              yield env.timeout(0.01)
              
@@ -297,18 +338,22 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         yield env.timeout(get_time('registration'))
         patient.stop_timer('admin', env.now)
         
-        # ========== Step 3 & 4: Transport Decision (Dynamic Look-Ahead) ==========
+        # ========== Step 3 & 4: Transport Decision (Human Factors Coverage) ==========
         porter_res = resources['porter']
+        staff_mgr = resources.get('staff_mgr')
+        porter_on_break = getattr(staff_mgr, 'staff_on_break', {}).get('porter_0', False) if staff_mgr else False
+        porter_covering = getattr(staff_mgr, 'porter_covering_admin', False) if staff_mgr else False
         
-        # Decision: Use Admin TA if Porter is busy
-        if porter_res.count >= porter_res.capacity or len(porter_res.queue) > 0:
-            # === Branch A: Admin TA Escorts ===
-            admin = staff_dict['admin']
-            admin.busy = True
+        # Decision: Use Admin station or Tech if Porter is busy/on-break/covering
+        if (porter_res.count >= porter_res.capacity or len(porter_res.queue) > 0 or 
+            porter_on_break or porter_covering):
             
-            # TA moves to patient
-            admin.move_to(patient.x, patient.y)
-            while not admin.is_at_target(): yield env.timeout(0.01)
+            # --- Option A: Admin Station Escorts ---
+            # If porter is covering admin, they are at the desk!
+            is_p_at_desk = porter_covering
+            escort_staff = staff_dict['porter'] if is_p_at_desk else staff_dict['admin']
+            
+            escort_staff.busy = True
             
             # AT ARRIVAL: Dynamic Look-Ahead
             free_room, _ = resources['get_free_change_room_with_index']()
@@ -324,62 +369,104 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
                 
             # Escort to destination
             patient.move_to(*change_target)
-            admin.move_to(*change_target)
+            escort_staff.move_to(*change_target)
             while not patient.is_at_target(): yield env.timeout(0.01)
             
             escorted = True
-                
-            # TA returns to desk
-            admin.busy = False
-            admin.return_home()
-            while not admin.is_at_target(): yield env.timeout(0.01)
+            escort_staff.busy = False
+            
+            # Return to station
+            # Re-check live coverage status (break might have ended during task)
+            still_covering = getattr(staff_mgr, 'porter_covering_admin', False) if staff_mgr else False
+            
+            if is_p_at_desk and still_covering:
+                escort_staff.cover_position(AGENT_POSITIONS['admin_home'])
+            else:
+                escort_staff.return_home()
             
         else:
-            # === Branch B: Porter Escorts (Wait for Porter arriving in next block) ===
-            pass 
+            # === Branch B: Wait for Porter arriving in next block ===
+            pass
             
-    # If Porter Escort (Branch B) is needed:
+    # Case 1 & 4 Coverage: Allow tech to process 'transport' event if porter unavailable
     if not escorted:
         # Move to Zone 1 Waiting Grid
         arrival_pos, arrival_slot = pos_manager.get_grid_pos('zone1', p_id)
         patient.move_to(*arrival_pos)
         
-        # Request Porter (Priority 1)
-        with resources['porter'].request(priority=1) as req:
-            yield req
-            
-            porter = staff_dict['porter']
-            porter.busy = True
-            
-            # Porter moves to patient
-            while True:
-                dist = ((porter.x - patient.x)**2 + (porter.y - patient.y)**2)**0.5
-                if dist < 10: break
-                porter.move_to(patient.x, patient.y)
-                yield env.timeout(0.01)
+        staff_mgr = resources.get('staff_mgr')
+        porter_avail = not getattr(staff_mgr, 'staff_on_break', {}).get('porter_0', False) and not getattr(staff_mgr, 'porter_covering_admin', False)
+        
+        if not porter_avail and resources['backup_techs'].count < resources['backup_techs'].capacity:
+            # === Branch C: Tech Escorts ===
+            with resources['backup_techs'].request() as b_req:
+                yield b_req
+                # Find free backup tech
+                free_backups = [t for t in staff_dict['backup'] if not t.busy]
+                if free_backups:
+                    tech = free_backups[0]
+                    tech.busy = True
+                    
+                    # Move to patient
+                    tech.move_to(patient.x, patient.y)
+                    while not tech.is_at_target(): yield env.timeout(0.01)
+                    
+                    # Transport decision
+                    free_room, _ = resources['get_free_change_room_with_index']()
+                    if free_room:
+                        selected_room = free_room
+                        selected_req = resources[selected_room].request()
+                        yield selected_req
+                        change_target = AGENT_POSITIONS[f"{selected_room}_center"]
+                    else:
+                        change_target = AGENT_POSITIONS['change_staging']
+                    
+                    pos_manager.release_pos('zone1', arrival_slot)
+                    patient.move_to(*change_target)
+                    tech.move_to(*change_target)
+                    while not patient.is_at_target(): yield env.timeout(0.01)
+                    
+                    tech.busy = False
+                    tech.return_home()
+                    escorted = True
+
+        if not escorted:
+            # Wait for Porter (Priority 1)
+            with resources['porter'].request(priority=1) as req:
+                yield req
                 
-            # AT ARRIVAL: Dynamic Look-Ahead
-            free_room, _ = resources['get_free_change_room_with_index']()
-            if free_room:
-                selected_room = free_room
-                selected_req = resources[selected_room].request()
-                yield selected_req
-                change_target = AGENT_POSITIONS[f"{selected_room}_center"]
-                stats.log_movement(p_id, 'change_room', env.now)
-            else:
-                change_target = AGENT_POSITIONS['change_staging']
-                stats.log_movement(p_id, 'change_staging', env.now)
-            
-            # Release Zone 1 Grid
-            pos_manager.release_pos('zone1', arrival_slot)
-            
-            # Escort to destination
-            patient.move_to(*change_target)
-            porter.move_to(*change_target)
-            while not patient.is_at_target(): yield env.timeout(0.01)
-            
-            porter.busy = False
-            porter.return_home()
+                porter = staff_dict['porter']
+                porter.busy = True
+                
+                # Porter moves to patient
+                while True:
+                    dist = ((porter.x - patient.x)**2 + (porter.y - patient.y)**2)**0.5
+                    if dist < 10: break
+                    porter.move_to(patient.x, patient.y)
+                    yield env.timeout(0.01)
+                    
+                # AT ARRIVAL: Dynamic Look-Ahead
+                free_room, _ = resources['get_free_change_room_with_index']()
+                if free_room:
+                    selected_room = free_room
+                    selected_req = resources[selected_room].request()
+                    yield selected_req
+                    change_target = AGENT_POSITIONS[f"{selected_room}_center"]
+                    stats.log_movement(p_id, 'change_room', env.now)
+                else:
+                    change_target = AGENT_POSITIONS['change_staging']
+                    stats.log_movement(p_id, 'change_staging', env.now)
+                
+                # Release Zone 1 Grid
+                pos_manager.release_pos('zone1', arrival_slot)
+                
+                # Escort to destination
+                patient.move_to(*change_target)
+                porter.move_to(*change_target)
+                while not patient.is_at_target(): yield env.timeout(0.01)
+                
+                porter.busy = False
+                porter.return_home()
 
     # ========== Step 5: Smart Seize (Skip if Already Seized) ==========
     # If room was seized during transport, skip seizing
@@ -551,14 +638,23 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     pos_manager.release_pos('waiting_room_right', wr_right_slot)
     stats.log_waiting_room(p_id, env.now, 'exit')
     
-    # Walk alone (Digital Signage)
+    # 8c. Walk to Magnet (Outpatients assume 'Signage' navigation)
     patient.move_to(*magnet_config['loc'])
     while not patient.is_at_target(): yield env.timeout(0.01)
     
-    # ========== Step 9: Scan & Exit ==========
-    scan_tech_3t = staff_dict['scan'][0]
-    scan_tech_15t = staff_dict['scan'][1] if len(staff_dict['scan']) > 1 else scan_tech_3t
-    scan_tech = scan_tech_3t if magnet_config['id'] == '3T' else scan_tech_15t
+    
+    # Determine active scan tech (supporting cross-coverage)
+    staff_mgr = resources.get('staff_mgr')
+    tech_idx = 0 if magnet_config['id'] == '3T' else 1
+    is_on_break = getattr(staff_mgr, 'staff_on_break', {}).get(f"scan_{tech_idx}", False) if staff_mgr else False
+    
+    if is_on_break:
+        # Cross-coverage: Use backup tech (staying cyan visually)
+        scan_tech = staff_dict['backup'][tech_idx % len(staff_dict['backup'])]
+    else:
+        scan_tech_3t = staff_dict['scan'][0]
+        scan_tech_15t = staff_dict['scan'][1] if len(staff_dict['scan']) > 1 else scan_tech_3t
+        scan_tech = scan_tech_3t if magnet_config['id'] == '3T' else scan_tech_15t
     
     scan_tech.busy = True
     patient.set_state('scanning')
@@ -600,11 +696,18 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     env.process(patient_exit_process(env, patient, renderer, stats, p_id, magnet_config['id'], resources))
     
     # ========== Step 10: The Critical Bed Flip ==========
+    # ========== Step 10: The Critical Bed Flip ==========
     yield porter_req
     try:
         stats.log_magnet_start(env.now, is_scanning=False)
         porter = staff_dict['porter']
         porter.busy = True
+
+        # Safety: Wait for patient to physically clear the room (Visual)
+        # Assuming magnet radius ~40-50, wait for 60px distance
+        mx, my = magnet_config['loc']
+        while ((patient.x - mx)**2 + (patient.y - my)**2)**0.5 < 60:
+            yield env.timeout(0.5)
         
         # Check SMED Condition
         is_same_exam = (magnet_res.last_exam_type == patient.exam_type)
@@ -621,6 +724,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
             flip_time = get_time('bed_flip_fast')
             yield env.timeout(flip_time)
             stats.log_magnet_metric(magnet_config['id'], 'flip', flip_time)
+            patient.metrics['bed_flip'] = flip_time  # Log to patient metrics for summary
             
             # Tech returns to control
             scan_tech.return_home() # This needs to be defined for scan techs or they stay put
@@ -639,6 +743,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
             
             yield env.timeout(duration)
             stats.log_magnet_metric(magnet_config['id'], 'flip', duration)
+            patient.metrics['bed_flip'] = duration  # Log to patient metrics for summary
             
         # Update last exam type
         magnet_res.last_exam_type = patient.exam_type
@@ -695,20 +800,33 @@ def patient_generator(env, staff_dict, resources, stats, renderer, duration):
         if env.now >= duration:
              stats.generator_active = False
              break
-        
+             
         p_id += 1
         
-        # Create patient sprite
-        patient = Patient(p_id, *AGENT_POSITIONS['zone1_center'])
-        # Assign Exam Type (Source 140)
-        patient.exam_type = random.choice(EXAM_TYPES)
+        # Determine fate immediately: No-Show, Late, or Normal
+        fate_roll = random.random()
+        is_noshow = fate_roll < config.PROB_NO_SHOW
+        is_late = (not is_noshow) and (fate_roll < config.PROB_NO_SHOW + config.PROB_LATE)
         
-        renderer.add_sprite(patient)
+        if is_noshow:
+            # Simulate the lost gap
+            env.process(handle_no_show_gap(env, resources, stats, config.PROCESS_TIMES['no_show_wait']))
+        else:
+            # Create patient sprite
+            patient = Patient(p_id, *AGENT_POSITIONS['zone1_center'])
+            patient.exam_type = random.choice(EXAM_TYPES)
+            
+            # Compliance tracking
+            patient.is_late = is_late
+            patient.late_duration = 0
+            if is_late:
+                patient.late_duration = triangular_sample(config.PROCESS_TIMES['late_delay'])
+                stats.late_arrivals += 1
+
+            # Start patient journey (renderer.add_sprite handled inside journey after delay)
+            env.process(patient_journey(env, patient, staff_dict, resources, stats, renderer))
         
-        # Start patient journey
-        env.process(patient_journey(env, patient, staff_dict, resources, stats, renderer))
-        
-        # Wait for next patient
+        # Wait for next patient inter-arrival
         inter_arrival = poisson_sample(PROCESS_TIMES['mean_inter_arrival'])
         yield env.timeout(inter_arrival)
         

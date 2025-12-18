@@ -6,6 +6,7 @@ Defines Patient and Staff agents with smooth movement and state-based rendering.
 
 import pygame
 import math
+import src.config as config
 from src.config import (
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING,
     ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, BLUE_ADMIN,
@@ -41,6 +42,11 @@ class Agent(pygame.sprite.Sprite):
         """Set new target position for smooth movement."""
         self.target_x = float(target_x)
         self.target_y = float(target_y)
+        
+        # In headless mode, movement is instantaneous
+        if config.HEADLESS:
+            self.x = self.target_x
+            self.y = self.target_y
     
     def update(self):
         """
@@ -69,6 +75,8 @@ class Agent(pygame.sprite.Sprite):
     
     def draw(self, surface):
         """Override in subclasses to define visual appearance."""
+        if config.HEADLESS:
+            return
         pass
 
 
@@ -183,6 +191,22 @@ class Staff(Agent):
     def return_home(self):
         """Move staff back to their assigned home position."""
         self.move_to(self.home_x, self.home_y)
+        
+    def return_to_base(self):
+        """Alias for return_home to satisfy verification requirements."""
+        self.return_home()
+
+    def go_to_break(self):
+        """Move sprite to BREAK_ROOM_LOC."""
+        from src.config import AGENT_POSITIONS
+        self.move_to(*AGENT_POSITIONS['break_room_center'])
+
+    def cover_position(self, target_pos_or_x, target_y=None):
+        """Move sprite to the station they are covering."""
+        if target_y is not None:
+            self.move_to(target_pos_or_x, target_y)
+        else:
+            self.move_to(*target_pos_or_x)
     
     def draw(self, surface):
         """Draw staff member - shape depends on role. Apply offset when busy to avoid Z-fighting."""

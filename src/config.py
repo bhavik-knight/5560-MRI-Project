@@ -93,6 +93,9 @@ ROOM_COORDINATES = {
     'magnet_3t': (870, 50, 250, 250),    # 3T MRI (Room 319)
     'magnet_15t': (870, 320, 250, 250),  # 1.5T MRI (Room 315)
     
+    # break room
+    'break_room': (50, 400, 75, 75),
+
     # Building Border
     'building': (10, 10, 1180, 770),
 }
@@ -123,7 +126,16 @@ AGENT_POSITIONS = {
     # Staging Areas
     'change_staging': (150, 250), # Hallway outside change rooms
     'washroom_staging': (280, 100), # Near washrooms 306/307 (Zone 2 top)
+    'break_room_center': (87, 437), # Center of the newly defined break room
+    'room_311_slot_1': (450, 350),
+    'room_311_slot_2': (450, 450),
+    'control_room_center': (850, 320),
 }
+
+# Room Capacities
+ROOM_311_CAPACITY = 2
+ROOM_311_SLOTS = [(450, 350), (450, 450)]
+CONTROL_ROOM_LOC = (850, 320)
 
 # Priority Levels (Lower number = Higher priority in SimPy)
 PRIORITY_INPATIENT = 0  # Highest priority for high-acuity cases
@@ -142,6 +154,7 @@ WAITING_ROOM_LOC = (325, 350)
 # Time-Based Simulation (Shift Duration Model)
 DEFAULT_DURATION = 720      # 12 hours
 WARM_UP_DURATION = 60       # 1 hour
+HEADLESS = False            # Set to True for fast batch runs
 
 # Time Scaling (Faster for video recording)
 # Source 118: SIM_SPEED = 0.25 (Note: Adjust higher if running 720 hours, but keep 0.25 for demo)
@@ -153,10 +166,18 @@ EXAM_TYPES = ['Brain', 'Spine', 'Knee', 'Abdomen', 'Cardiac'] # Source 140
 
 # Staffing
 STAFF_COUNT = {
-    'porter': 1,
-    'backup_tech': 2,
     'scan_tech': 2,
+    'backup_tech': 2,
     'admin': 1,
+    'porter': 1,
+}
+
+# Break Schedule Parameters
+BREAK_CONFIG = {
+    'long_break_min': 30,
+    'short_break_min': 15,
+    'total_break_min': 90,
+    'schedule': [30, 15, 30, 15] # 2 long, 2 short
 }
 
 # Resource Capacities (Dual-Bay Model)
@@ -188,7 +209,9 @@ AGENT_SPEED = {
 PROB_IV_NEEDED = 0.33
 PROB_DIFFICULT_IV = 0.01
 PROB_WASHROOM_USAGE = 0.2 # Source 17
-PROB_INPATIENT = 0.10  # 10% of patients are high-acuity inpatients
+PROB_INPATIENT = 0.25  # Increased to 25% for Stress Test [User Request]
+PROB_NO_SHOW = 0.05    # 5% Absent rate [Source 36]
+PROB_LATE = 0.20       # 20% Lateness rate [Source 36]
 
 # Dynamic Capacity Constants [Source 172]
 MAX_SCAN_TIME = 70      # Max time for complex case
@@ -233,6 +256,10 @@ PROCESS_TIMES = {
     # Arrival Schedule (Poisson Process) 
     # Arrival Schedule (Poisson Process)
     'mean_inter_arrival': 30,
+    
+    # Compliance Penalties
+    'no_show_wait': 15,          # Magnet sits idle for 15 min
+    'late_delay': (10, 15, 30),  # Late patients arrive 10-30 mins behind
 }
 
 
@@ -252,6 +279,7 @@ ROOM_LABELS = {
     'waiting_room': 'WAITING ROOM',
     'holding_transfer': 'ROOM 311\nHolding/Transfer',
     'control': 'CONTROL',
+    'break_room': 'Break\nRoom',
     'magnet_3t': '3T MRI',
     'magnet_15t': '1.5T MRI',
 }

@@ -16,7 +16,9 @@ from src.visuals.renderer import RenderEngine
 from src.visuals.sprites import Staff
 from src.analysis.tracker import SimStats
 from src.analysis.reporter import generate_report, print_summary
+import src.config as config
 from src.core.workflow import patient_generator
+from src.core.staff_controller import StaffManager
 
 def run_simulation(duration=None, output_dir='results', record=False, video_format='mp4'):
     """
@@ -60,9 +62,12 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
     env = simpy.Environment()
     
     # 2. Rendering Engine (PyGame)
-    renderer = RenderEngine(title="MRI Digital Twin - Modular Architecture", 
-                           record_video=record, 
-                           video_format=video_format)
+    if config.HEADLESS:
+        renderer = type('MockRenderer', (), {'add_sprite': lambda *a: None, 'remove_sprite': lambda *a: None, 'cleanup': lambda *a: None, 'render_frame': lambda *a: True})()
+    else:
+        renderer = RenderEngine(title="MRI Digital Twin - Modular Architecture", 
+                               record_video=record, 
+                               video_format=video_format)
     
     # 3. Statistics Tracker
     stats = SimStats()
@@ -79,7 +84,8 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
         'change_3': simpy.Resource(env, capacity=1),
         'washroom_1': simpy.Resource(env, capacity=1),
         'washroom_2': simpy.Resource(env, capacity=1),
-        'holding_room': simpy.Resource(env, capacity=1),  # Room 311 for inpatients
+        'holding_room': simpy.Resource(env, capacity=1),  # Legacy
+        'room_311': simpy.Resource(env, capacity=getattr(config, 'ROOM_311_CAPACITY', 2)), # New Inpatient Holding
     }
 
     # Populate magnet pool AND keep references for visual tracking
@@ -182,107 +188,119 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
     
     # ========== START SIMULATION ==========
     
+    # Initialize Staff Manager for Breaks/Coverage
+    staff_mgr = StaffManager(env, staff_dict, resources)
+    staff_mgr.manage_breaks()
+
     # Start patient generator (runs until duration)
     env.process(patient_generator(env, staff_dict, resources, stats, renderer, duration))
     
     # ========== MAIN LOOP (The Bridge) ==========
     
-    running = True
-    
-    print("Starting simulation loop...")
-    print("Close the window to end early.\n")
+    if config.HEADLESS:
+        # High-Speed Batch execution
+        env.run(until=duration)
+        # Overtime clearing
+        while stats.patients_in_system > 0:
+            env.run(until=env.now + 1)
+            if env.now > duration + 300: break # Safety exit
+    else:
+        # Interactive UI execution
+        running = True
+        
+        print("Starting simulation loop...")
+        print("Close the window to end early.\n")
 
-    # PHASE 1 & 2: Normal Shift (inc. Warm-up and Cooldown)
-    while running and env.now < duration:
-        # Prepare Room States
-        room_visual_states = {}
-        for cfg in magnet_configs:
-            room_visual_states[cfg['name']] = cfg['visual_state']
-            
-        # Determine Status Label
-        if env.now < WARM_UP_DURATION:
-            status = "WARM UP"
-        elif not stats.generator_active:
-            status = "CLOSED (Flushing Queue)"
-        else:
-            status = "NORMAL SHIFT"
-            
-        # Prepare stats for display
-        current_stats = {
-            'Sim Time': int(env.now),
-            'Patients': stats.patients_completed,
-            'In System': stats.patients_in_system,
-            'Status': status,
-            'Est Clear': f"{stats.est_clearing_time:.0f}m"
-        }
-        
-        # Render frame (returns False if window closed)
-        running = renderer.render_frame(current_stats, room_visual_states)
-        
-        # Advance simulation time
-        delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60  # sim minutes per frame
-        
-        try:
-            env.run(until=env.now + delta_sim_time)
-        except simpy.core.EmptySchedule:
-            break
-
-    # PHASE 3: Run-to-Clear Overtime
-    # Continue until all patients exit the system
-    if running and stats.patients_in_system > 0:
-        print(f"\nShift ended at {env.now:.1f}m. Entering Overtime to clear {stats.patients_in_system} patients.")
-        
-        while running and stats.patients_in_system > 0:
-            # Update Room States
+        # PHASE 1 & 2: Normal Shift (inc. Warm-up and Cooldown)
+        while running and env.now < duration:
+            # Prepare Room States
             room_visual_states = {}
             for cfg in magnet_configs:
                 room_visual_states[cfg['name']] = cfg['visual_state']
                 
+            # Determine Status Label
+            if env.now < WARM_UP_DURATION:
+                status = "WARM UP"
+            elif not stats.generator_active:
+                status = "CLOSED (Flushing Queue)"
+            else:
+                status = "NORMAL SHIFT"
+                
+            # Prepare stats for display
             current_stats = {
                 'Sim Time': int(env.now),
                 'Patients': stats.patients_completed,
                 'In System': stats.patients_in_system,
-                'Status': 'OVERTIME (Clearing)'
+                'Status': status,
+                'Est Clear': f"{stats.est_clearing_time:.0f}m"
             }
             
+            # Render frame (returns False if window closed)
             running = renderer.render_frame(current_stats, room_visual_states)
-            delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
+            
+            # Advance simulation time
+            delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60  # sim minutes per frame
             
             try:
                 env.run(until=env.now + delta_sim_time)
             except simpy.core.EmptySchedule:
                 break
+
+        # PHASE 3: Run-to-Clear Overtime
+        # Continue until all patients exit the system
+        if running and stats.patients_in_system > 0:
+            print(f"\nShift ended at {env.now:.1f}m. Entering Overtime to clear {stats.patients_in_system} patients.")
+            
+            while running and stats.patients_in_system > 0:
+                # Update Room States
+                room_visual_states = {}
+                for cfg in magnet_configs:
+                    room_visual_states[cfg['name']] = cfg['visual_state']
+                    
+                current_stats = {
+                    'Sim Time': int(env.now),
+                    'Patients': stats.patients_completed,
+                    'In System': stats.patients_in_system,
+                    'Status': 'OVERTIME (Clearing)'
+                }
                 
-        print(f"All patients cleared. Stopping simulation at {env.now:.1f}m.")
-        running = False # Stop the engine loop explicitly
+                running = renderer.render_frame(current_stats, room_visual_states)
+                delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
+                
+                try:
+                    env.run(until=env.now + delta_sim_time)
+                except simpy.core.EmptySchedule:
+                    break
+                    
+            print(f"All patients cleared. Stopping simulation at {env.now:.1f}m.")
     
     
     # ========== CLEANUP AND REPORTING ==========
     
     actual_duration = env.now
     renderer.cleanup()
-    pygame.quit() # Extra safety
-    if running is False:
-        # If we exited loop naturally, we can assume task done.
-        pass
-    
-    print("\n" + "=" * 60)
-    print("Simulation Complete")
-    print("=" * 60)
-    print(f"Simulated Time: {actual_duration:.1f} minutes")
-    print(f"Patients Completed: {stats.patients_completed}")
-    print("=" * 60 + "\n")
-    
-    # Print summary to console
-    print_summary(stats, actual_duration)
-    
-    # Generate comprehensive report
-    print("Generating reports...")
-    report_files = generate_report(stats, actual_duration, output_dir, filename='mri_digital_twin')
-    
-    print("\nReports saved:")
-    for report_type, filepath in report_files.items():
-        print(f"  {report_type}: {filepath}")
+    if not config.HEADLESS:
+        pygame.quit() # Extra safety
+        
+        print("\n" + "=" * 60)
+        print("Simulation Complete")
+        print("=" * 60)
+        print(f"Simulated Time: {actual_duration:.1f} minutes")
+        print(f"Patients Completed: {stats.patients_completed}")
+        print("=" * 60 + "\n")
+        
+        # Print summary to console
+        print_summary(stats, actual_duration)
+        
+        # Generate comprehensive report
+        print("Generating reports...")
+        report_files = generate_report(stats, actual_duration, output_dir, filename='mri_digital_twin')
+        
+        print("\nReports saved:")
+        for report_type, filepath in report_files.items():
+            print(f"  {report_type}: {filepath}")
+    else:
+        report_files = {} # Skip reporting internally for batch
     
     # Return results
     return {
