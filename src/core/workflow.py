@@ -288,12 +288,24 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         stats.log_state_change(p_id, 'arriving', 'registered', env.now)
         yield env.timeout(get_time('registration'))
         
-        # ========== Step 3 & 4: Transport Decision (The TA Heuristic) ==========
+        # ========== Step 3 & 4: Transport Decision (Smart Look-Ahead) ==========
         porter_res = resources['porter']
         
-        # Select change room target
-        change_rooms = ['change_1_center', 'change_2_center', 'change_3_center']
-        change_target = AGENT_POSITIONS[random.choice(change_rooms)]
+        # LOOK-AHEAD: Check room availability BEFORE transport
+        free_room, free_idx = resources['get_free_change_room_with_index']()
+        
+        if free_room:
+            # Room available! Transport directly to room
+            change_target = AGENT_POSITIONS[f"{free_room}_center"]
+            # Seize the room NOW
+            selected_room = free_room
+            selected_req = resources[selected_room].request()
+            yield selected_req
+        else:
+            # All rooms full - will go to staging
+            change_target = AGENT_POSITIONS['change_staging']
+            selected_room = None
+            selected_req = None
         
         if porter_res.count >= porter_res.capacity or len(porter_res.queue) > 0:
             # === Branch A: Porter Busy -> TA Escorts ===
@@ -304,14 +316,15 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
             admin.move_to(patient.x, patient.y)
             while not admin.is_at_target(): yield env.timeout(0.01)
                 
-            # TA Escorts to CHANGE STAGING (Zone 2 Hallway)
-            # User Request: Treat Zone 2 as staging. Staff drops them off here.
-            staging_loc = AGENT_POSITIONS['change_staging']
-            patient.move_to(*staging_loc)
-            admin.move_to(*staging_loc)
+            # TA Escorts to destination (room or staging)
+            patient.move_to(*change_target)
+            admin.move_to(*change_target)
             while not patient.is_at_target(): yield env.timeout(0.01)
                 
-            stats.log_movement(p_id, 'change_staging', env.now)
+            if selected_room:
+                stats.log_movement(p_id, 'change_room', env.now)
+            else:
+                stats.log_movement(p_id, 'change_staging', env.now)
             
             # TA returns to desk
             admin.busy = False
@@ -326,82 +339,76 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
             pass # Exiting 'with' block releases admin
             
     # If Branch B (Porter Free/Called):
-    # Check if we need transport (i.e. not at staging yet)
-    # Note: Branch A puts us at staging.
+    # Check if we need transport
     
-    # Need to check distance to STAGING now.
-    staging_loc = AGENT_POSITIONS['change_staging']
-    dist_to_staging = ((patient.x - staging_loc[0])**2 + (patient.y - staging_loc[1])**2)**0.5
-    
-    if dist_to_staging > 5: # Branch B path (Still at desk or Zone 1)
-        # Move to Zone 1 Waiting Grid (Admission to Public Zone)
-        arrival_pos, arrival_slot = pos_manager.get_grid_pos('zone1', p_id)
-        patient.move_to(*arrival_pos)
+    # If we already seized a room in Branch A, skip to changing
+    if 'selected_room' not in locals() or selected_room is None:
+        # Need to check distance to destination
+        dist_to_dest = ((patient.x - change_target[0])**2 + (patient.y - change_target[1])**2)**0.5
         
-        # Request Porter (Priority 1)
-        with resources['porter'].request(priority=1) as req:
-            yield req
+        if dist_to_dest > 5: # Branch B path (Still at desk or Zone 1)
+            # Move to Zone 1 Waiting Grid
+            arrival_pos, arrival_slot = pos_manager.get_grid_pos('zone1', p_id)
+            patient.move_to(*arrival_pos)
             
-            # Porter moves to patient
-            porter = staff_dict['porter']
-            porter.busy = True
-            porter.move_to(patient.x, patient.y) # Targets current pos
-            
-            # Wait for porter to reach patient (Intercept logic)
-            while True:
-                dist = ((porter.x - patient.x)**2 + (porter.y - patient.y)**2)**0.5
-                if dist < 10: break
+            # Request Porter (Priority 1)
+            with resources['porter'].request(priority=1) as req:
+                yield req
+                
+                # Porter moves to patient
+                porter = staff_dict['porter']
+                porter.busy = True
                 porter.move_to(patient.x, patient.y)
-                yield env.timeout(0.01)
-            
-            # Release Zone 1 Grid
-            pos_manager.release_pos('zone1', arrival_slot)
-            
-            # Escort to CHANGE STAGING
-            patient.move_to(*staging_loc)
-            porter.move_to(*staging_loc)
-            while not patient.is_at_target(): yield env.timeout(0.01)
-            
-            stats.log_movement(p_id, 'change_staging', env.now)
-            porter.busy = False
-            porter.return_home()
-
-    # ========== Step 5: Change Loop (Seize Logic) ==========
-    # Patient is now at Staging.
-    
-    # ========== Step 5: Smart Seize (No Pausing) ==========
-    # Look-ahead BEFORE moving to staging
-    
-    selected_room = None
-    selected_req = None
-    at_staging = False
-    
-    while selected_room is None:
-        # Look-ahead: Check if ANY room is free
-        free_room, free_idx = resources['get_free_change_room_with_index']()
-        
-        if free_room:
-            # Room available! Seize it immediately
-            selected_room = free_room
-            selected_req = resources[selected_room].request()
-            yield selected_req
-            # Move DIRECTLY to room (no staging pause)
-            break
-        else:
-            # ALL rooms occupied - move to staging if not already there
-            if not at_staging:
-                patient.move_to(*AGENT_POSITIONS['change_staging'])
-                while not patient.is_at_target():
+                
+                # Wait for porter to reach patient
+                while True:
+                    dist = ((porter.x - patient.x)**2 + (porter.y - patient.y)**2)**0.5
+                    if dist < 10: break
+                    porter.move_to(patient.x, patient.y)
                     yield env.timeout(0.01)
-                at_staging = True
-            # Wait at staging
-            yield env.timeout(0.5)
-            
-    # Move to seized room
-    room_target = AGENT_POSITIONS[f"{selected_room}_center"]
-    patient.move_to(*room_target)
-    while not patient.is_at_target(): yield env.timeout(0.01)
+                
+                # Release Zone 1 Grid
+                pos_manager.release_pos('zone1', arrival_slot)
+                
+                # Escort to destination (room or staging)
+                patient.move_to(*change_target)
+                porter.move_to(*change_target)
+                while not patient.is_at_target(): yield env.timeout(0.01)
+                
+                if selected_room:
+                    stats.log_movement(p_id, 'change_room', env.now)
+                else:
+                    stats.log_movement(p_id, 'change_staging', env.now)
+                porter.busy = False
+                porter.return_home()
+
+    # ========== Step 5: Smart Seize (Skip if Already Seized) ==========
+    # If room was seized during transport, skip seizing
     
+    if 'selected_room' not in locals() or selected_room is None:
+        # Need to seize a room (we're at staging)
+        
+        while selected_room is None:
+            # Look-ahead: Check if ANY room is free
+            free_room, free_idx = resources['get_free_change_room_with_index']()
+            
+            if free_room:
+                # Room available! Seize it immediately
+                selected_room = free_room
+                selected_req = resources[selected_room].request()
+                yield selected_req
+                break
+            else:
+                # ALL rooms occupied - wait at staging
+                yield env.timeout(0.5)
+                
+        # Move to seized room from staging
+        room_target = AGENT_POSITIONS[f"{selected_room}_center"]
+        patient.move_to(*room_target)
+        while not patient.is_at_target(): yield env.timeout(0.01)
+    # else: Already at room, seized during transport
+    
+    # Change into gown
     patient.set_state('changing')
     stats.log_state_change(p_id, 'registered', 'changing', env.now)
     yield env.timeout(get_time('changing'))
