@@ -83,8 +83,8 @@ ROOM_COORDINATES = {
     'prep_1': (350, 50, 150, 150),       # IV Prep Room 308
     'prep_2': (520, 50, 150, 150),       # IV Prep Room 309
     
-    'waiting_room': (180, 250, 200, 250),  # Original Hub Buffer
-    'holding_transfer': (450, 250, 200, 250), # holding transfer room
+    'waiting_room': (200, 250, 200, 250),  # Original Hub Buffer
+    'holding_transfer': (420, 250, 250, 250), # holding transfer room
     
     # Zone 3: Control (Vertical Strip)
     'control': (750, 50, 100, 520),
@@ -107,8 +107,8 @@ AGENT_POSITIONS = {
     'washroom_2_center': (283, 88),
     'prep_1_center': (425, 125),
     'prep_2_center': (595, 125),
-    'waiting_room_center': (280, 375),
-    'holding_transfer_center': (550, 375),
+    'waiting_room_center': (300, 375),
+    'holding_transfer_center': (545, 375),
     'magnet_3t_center': (995, 175),
     'magnet_15t_center': (995, 445),
     'exit': (1180, 675),
