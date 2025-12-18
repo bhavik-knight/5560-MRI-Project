@@ -142,6 +142,8 @@ class Staff(Agent):
         super().__init__(x, y, color, speed=AGENT_SPEED['staff'])
         self.role = role
         self.busy = False  # Track if staff is currently assisting a patient
+        
+        # Home position for returning when idle (e.g., Backup Techs stay near IV Prep)
         self.home_x = x
         self.home_y = y
     

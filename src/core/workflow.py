@@ -112,21 +112,31 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     change_time = get_time('change')
     yield env.timeout(change_time)
     
-    # ========== 4. PREP (Backup Tech) ==========
+    # ========== 4. PREP (Backup Tech Localization) ==========
+    # Patient moves themselves from Change Room to Waiting Room first
+    patient.move_to(*AGENT_POSITIONS['waiting_room_center'])
+    while not patient.is_at_target():
+        yield env.timeout(0.01)
+    
+    stats.log_movement(p_id, 'waiting_room', env.now)
+    stats.log_waiting_room(p_id, env.now, 'enter')
+
+    # Now request Backup Tech to escort to prep room
     with resources['backup_techs'].request() as req:
         yield req
+        stats.log_waiting_room(p_id, env.now, 'exit')
         
         # Find available backup tech
         tech = next((t for t in staff_dict['backup'] if not t.busy), staff_dict['backup'][0])
         tech.busy = True
-        tech.move_to(patient.x, patient.y)
         
+        # Tech meets patient in waiting room
+        tech.move_to(patient.x, patient.y)
         while not tech.is_at_target():
             yield env.timeout(0.01)
         
-        # Move to tech's respective prep room
+        # Move together to tech's respective prep room
         prep_target = (tech.home_x, tech.home_y)
-        
         patient.move_to(*prep_target)
         tech.move_to(*prep_target)
         
@@ -150,17 +160,21 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         patient.set_state('prepped')
         stats.log_state_change(p_id, 'changing', 'prepped', env.now)
         
+        # RETURN to Waiting Room (Pit Crew Buffer)
+        patient.move_to(*AGENT_POSITIONS['waiting_room_center'])
+        tech.move_to(*AGENT_POSITIONS['waiting_room_center'])
+        while not patient.is_at_target():
+            yield env.timeout(0.01)
+            
+        stats.log_movement(p_id, 'waiting_room', env.now)
+        stats.log_waiting_room(p_id, env.now, 'enter')
+        
+        # Tech returns home (localized to Zone 2)
         tech.busy = False
         tech.return_home()
     
-    # ========== 5. WAITING ROOM (The Critical Buffer) ==========
-    patient.move_to(*AGENT_POSITIONS['waiting_room_center'])
-    
-    while not patient.is_at_target():
-        yield env.timeout(0.01)
-    
-    stats.log_movement(p_id, 'waiting_room', env.now)
-    stats.log_waiting_room(p_id, env.now, 'enter')
+    # ========== 5. WAITING FOR MAGNET (Autonomous Signage) ==========
+    # Patient is already in waiting room, wait for magnet availability
     
     # ========== 6. SCANNING (Load Balancing Routing) ==========
     # Select magnet with shortest queue
@@ -182,26 +196,10 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         
         stats.log_waiting_room(p_id, env.now, 'exit')
         
-        # 6a. Escort patient to magnet (using Backup Tech)
-        with resources['backup_techs'].request() as b_req:
-            yield b_req
-            backup_tech = next((t for t in staff_dict['backup'] if not t.busy), staff_dict['backup'][0])
-            backup_tech.busy = True
-            
-            # Move to patient in waiting room
-            backup_tech.move_to(patient.x, patient.y)
-            while not backup_tech.is_at_target():
-                yield env.timeout(0.01)
-                
-            # Escort to magnet room
-            patient.move_to(*magnet_loc)
-            backup_tech.move_to(*magnet_loc)
-            while not patient.is_at_target():
-                yield env.timeout(0.01)
-            
-            # Tech returns to prep room
-            backup_tech.busy = False
-            backup_tech.return_home()
+        # 6a. Patient moves AUTONOMOUSLY to magnet room (reading the digital sign)
+        patient.move_to(*magnet_loc)
+        while not patient.is_at_target():
+            yield env.timeout(0.01)
 
         # 6b. Perform scanning (Scan Tech at terminal)
         scan_tech_3t = staff_dict['scan'][0]
@@ -231,27 +229,38 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         yield env.timeout(get_time('scan_exit'))
         stats.log_magnet_end(env.now)
         
-        # Step 4: Phased Bed Flip (Room cleared, prepping for next)
-        stats.log_magnet_start(env.now, is_scanning=False)
-        flip_time = get_time('bed_flip')
-        yield env.timeout(flip_time)
-        stats.log_magnet_end(env.now)
+        # PATIENT EXITS (Releases room, but room is still busy for flip)
+        patient.move_to(*AGENT_POSITIONS['exit'])
+        # Patient journey ends here for visualization purposes
+        renderer.remove_sprite(patient)
+        stats.log_state_change(p_id, 'scanning', 'exited', env.now)
+        stats.log_movement(p_id, 'exit', env.now)
+        stats.log_completion(p_id, magnet_id)
+
+        # Step 4: Phased Bed Flip (PORTER Fix - Porter must arrive to flip)
+        with resources['porter'].request() as p_req:
+            yield p_req
+            stats.log_magnet_start(env.now, is_scanning=False)
+            
+            porter = staff_dict['porter']
+            porter.busy = True
+            
+            # Porter moves to magnet to perform flip
+            porter.move_to(*magnet_loc)
+            while not porter.is_at_target():
+                yield env.timeout(0.01)
+                
+            flip_time = get_time('bed_flip')
+            yield env.timeout(flip_time)
+            
+            stats.log_magnet_end(env.now)
+            
+            # Porter returns home
+            porter.busy = False
+            porter.return_home()
 
         scan_tech.busy = False
         # Scan tech remains at staging_pos (console)
-    
-    # ========== 7. EXIT ==========
-    patient.move_to(*AGENT_POSITIONS['exit'])
-    
-    while not patient.is_at_target():
-        yield env.timeout(0.01)
-    
-    stats.log_state_change(p_id, 'scanning', 'exited', env.now)
-    stats.log_movement(p_id, 'exit', env.now)
-    stats.log_completion(p_id, magnet_id)
-    
-    # Remove patient from rendering
-    renderer.remove_sprite(patient)
 
 def patient_generator(env, staff_dict, resources, stats, renderer, duration):
     """
