@@ -84,8 +84,8 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
     # Populate magnet pool AND keep references for visual tracking
     magnet_configs = []
     
-    # Magnet 1: 3T
-    m3t = simpy.Resource(env, capacity=1)
+    # Magnet 1: 3T (Priority Resource for clinical priority)
+    m3t = simpy.PriorityResource(env, capacity=1)
     m3t.last_exam_type = None 
     m3t_config = {
         'id': '3T',
@@ -98,8 +98,8 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
     resources['magnet_pool'].put(m3t_config)
     magnet_configs.append(m3t_config)
     
-    # Magnet 2: 1.5T
-    m15t = simpy.Resource(env, capacity=1)
+    # Magnet 2: 1.5T (Priority Resource for clinical priority)
+    m15t = simpy.PriorityResource(env, capacity=1)
     m15t.last_exam_type = None
     m15t_config = {
         'id': '1.5T',
@@ -135,37 +135,49 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
         renderer.add_sprite(tech)
     renderer.add_sprite(staff_dict['admin'])
     
-    # ========== HELPER FUNCTIONS FOR RESOURCE SELECTION ==========
+    # ========== HELPER FUNCTIONS FOR SMART RESOURCE SELECTION ==========
     
-    def get_free_change_room():
+    def get_free_change_room_with_index():
         """
-        Immediately check for first available change room.
-        Returns room key if available, None if all occupied.
+        Look-ahead: Check for first available change room.
+        Returns (room_key, index) if available, (None, None) if all occupied.
+        Index allows direct movement without staging pause.
         """
         import random
         room_keys = ['change_1', 'change_2', 'change_3']
         random.shuffle(room_keys)
-        for key in room_keys:
+        for idx, key in enumerate(room_keys):
             if resources[key].count < resources[key].capacity:
-                return key
-        return None
+                return key, idx
+        return None, None
     
-    def get_free_washroom():
+    def get_free_washroom_with_index():
         """
-        Immediately check for first available washroom.
-        Returns room key if available, None if all occupied.
+        Look-ahead: Check for first available washroom.
+        Returns (room_key, index) if available, (None, None) if all occupied.
         """
         import random
         room_keys = ['washroom_1', 'washroom_2']
         random.shuffle(room_keys)
-        for key in room_keys:
+        for idx, key in enumerate(room_keys):
             if resources[key].count < resources[key].capacity:
-                return key
-        return None
+                return key, idx
+        return None, None
+    
+    # Legacy helpers (kept for compatibility)
+    def get_free_change_room():
+        key, _ = get_free_change_room_with_index()
+        return key
+    
+    def get_free_washroom():
+        key, _ = get_free_washroom_with_index()
+        return key
     
     # Make helpers available to workflow
     resources['get_free_change_room'] = get_free_change_room
     resources['get_free_washroom'] = get_free_washroom
+    resources['get_free_change_room_with_index'] = get_free_change_room_with_index
+    resources['get_free_washroom_with_index'] = get_free_washroom_with_index
     
     # ========== START SIMULATION ==========
     

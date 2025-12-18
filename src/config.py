@@ -122,8 +122,12 @@ AGENT_POSITIONS = {
 
     # Staging Areas
     'change_staging': (150, 250), # Hallway outside change rooms
-    'washroom_staging': (150, 500), # Hallway outside washrooms
+    'washroom_staging': (280, 100), # Near washrooms 306/307 (Zone 2 top)
 }
+
+# Priority Levels (Lower number = Higher priority in SimPy)
+PRIORITY_INPATIENT = 0  # Highest priority for high-acuity cases
+PRIORITY_OUTPATIENT = 1  # Standard priority
 
 # Waiting Areas (Rectangles for spatial scatter: x_min, x_max, y_min, y_max)
 ZONE1_TOP_Y = 600

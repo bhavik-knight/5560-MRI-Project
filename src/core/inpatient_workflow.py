@@ -39,11 +39,12 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
         prep_time = get_time('holding_prep')
         yield env.timeout(prep_time)
     
-    # Step 4: Wait for magnet (same as outpatients from here)
+    # Step 4: Wait for magnet (with HIGH PRIORITY)
     magnet_config = yield resources['magnet_pool'].get()
     magnet_res = magnet_config['resource']
     
-    magnet_req = magnet_res.request()
+    # Inpatients get highest priority (0)
+    magnet_req = magnet_res.request(priority=config.PRIORITY_INPATIENT)
     yield magnet_req
     
     # Step 5: Bed transfer to magnet
