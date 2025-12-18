@@ -153,40 +153,35 @@ AGENT_SPEED = {
     'staff': 6.0,          # pixels per frame (staff move faster)
 }
 
-# ============================================================================
-# DISTRIBUTION PARAMETERS (From Sheet 4 - Source 41)
-# ============================================================================
+# PROBABILITIES (Source 33)
+PROB_IV_NEEDED = 0.33
+PROB_DIFFICULT_IV = 0.01
 
 # All times in MINUTES
 # Format: (min, mode, max) for triangular distribution
 PROCESS_TIMES = {
     # Screening & Consent
-    'screening': (2, 3, 5),
+    'screening': (2.08, 3.20, 5.15),
     
     # Change/Gown
-    'change': (2, 3.5, 5),
+    'change': (1.53, 3.17, 5.78),
     
     # IV Setup (if needed)
-    'iv_setup': (1, 2.5, 4),
-    'iv_difficult': (3, 5, 8),  # If difficult IV
+    'iv_setup': (1.53, 2.56, 4.08),
+    'iv_difficult': (7.0, 7.8, 9.0),
     
-    # Scan Duration
-    'scan': (18, 22, 26),
+    # Scanning Phase (Empirical breakdown)
+    'scan_setup': (1.52, 3.96, 7.48),
+    'scan_duration': (18.1, 22.0, 26.5),
+    'scan_exit': (0.35, 2.56, 4.52),
     
-    # Bed Flip Time
-    'bed_flip_current': 5,      # Current state (constant)
-    'bed_flip_future': 1,       # Future state goal (constant)
+    # Bed Flip Time (Parallel workflow goal)
+    'bed_flip': (0.58, 1.0, 1.33),
     
-    # Arrival Schedule (Poisson Process - Increased Demand)
-    'mean_inter_arrival': 15,   # Mean time between arrivals (minutes)
-    'arrival_noise': (-5, 0, 5),  # Random variation (for non-Poisson fallback)
+    # Arrival Schedule (Poisson Process)
+    'mean_inter_arrival': 15,
 }
 
-# Probabilities
-PROBABILITIES = {
-    'needs_iv': 0.70,           # 70% of patients need IV
-    'difficult_iv': 0.15,       # 15% of IVs are difficult
-}
 
 # ============================================================================
 # ROOM LABELS (For Visualization)

@@ -7,10 +7,16 @@ Includes dual-bay magnet routing with Poisson arrivals.
 
 import random
 import simpy
+import src.config as config
 from src.config import (
-    AGENT_POSITIONS, PROCESS_TIMES, PROBABILITIES,
-    MAGNET_3T_LOC, MAGNET_15T_LOC
+    AGENT_POSITIONS, PROCESS_TIMES,
+    MAGNET_3T_LOC, MAGNET_15T_LOC,
+    PROB_IV_NEEDED, PROB_DIFFICULT_IV
 )
+
+def get_time(task):
+    """Refined triangular sampling from config."""
+    return random.triangular(*PROCESS_TIMES[task])
 
 def triangular_sample(params):
     """
@@ -103,7 +109,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     patient.set_state('changing')
     stats.log_state_change(p_id, 'arriving', 'changing', env.now)
     
-    change_time = triangular_sample(PROCESS_TIMES['change'])
+    change_time = get_time('change')
     yield env.timeout(change_time)
     
     # ========== 4. PREP (Backup Tech) ==========
@@ -129,16 +135,16 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         
         stats.log_movement(p_id, 'prep_room', env.now)
         
-        # IV Setup (if needed)
-        if random.random() < PROBABILITIES['needs_iv']:
-            if random.random() < PROBABILITIES['difficult_iv']:
-                iv_time = triangular_sample(PROCESS_TIMES['iv_difficult'])
+        # IV Setup (Source 33: 33% Probability)
+        if random.random() < PROB_IV_NEEDED:
+            if random.random() < PROB_DIFFICULT_IV:
+                iv_time = get_time('iv_difficult')
             else:
-                iv_time = triangular_sample(PROCESS_TIMES['iv_setup'])
+                iv_time = get_time('iv_setup')
             yield env.timeout(iv_time)
         
         # Screening time
-        screen_time = triangular_sample(PROCESS_TIMES['screening'])
+        screen_time = get_time('screening')
         yield env.timeout(screen_time)
         
         patient.set_state('prepped')
@@ -208,17 +214,29 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         patient.set_state('scanning')
         stats.log_state_change(p_id, 'prepped', 'scanning', env.now)
         stats.log_movement(p_id, magnet_name, env.now)
-        stats.log_magnet_start(env.now, is_scanning=True)
         
-        # Scan duration
-        scan_time = triangular_sample(PROCESS_TIMES['scan'])
-        yield env.timeout(scan_time)
-        
-        # Bed flip
-        flip_time = PROCESS_TIMES['bed_flip_future']
-        yield env.timeout(flip_time)
-        
+        # Step 1: Phased Setup (Hidden Time - Patient on table, room occupied but not scanning)
+        stats.log_magnet_start(env.now, is_scanning=False)
+        yield env.timeout(get_time('scan_setup'))
         stats.log_magnet_end(env.now)
+        
+        # Step 2: Phased Scanning (Active Value-Added Time)
+        stats.log_magnet_start(env.now, is_scanning=True)
+        scan_time = get_time('scan_duration')
+        yield env.timeout(scan_time)
+        stats.log_magnet_end(env.now)
+        
+        # Step 3: Phased Exit (Patient getting off table, room blocked)
+        stats.log_magnet_start(env.now, is_scanning=False)
+        yield env.timeout(get_time('scan_exit'))
+        stats.log_magnet_end(env.now)
+        
+        # Step 4: Phased Bed Flip (Room cleared, prepping for next)
+        stats.log_magnet_start(env.now, is_scanning=False)
+        flip_time = get_time('bed_flip')
+        yield env.timeout(flip_time)
+        stats.log_magnet_end(env.now)
+
         scan_tech.busy = False
         # Scan tech remains at staging_pos (console)
     
