@@ -26,6 +26,12 @@ class MetricAggregator(SimStats):
             'magnet_15t': 0.0
         }
         
+        # Idle Time Accumulators
+        self.idle_minutes = {
+            'magnet_3t': 0.0,
+            'magnet_15t': 0.0
+        }
+        
         # Staff Metrics
         self.staff_break_minutes = {
             'porter': 0.0,
@@ -57,18 +63,22 @@ class MetricAggregator(SimStats):
         else:
             total_time = 0
 
-        # Capture detailed time metrics
+        # Capture detailed time metrics (from timers if available, else metrics)
+        timers = getattr(patient, 'timers', {})
+        metrics = getattr(patient, 'metrics', {})
+        
         p_data = {
             'type': patient.patient_type,
             'total_time': total_time,
-            'reg_time': patient.metrics.get('admin', 0),
-            'change_time': patient.metrics.get('change', 0),
-            'wash_time': patient.metrics.get('washroom', 0),
-            'prep_time': patient.metrics.get('prep', 0),
-            'wait_time': patient.metrics.get('wait_room', 0),
-            'scan_time': patient.metrics.get('scan_room', 0),
-            'holding_time': patient.metrics.get('holding_room', 0)
+            'reg_time': timers.get('reg', metrics.get('reg', 0)),
+            'change_time': metrics.get('change', 0), # Usually covered in 'reg' or 'prep' phase conceptually or separate? Keeping as metrics for now.
+            'wash_time': metrics.get('washroom', 0),
+            'prep_time': timers.get('prep', metrics.get('prep', 0)),
+            'wait_time': timers.get('wait', metrics.get('wait', 0)),
+            'scan_time': timers.get('scan', metrics.get('scan_room', 0)),
+            'holding_time': timers.get('hold', metrics.get('holding_room', 0))
         }
+        self.patient_data[patient.p_id] = p_data
         self.patient_data[patient.p_id] = p_data
         
         # Update counts

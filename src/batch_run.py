@@ -105,6 +105,26 @@ def process_results(results_list):
             std_pct = (std_occupied / (duration * capacity)) * 100
             print(f"{res_name.ljust(15)}: {util_pct:.1f}% ± {std_pct:.1f}%")
 
+    # 2b. Magnet Idle Time %
+    # Formula: (Idle_Minutes / Duration) * 100
+    print("\n[ Magnet Idle Time % ]")
+    if 'magnet_3t_idle' in df.columns:
+         idle_3t = (df['magnet_3t_idle'].mean() / duration) * 100
+         idle_3t_std = (df['magnet_3t_idle'].std() / duration) * 100
+         print(f"Magnet 3T Idle : {idle_3t:.1f}% ± {idle_3t_std:.1f}%")
+    if 'magnet_15t_idle' in df.columns:
+         idle_15t = (df['magnet_15t_idle'].mean() / duration) * 100
+         idle_15t_std = (df['magnet_15t_idle'].std() / duration) * 100
+         print(f"Magnet 1.5T Idle: {idle_15t:.1f}% ± {idle_15t_std:.1f}%")
+
+    # 2c. Overall Magnet Utilization
+    if 'magnet_3t' in occ_df.columns and 'magnet_15t' in occ_df.columns:
+        total_mag_cap = caps['magnet_3t'] + caps['magnet_15t']
+        combined_occ = occ_df['magnet_3t'] + occ_df['magnet_15t']
+        overall_util = (combined_occ.mean() / (duration * total_mag_cap)) * 100
+        overall_std = (combined_occ.std() / (duration * total_mag_cap)) * 100
+        print(f"Overall Magnet  : {overall_util:.1f}% ± {overall_std:.1f}%")
+
     # 3. Patient Wait Times
     print("\n[ Patient Experience (Avg Minutes) ]")
     

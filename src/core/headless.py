@@ -76,7 +76,11 @@ class HeadlessPatient(HeadlessEntity):
     def __init__(self, p_id, x, y):
         super().__init__(x, y)
         self.p_id = p_id
-        self.metrics = {}
+        self.metrics = {} # Stores completed durations
+        self.timers = { # Accumulators
+            'reg': 0.0, 'wait': 0.0, 'prep': 0.0, 'scan': 0.0, 'hold': 0.0
+        }
+        self.state_start_time = 0.0
         self.is_late = False
         self.late_duration = 0
         self.has_iv = False
@@ -84,11 +88,24 @@ class HeadlessPatient(HeadlessEntity):
         self.patient_type = 'outpatient'
         
     def start_timer(self, timer_name, now):
-        # We handle timing in stats object mainly, but workflow might check this
-        pass
+        """Start tracking duration for a specific phase."""
+        self.state_start_time = now
         
     def stop_timer(self, timer_name, now):
-        pass
+        """Stop tracking and accumulate duration."""
+        duration = now - self.state_start_time
+        if timer_name == 'admin': timer_name = 'reg' # normalize key
+        if timer_name == 'waiting_room' or timer_name == 'wait_room': timer_name = 'wait'
+        if timer_name == 'scan_room': timer_name = 'scan'
+        if timer_name == 'holding_room': timer_name = 'hold'
+        
+        # Accumulate in self.timers
+        if timer_name in self.timers:
+            self.timers[timer_name] += duration
+        
+        # Also store in flat metrics for workflow compat
+        self.metrics[timer_name] = self.metrics.get(timer_name, 0.0) + duration
+        return duration
 
 class ResourceMonitor:
     """Monitors resource usage over time."""
@@ -100,6 +117,12 @@ class ResourceMonitor:
         # Specifically split magnets if they are in 'magnet_pool'
         self.occupied_minutes['magnet_3t'] = 0.0
         self.occupied_minutes['magnet_15t'] = 0.0
+        self.occupied_minutes['waiting_room'] = 0.0 # Explicitly init
+        self.occupied_minutes['prep_rooms'] = 0.0
+        
+        # Import global pos_manager for accurate waiting room tracking
+        from src.core.workflow import pos_manager
+        self.pos_manager = pos_manager
         
     def run(self):
         while True:
@@ -107,10 +130,11 @@ class ResourceMonitor:
             yield self.env.timeout(1.0)
             
             # Simple discrete integration: 1 minute * count
-            # Zone 1 (Public) - approximated by Admin/Porter queues or just patient states
-            # Waiting Room
-            if 'waiting_room' in self.resources: 
-                 self.stats.occupied_minutes['waiting_room'] += self.resources['waiting_room'].count
+            
+            # Waiting Room: Read from PositionManager (Global source of truth for location)
+            wr_count = len(self.pos_manager.occupancy.get('waiting_room_left', {})) + \
+                       len(self.pos_manager.occupancy.get('waiting_room_right', {}))
+            self.stats.occupied_minutes['waiting_room'] += wr_count
             
             # Change Rooms
             cr_count = 0
@@ -124,21 +148,25 @@ class ResourceMonitor:
                 if k in self.resources: wr_count += self.resources[k].count
             self.stats.occupied_minutes['washrooms'] += wr_count
             
-            # Prep
-            prep_count = 0
-            if 'prep_1' in self.resources: prep_count += self.resources['prep_1'].count
-            if 'prep_2' in self.resources: prep_count += self.resources['prep_2'].count
-            self.stats.occupied_minutes['prep_rooms'] += prep_count
+            # Prep: Use Backup Tech count as proxy since workflow doesn't seize prep rooms
+            # This generally represents patients being prepped or escorted
+            if 'backup_techs' in self.resources:
+                 self.stats.occupied_minutes['prep_rooms'] += self.resources['backup_techs'].count
             
             # Holding / Room 311
             if 'room_311' in self.resources:
                 self.stats.occupied_minutes['room_311'] += self.resources['room_311'].count
                 
-            # Magnets
+            # Magnets Utilization
             if 'magnet_3t_res' in self.resources:
-                self.stats.occupied_minutes['magnet_3t'] += self.resources['magnet_3t_res'].count
+                cnt = self.resources['magnet_3t_res'].count
+                self.stats.occupied_minutes['magnet_3t'] += cnt
+                if cnt == 0: self.stats.idle_minutes['magnet_3t'] += 1.0
+
             if 'magnet_15t_res' in self.resources:
-                self.stats.occupied_minutes['magnet_15t'] += self.resources['magnet_15t_res'].count
+                cnt = self.resources['magnet_15t_res'].count
+                self.stats.occupied_minutes['magnet_15t'] += cnt
+                if cnt == 0: self.stats.idle_minutes['magnet_15t'] += 1.0
 
 class HeadlessSimulation:
     def __init__(self, settings, seed):
@@ -276,6 +304,8 @@ class HeadlessSimulation:
             'counts': stats.counts,
             'patient_data': stats.patient_data,
             'magnet_3t_occupied': stats.occupied_minutes.get('magnet_3t', 0),
-            'magnet_15t_occupied': stats.occupied_minutes.get('magnet_15t', 0)
+            'magnet_15t_occupied': stats.occupied_minutes.get('magnet_15t', 0),
+            'magnet_3t_idle': stats.idle_minutes.get('magnet_3t', 0),
+            'magnet_15t_idle': stats.idle_minutes.get('magnet_15t', 0)
         }
         return results
