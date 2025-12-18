@@ -36,7 +36,7 @@ Inspired by Formula 1 pit stops - parallel processing:
 graph LR;
     A[Prep] --> B[Waiting Room Buffer];
     B --> C[Magnet Scan Only];
-    C --> D[Change Room (Exit)];
+    C --> D[Change Room - Exit];
     D --> E[Exit Building];
 
     style B fill:#ffcc00,stroke:#000,stroke-width:3px,color:#000;
