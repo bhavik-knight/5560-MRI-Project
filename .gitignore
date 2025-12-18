@@ -220,3 +220,4 @@ __marimo__/
 
 # ignore video files
 results/*.mkv
+mkv/
