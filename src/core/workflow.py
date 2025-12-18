@@ -176,91 +176,81 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     # ========== 5. WAITING FOR MAGNET (Autonomous Signage) ==========
     # Patient is already in waiting room, wait for magnet availability
     
-    # ========== 6. SCANNING (Load Balancing Routing) ==========
-    # Select magnet with shortest queue
-    if len(resources['magnet_3t'].queue) <= len(resources['magnet_15t'].queue):
-        magnet_id = '3T'
-        resource_key = 'magnet_3t'
-        magnet_loc = MAGNET_3T_LOC
-        magnet_name = 'magnet_3t'
-        staging_pos = AGENT_POSITIONS['scan_staging_3t']
-    else:
-        magnet_id = '1.5T'
-        resource_key = 'magnet_15t'
-        magnet_loc = MAGNET_15T_LOC
-        magnet_name = 'magnet_15t'
-        staging_pos = AGENT_POSITIONS['scan_staging_15t']
+    # ========== 6. SCANNING (First Available Load Balancing) ==========
+    # Wait for ANY available magnet from the pool
+    magnet_config = yield resources['magnet_pool'].get()
+    
+    magnet_id = magnet_config['id']
+    magnet_loc = magnet_config['loc']
+    magnet_name = magnet_config['name']
+    staging_pos = magnet_config['staging']
+        
+    stats.log_waiting_room(p_id, env.now, 'exit')
+    
+    # 6a. Patient moves AUTONOMOUSLY to magnet room (reading the digital sign)
+    patient.move_to(*magnet_loc)
+    while not patient.is_at_target():
+        yield env.timeout(0.01)
 
-    with resources[resource_key].request() as req:
-        yield req
+    # 6b. Perform scanning (Scan Tech at terminal)
+    scan_tech_3t = staff_dict['scan'][0]
+    scan_tech_15t = staff_dict['scan'][1] if len(staff_dict['scan']) > 1 else scan_tech_3t
+    
+    # Assign tech based on chosen magnet
+    scan_tech = scan_tech_3t if magnet_id == '3T' else scan_tech_15t
+    scan_tech.busy = True
+    
+    patient.set_state('scanning')
+    stats.log_state_change(p_id, 'prepped', 'scanning', env.now)
+    stats.log_movement(p_id, magnet_name, env.now)
+    
+    # Step 1: Phased Setup (Hidden Time - Patient on table, room occupied but not scanning)
+    stats.log_magnet_start(env.now, is_scanning=False)
+    yield env.timeout(get_time('scan_setup'))
+    stats.log_magnet_end(env.now)
+    
+    # Step 2: Phased Scanning (Active Value-Added Time)
+    stats.log_magnet_start(env.now, is_scanning=True)
+    scan_time = get_time('scan_duration')
+    yield env.timeout(scan_time)
+    stats.log_magnet_end(env.now)
+    
+    # Step 3: Phased Exit (Patient getting off table, room blocked)
+    stats.log_magnet_start(env.now, is_scanning=False)
+    yield env.timeout(get_time('scan_exit'))
+    stats.log_magnet_end(env.now)
+    
+    # PATIENT EXITS (Releases room, but room is still busy for flip)
+    patient.move_to(*AGENT_POSITIONS['exit'])
+    renderer.remove_sprite(patient)
+    stats.log_state_change(p_id, 'scanning', 'exited', env.now)
+    stats.log_movement(p_id, 'exit', env.now)
+    stats.log_completion(p_id, magnet_id)
+
+    # Step 4: Phased Bed Flip (PORTER Fix - Porter must arrive to flip)
+    with resources['porter'].request() as p_req:
+        yield p_req
+        stats.log_magnet_start(env.now, is_scanning=False)
         
-        stats.log_waiting_room(p_id, env.now, 'exit')
+        porter = staff_dict['porter']
+        porter.busy = True
         
-        # 6a. Patient moves AUTONOMOUSLY to magnet room (reading the digital sign)
-        patient.move_to(*magnet_loc)
-        while not patient.is_at_target():
+        # Porter moves to magnet to perform flip
+        porter.move_to(*magnet_loc)
+        while not porter.is_at_target():
             yield env.timeout(0.01)
-
-        # 6b. Perform scanning (Scan Tech at terminal)
-        scan_tech_3t = staff_dict['scan'][0]
-        scan_tech_15t = staff_dict['scan'][1] if len(staff_dict['scan']) > 1 else scan_tech_3t
-        
-        # Assign tech based on chosen magnet
-        scan_tech = scan_tech_3t if magnet_id == '3T' else scan_tech_15t
-        scan_tech.busy = True
-        
-        patient.set_state('scanning')
-        stats.log_state_change(p_id, 'prepped', 'scanning', env.now)
-        stats.log_movement(p_id, magnet_name, env.now)
-        
-        # Step 1: Phased Setup (Hidden Time - Patient on table, room occupied but not scanning)
-        stats.log_magnet_start(env.now, is_scanning=False)
-        yield env.timeout(get_time('scan_setup'))
+            
+        flip_time = get_time('bed_flip')
+        yield env.timeout(flip_time)
         stats.log_magnet_end(env.now)
         
-        # Step 2: Phased Scanning (Active Value-Added Time)
-        stats.log_magnet_start(env.now, is_scanning=True)
-        scan_time = get_time('scan_duration')
-        yield env.timeout(scan_time)
-        stats.log_magnet_end(env.now)
-        
-        # Step 3: Phased Exit (Patient getting off table, room blocked)
-        stats.log_magnet_start(env.now, is_scanning=False)
-        yield env.timeout(get_time('scan_exit'))
-        stats.log_magnet_end(env.now)
-        
-        # PATIENT EXITS (Releases room, but room is still busy for flip)
-        patient.move_to(*AGENT_POSITIONS['exit'])
-        # Patient journey ends here for visualization purposes
-        renderer.remove_sprite(patient)
-        stats.log_state_change(p_id, 'scanning', 'exited', env.now)
-        stats.log_movement(p_id, 'exit', env.now)
-        stats.log_completion(p_id, magnet_id)
+        porter.busy = False
+        porter.return_home()
 
-        # Step 4: Phased Bed Flip (PORTER Fix - Porter must arrive to flip)
-        with resources['porter'].request() as p_req:
-            yield p_req
-            stats.log_magnet_start(env.now, is_scanning=False)
-            
-            porter = staff_dict['porter']
-            porter.busy = True
-            
-            # Porter moves to magnet to perform flip
-            porter.move_to(*magnet_loc)
-            while not porter.is_at_target():
-                yield env.timeout(0.01)
-                
-            flip_time = get_time('bed_flip')
-            yield env.timeout(flip_time)
-            
-            stats.log_magnet_end(env.now)
-            
-            # Porter returns home
-            porter.busy = False
-            porter.return_home()
-
-        scan_tech.busy = False
-        # Scan tech remains at staging_pos (console)
+    scan_tech.busy = False
+    
+    # Release magnet back to pool
+    yield resources['magnet_pool'].put(magnet_config)
 
 def patient_generator(env, staff_dict, resources, stats, renderer, duration):
     """

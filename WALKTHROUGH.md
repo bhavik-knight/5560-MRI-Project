@@ -103,7 +103,7 @@ src/
    - Scan Tech remains in Control Room (Zone 3)
 
 6. SCANNING (Dual-Bay Phased Workflow)
-   - Selection: Shortest queue (Load Balancing)
+   - Selection: First Available (Dynamic Pool)
    - Task 1: Setup (occupied, not scanning) - triangular(1.52, 3.96, 7.48) min
    - Task 2: Scan (Value-Added) - triangular(18.1, 22, 26.5) min
    - Task 3: Exit (occupied, not scanning) - triangular(0.35, 2.56, 4.52) min
@@ -598,7 +598,7 @@ Check CSV files:
 ### Current Limitations
 
 1. **Deterministic Setup Times**: While scan times are stochastic, some setup phases use constant modes.
-2. **Simplified Routing**: Load balances between two magnets, but doesn't account for clinical priority (e.g., 3T-only scans).
+2. **Simplified Routing**: Uses first-available dynamic routing between two magnets, but doesn't account for clinical priority (e.g., 3T-only scans).
 3. **No Patient Priorities**: First-Come, First-Served (FIFO) queue only.
 4. **Fixed Staff Count**: No modeling of breaks, shift changes, or dynamic staffing.
 5. **No Equipment Failures**: Assumes 100% uptime for both 3T and 1.5T magnets.

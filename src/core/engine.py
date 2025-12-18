@@ -5,7 +5,11 @@ Orchestrates the integration of SimPy, PyGame, and Statistics modules.
 """
 
 import simpy
-from src.config import STAFF_COUNT, AGENT_POSITIONS, SIM_SPEED, FPS, DEFAULT_DURATION, WARM_UP_DURATION
+from src.config import (
+    STAFF_COUNT, AGENT_POSITIONS, SIM_SPEED, FPS, 
+    DEFAULT_DURATION, WARM_UP_DURATION,
+    MAGNET_3T_LOC, MAGNET_15T_LOC
+)
 from src.visuals.renderer import RenderEngine
 from src.visuals.sprites import Staff
 from src.analysis.tracker import SimStats
@@ -57,15 +61,29 @@ def run_simulation(duration=None, output_dir='results', record=False):
     
     # 3. Statistics Tracker
     stats = SimStats()
-    
     # 4. Create SimPy Resources
     resources = {
         'porter': simpy.Resource(env, capacity=STAFF_COUNT['porter']),
         'backup_techs': simpy.Resource(env, capacity=STAFF_COUNT['backup_tech']),
         'scan_techs': simpy.Resource(env, capacity=STAFF_COUNT['scan_tech']),
-        'magnet_3t': simpy.Resource(env, capacity=1),
-        'magnet_15t': simpy.Resource(env, capacity=1),
+        'magnet_pool': simpy.Store(env, capacity=2),
     }
+
+    # Populate magnet pool
+    resources['magnet_pool'].put({
+        'id': '3T',
+        'resource': simpy.Resource(env, capacity=1),
+        'loc': MAGNET_3T_LOC,
+        'name': 'magnet_3t',
+        'staging': AGENT_POSITIONS['scan_staging_3t']
+    })
+    resources['magnet_pool'].put({
+        'id': '1.5T',
+        'resource': simpy.Resource(env, capacity=1),
+        'loc': MAGNET_15T_LOC,
+        'name': 'magnet_15t',
+        'staging': AGENT_POSITIONS['scan_staging_15t']
+    })
 
     
     # 5. Create Staff Sprites
