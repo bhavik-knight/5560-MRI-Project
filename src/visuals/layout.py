@@ -127,6 +127,7 @@ def draw_floor_plan(surface, font_room=None, font_zone=None, occupied_rooms=None
         ('prep_1', font_room),
         ('prep_2', font_room),
         ('waiting_room', font_room),
+        ('holding_transfer', font_room),
     ]
 
     

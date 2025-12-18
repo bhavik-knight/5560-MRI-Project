@@ -78,6 +78,7 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
         'change_3': simpy.Resource(env, capacity=1),
         'washroom_1': simpy.Resource(env, capacity=1),
         'washroom_2': simpy.Resource(env, capacity=1),
+        'holding_room': simpy.Resource(env, capacity=1),  # Room 311 for inpatients
     }
 
     # Populate magnet pool AND keep references for visual tracking

@@ -233,8 +233,23 @@ def patient_exit_process(env, patient, renderer, stats, p_id, magnet_id, resourc
 def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     """
     Implements the "Pit Crew" workflow with conditional staff logic.
+    Now includes branching for Inpatient (high acuity) vs Outpatient workflows.
     """
+    from src.core.inpatient_workflow import inpatient_workflow
+    
     p_id = patient.p_id
+    
+    # ========== Step 0: Patient Classification ==========
+    is_inpatient = random.random() < config.PROB_INPATIENT
+    patient.patient_type = 'inpatient' if is_inpatient else 'outpatient'
+    
+    if is_inpatient:
+        patient.color = config.COLOR_INPATIENT  # Dark Pink
+        # Inpatient path: bypass registration, go to holding room
+        yield from inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_id)
+        return  # Exit after inpatient workflow completes
+    else:
+        patient.color = config.COLOR_OUTPATIENT  # Dodger Blue
     
     # ========== Step 1: Arrival & Gatekeeper Queue ==========
     patient.set_state('arriving')

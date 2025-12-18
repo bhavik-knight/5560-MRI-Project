@@ -60,6 +60,10 @@ COLOR_MAGNET_CLEAN = (255, 255, 255)    # White
 COLOR_MAGNET_BUSY = (230, 255, 230)     # Light Green
 COLOR_MAGNET_DIRTY = (210, 180, 140)    # Tan/Light Brown
 
+# Patient Type Colors
+COLOR_INPATIENT = (233, 30, 99)         # Dark Pink / Fuschia (High Acuity)
+COLOR_OUTPATIENT = (30, 144, 255)       # Dodger Blue (Standard)
+
 # ============================================================================
 # LAYOUT COORDINATES (pygame.Rect format: x, y, width, height)
 # ============================================================================
@@ -79,7 +83,8 @@ ROOM_COORDINATES = {
     'prep_1': (350, 50, 150, 150),       # IV Prep Room 308
     'prep_2': (520, 50, 150, 150),       # IV Prep Room 309
     
-    'waiting_room': (200, 250, 250, 200),  # Original Hub Buffer
+    'waiting_room': (180, 250, 200, 250),  # Original Hub Buffer
+    'holding_transfer': (450, 250, 200, 250), # holding transfer room
     
     # Zone 3: Control (Vertical Strip)
     'control': (750, 50, 100, 520),
@@ -98,11 +103,12 @@ AGENT_POSITIONS = {
     'change_1_center': (100, 100),
     'change_2_center': (87, 192),
     'change_3_center': (87, 282),
-    'washroom_1_center': (87, 467),
-    'washroom_2_center': (87, 557),
+    'washroom_1_center': (198, 88),
+    'washroom_2_center': (283, 88),
     'prep_1_center': (425, 125),
     'prep_2_center': (595, 125),
-    'waiting_room_center': (325, 350),
+    'waiting_room_center': (280, 375),
+    'holding_transfer_center': (550, 375),
     'magnet_3t_center': (995, 175),
     'magnet_15t_center': (995, 445),
     'exit': (1180, 675),
@@ -178,6 +184,8 @@ AGENT_SPEED = {
 PROB_IV_NEEDED = 0.33
 PROB_DIFFICULT_IV = 0.01
 PROB_WASHROOM_USAGE = 0.2 # Source 17
+PROB_INPATIENT = 0.10  # 10% of patients are high-acuity inpatients
+
 # Dynamic Capacity Constants [Source 172]
 MAX_SCAN_TIME = 70      # Max time for complex case
 AVG_CYCLE_TIME = 45     # Avg throughput time per patient
@@ -214,6 +222,10 @@ PROCESS_TIMES = {
     'washroom': (0.8, 2.3, 5.2), # Source 17
     'change_back': (2.0, 3.5, 5.0),
     
+    # Inpatient/High Acuity (Parallel Processing)
+    'holding_prep': (10, 15, 25),  # Anesthesia setup outside magnet
+    'bed_transfer': (3, 5, 8),     # Moving from Room 311 to Magnet
+    
     # Arrival Schedule (Poisson Process)
     'mean_inter_arrival': 30,
 }
@@ -233,6 +245,7 @@ ROOM_LABELS = {
     'prep_1': 'IV Prep 1',
     'prep_2': 'IV Prep 2',
     'waiting_room': 'WAITING ROOM',
+    'holding_transfer': 'ROOM 311\nHolding/Transfer',
     'control': 'CONTROL',
     'magnet_3t': '3T MRI',
     'magnet_15t': '1.5T MRI',
