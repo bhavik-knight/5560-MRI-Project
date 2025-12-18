@@ -10,7 +10,7 @@ from src.config import (
     MEDICAL_WHITE, CORRIDOR_GREY, WALL_BLACK, LABEL_BLACK, SEPARATOR_BLACK,
     SIDEBAR_X, WINDOW_WIDTH, WINDOW_HEIGHT,
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING, GREY_DARK,
-    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y
+    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y, BLUE_ADMIN
 )
 
 
@@ -229,6 +229,14 @@ def draw_sidebar(surface, stats_dict, font):
     pygame.draw.rect(surface, PURPLE_SCAN, rect)
     pygame.draw.rect(surface, WALL_BLACK, rect, 2)
     text = font.render("Scan Tech", True, LABEL_BLACK)
+    surface.blit(text, (SIDEBAR_X + 50, y_offset - 8))
+    y_offset += 30
+
+    # Admin TA (square)
+    rect = pygame.Rect(SIDEBAR_X + 22, y_offset - 8, 16, 16)
+    pygame.draw.rect(surface, BLUE_ADMIN, rect)
+    pygame.draw.rect(surface, WALL_BLACK, rect, 2)
+    text = font.render("Admin TA", True, LABEL_BLACK)
     surface.blit(text, (SIDEBAR_X + 50, y_offset - 8))
 
 def draw_dashboard(surface, stats_dict, font):

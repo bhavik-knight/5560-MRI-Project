@@ -40,6 +40,7 @@ NEON_YELLOW = (255, 255, 0)          # High-visibility yellow
 ORANGE_PORTER = (255, 140, 0)        # Porter (Dark Orange)
 CYAN_BACKUP = (0, 255, 255)          # Backup Tech (Cyan)
 PURPLE_SCAN = (128, 0, 128)          # Scan Tech (Purple)
+BLUE_ADMIN = (0, 0, 139)             # Admin TA (Dark Blue)
 
 # Room/Zone Colors
 WHITE = (255, 255, 255)
@@ -103,6 +104,7 @@ AGENT_POSITIONS = {
     'backup_staging': (450, 125),
     'scan_staging_3t': (800, 175),
     'scan_staging_15t': (800, 445),
+    'admin_home': (450, 650),
 }
 
 # Waiting Areas (Rectangles for spatial scatter: x_min, x_max, y_min, y_max)
@@ -127,6 +129,7 @@ STAFF_COUNT = {
     'porter': 1,
     'backup_tech': 2,
     'scan_tech': 2,
+    'admin': 1,
 }
 
 # Resource Capacities (Dual-Bay Model)

@@ -66,6 +66,7 @@ def run_simulation(duration=None, output_dir='results', record=False):
         'porter': simpy.PriorityResource(env, capacity=STAFF_COUNT['porter']),
         'backup_techs': simpy.Resource(env, capacity=STAFF_COUNT['backup_tech']),
         'scan_techs': simpy.Resource(env, capacity=STAFF_COUNT['scan_tech']),
+        'admin_ta': simpy.Resource(env, capacity=STAFF_COUNT['admin']),
         'magnet_pool': simpy.Store(env, capacity=2),
     }
 
@@ -96,7 +97,9 @@ def run_simulation(duration=None, output_dir='results', record=False):
         'scan': [
             Staff('scan', *AGENT_POSITIONS['scan_staging_3t']),
             Staff('scan', *AGENT_POSITIONS['scan_staging_15t'])
-        ][:STAFF_COUNT['scan_tech']]
+            Staff('scan', *AGENT_POSITIONS['scan_staging_15t'])
+        ][:STAFF_COUNT['scan_tech']],
+        'admin': Staff('admin', *AGENT_POSITIONS['admin_home']),
     }
     
     # Add staff to renderer
@@ -105,6 +108,7 @@ def run_simulation(duration=None, output_dir='results', record=False):
         renderer.add_sprite(tech)
     for tech in staff_dict['scan']:
         renderer.add_sprite(tech)
+    renderer.add_sprite(staff_dict['admin'])
     
     # ========== START SIMULATION ==========
     

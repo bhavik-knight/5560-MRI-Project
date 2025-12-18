@@ -8,7 +8,6 @@ Includes dual-bay magnet routing with Poisson arrivals.
 import random
 import simpy
 import src.config as config
-from src.config import (
     AGENT_POSITIONS, PROCESS_TIMES,
     MAGNET_3T_LOC, MAGNET_15T_LOC,
     PROB_IV_NEEDED, PROB_DIFFICULT_IV,
@@ -183,6 +182,31 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     stats.log_movement(p_id, 'zone1', env.now)
     
     yield env.timeout(1)  # Brief arrival pause
+    
+    # ========== 1b. ADMIN REGISTRATION (Gatekeeper) ==========
+    with resources['admin_ta'].request() as req:
+        yield req
+        
+        # Visual: Interaction with TA
+        # Patient moves to desk? Or just changes color?
+        # User requested: "Visual: Patient turns Red (Busy/Registration)"
+        # Note: We need a RED color. Let's use a temporary string or import
+        # For now, let's assume 'changing' color or similar, OR define RED in sprites/config
+        # User said: "Visual: Patient turns Red (Busy/Registration)."
+        # I need to update sprites to handle 'registration' state, or hack the color manually.
+        # Let's revert to 'arriving' state but maybe just log it. 
+        # Actually, let's act busy.
+        
+        # Assuming we added RED_BUSY to config in a previous step? No, I only added BLUE_ADMIN.
+        # Let's use BLUE_CHANGING for now relative to the prompt "turns Red". 
+        # Wait, I can define RED in config or just use (255, 0, 0).
+        # Better: patient.color = (255, 0, 0) manual override.
+        original_color = patient.color
+        patient.color = (255, 0, 0) 
+        
+        yield env.timeout(get_time('screening'))
+        
+        patient.color = original_color # Revert to grey/arriving
     
     # ========== 2. TRANSPORT TO CHANGE ROOM (Porter) ==========
     with resources['porter'].request(priority=1) as req: # Lower priority than flips
