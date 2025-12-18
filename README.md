@@ -15,27 +15,28 @@ This digital twin simulates a 12-hour MRI department shift using agent-based mod
 
 Traditional MRI departments show high equipment "occupied time" (92%) but hide critically low "value-added time" (22%):
 
-| Metric | Serial Workflow | Parallel Workflow |
-|--------|----------------|-------------------|
-| **Occupied Time** | 92% | 75% |
-| **Busy Time (Value-Added)** | 22% | 73% |
-| **Interpretation** | Looks efficient, is wasteful | Lower occupied %, 3.3x more productive |
+| Metric                      | Serial Workflow              | Parallel Workflow                      |
+| --------------------------- | ---------------------------- | -------------------------------------- |
+| **Occupied Time**           | 92%                          | 75%                                    |
+| **Busy Time (Value-Added)** | 22%                          | 73%                                    |
+| **Interpretation**          | Looks efficient, is wasteful | Lower occupied %, 3.3x more productive |
 
-**Root Cause:** In serial workflows, patient prep happens *inside* the magnet room, wasting expensive equipment time on low-value tasks.
+**Root Cause:** In serial workflows, patient prep happens _inside_ the magnet room, wasting expensive equipment time on low-value tasks.
 
 **Solution:** The "Pit Crew" model moves prep outside, using a **waiting room buffer** to stage prepped patients, allowing the magnet to focus exclusively on scanning.
 
 ```mermaid
-graph LR
-    A[Arrival] --> B[Registration]
-    B --> C[Change Room]
-    C --> D[Waiting Room Buffer]
-    D <--> E[Prep/IV]
-    D --> F[Magnet (Scan)]
-    F --> G[Exit]
-    
-    style D fill:#f9f,stroke:#333,stroke-width:2px,color:black
-    style F fill:#9f9,stroke:#333,stroke-width:2px,color:black
+graph LR;
+  A[Arrival] --> B[Registration];
+  B --> C[Change Room];
+  C --> D[Waiting Room Buffer];
+  D --> E[Prep/IV];
+  E --> D;
+  D --> F[Magnet (Scan)];
+  F --> G[Exit];
+
+  style D fill:#f9f,stroke:#333,stroke-width:2px;
+  style F fill:#9f9,stroke:#333,stroke-width:2px;
 ```
 
 ## Architecture
@@ -78,6 +79,7 @@ mri-project/
 ## Key Features
 
 ### 1. Time-Based Simulation (Process Management Best Practice)
+
 - **3-Phase Execution Model**:
   1. **Warm-Up**: 60 minutes (excluded from stats)
   2. **Normal Shift**: Runs with Smart Gatekeeper monitoring
@@ -85,6 +87,7 @@ mri-project/
   4. **Run-to-Clear**: Overtime continues until system is completely empty
 
 ### 2. Smart Gatekeeper Logic (v2.0)
+
 - **Capacity-Aware Shutdown**: Replaces fixed cooldown with intelligent queue management
 - **Dynamic Calculation**: Uses `AVG_CYCLE_TIME` (45 min) and `MAX_SCAN_TIME` (70 min)
 - **Queue Burden Formula**: `(patients_in_system × 45) / 2 magnets`
@@ -93,6 +96,7 @@ mri-project/
 - **Result**: Minimizes overtime while ensuring all patients are served
 
 ### 3. Inpatient/High-Acuity Workflow (v2.0)
+
 - **Patient Classification**: 10% of arrivals are high-acuity inpatients
 - **Visual Distinction**:
   - **Dark Pink (Fuschia)**: Inpatients - bypass standard flow
@@ -103,6 +107,7 @@ mri-project/
 - **Bed Transfer**: Quick transfer (3-8 min) from holding to magnet
 
 ### 4. Race Condition Mitigation (v2.0)
+
 - **Staging + Seize Logic**: Patients wait at staging areas before room entry
 - **Distinct Resources**: Each change room (1, 2, 3) and washroom (1, 2) is a separate resource
 - **Randomized Selection**: Fair distribution prevents bias toward Room 1
@@ -110,6 +115,7 @@ mri-project/
 - **Visual Result**: Zero sprite overlaps; patients only queue when ALL rooms occupied
 
 ### 5. Real-Time Visualization
+
 - **Medical White Aesthetic**: High-contrast white rooms on grey background
 - **Visual State Tracking**:
   - **Light Green**: Magnet Scanning (Busy)
@@ -118,23 +124,26 @@ mri-project/
   - **Light Green**: Room Occupied (patient present)
   - **Maroon**: Registered (waiting for Porter)
   - **Dark Pink**: Inpatient (high acuity)
-- **Live Statistics**: 
+- **Live Statistics**:
   - Status indicators (Warm Up → Normal → CLOSED → Overtime)
   - Estimated clearing time display
   - Patient type color coding
 - **Gatekeeper Logic**: Visible queuing at Admin desk
 
 ### 6. Comprehensive Data Collection (v3.0)
+
 - **Granular Patient Metrics**: Tracks durations for admin, change, prep, staging, and scan.
 - **Magnet Performance**: Separates "Green Time" (Value-Added) from "Brown Time" (Setup/Flip).
 - **The Bowen Metric**: Calculates Process Efficiency % [(Scan Time) / (Occupied Time)].
 - **Clinical Stratification**: Tracks performance by patient type (Inpatient vs Outpatient).
-- **CSV Data Exports**: 
+- **CSV Data Exports**:
   - `detailed_patient_performance.csv` (Audit trail of every patient journey).
   - `magnet_performance_summary.csv` (Productivity analysis for both bays).
 
 ### 4. Empirical Process Times
+
 All durations based on real MRI department data:
+
 - Screening: triangular(2, 3, 5) minutes
 - Changing: triangular(2, 3.5, 5) minutes
 - IV Setup: triangular(1, 2.5, 4) minutes
@@ -144,6 +153,7 @@ All durations based on real MRI department data:
 ## Reproduction Instructions
 
 ### Prerequisites
+
 - Python 3.12 or higher
 - `uv` package manager ([installation](https://github.com/astral-sh/uv))
 
@@ -161,16 +171,19 @@ uv sync
 ### Running the Simulation
 
 **Default 2-hour test shift:**
+
 ```bash
 uv run python main.py
 ```
 
 **Standard 12-Hour Shift (Recommended):**
+
 ```bash
 uv run python main.py --duration 720
 ```
 
 **With video recording:**
+
 ```bash
 uv run python main.py --record          # Generates simulation_video.mp4
 ```
@@ -178,16 +191,19 @@ uv run python main.py --record          # Generates simulation_video.mp4
 ### What to Expect
 
 **Simulation Duration:**
+
 - Total runtime: `DURATION` + Overtime (until empty)
 - Real-time duration: ~45 seconds (for 2hr test) to ~3 mins (for 12hr shift)
 
 **Visual Output:**
+
 - PyGame window (1600×800) with animated agents
 - Patients (circles) change color by state (Grey -> Maroon -> Blue -> Yellow -> Green)
 - **Gatekeeper**: Patients wait at desk for Admin TA.
 - **Dirty Magnets**: Rooms turn brown after patient exit until Porter cleans them.
 
 **Data Output (in `results/` folder):**
+
 - `*_movements.csv` - All patient zone transitions
 - `*_states.csv` - State change log
 - `*_waiting_room.csv` - Buffer usage
@@ -197,16 +213,19 @@ uv run python main.py --record          # Generates simulation_video.mp4
 ## Key Metrics
 
 ### Throughput
+
 - Number of patients who completed scans during shift
 - Breakdowns for **3T** and **1.5T** magnet throughput
 - Expected: ~22-24 patients per standard 12-hour shift
 
 ### Magnet Utilization
+
 - **Busy %**: Time actually scanning (value-added work)
 - **Occupied %**: Total time in use (includes prep in serial workflow)
 - **Idle %**: True idle time
 
 ### Buffer Performance
+
 - Average wait time in waiting room
 - Maximum wait time
 - Demonstrates decoupling effect
@@ -214,6 +233,7 @@ uv run python main.py --record          # Generates simulation_video.mp4
 ## Technical Details
 
 ### Simulation Parameters
+
 ```python
 DEFAULT_DURATION = 120      # 2 hours
 WARM_UP_DURATION = 60       # 1 hour
@@ -222,12 +242,14 @@ FPS = 60                    # Smooth animation
 ```
 
 ### Agent Movement
+
 - Smooth interpolation between positions
 - Patient speed: 5 pixels/frame
 - Staff speed: 6 pixels/frame
 - Movement checks: every 0.01 sim minutes
 
 ### Time Advancement
+
 ```python
 delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
 # = 0.0333 sim minutes per frame
@@ -237,7 +259,9 @@ delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
 ## Validation
 
 ### Visual Verification
+
 Watch for these behaviors:
+
 - ✓ Patients spawn in Zone 1 (bottom)
 - ✓ Patients go to Admin TA and turn Maroon (Registered)
 - ✓ Orange triangle (porter) escorts to change rooms
@@ -249,6 +273,7 @@ Watch for these behaviors:
 - ✓ Patients exit to the right
 
 ### Data Verification
+
 ```python
 import pandas as pd
 

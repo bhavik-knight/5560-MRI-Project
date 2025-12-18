@@ -7,12 +7,15 @@ This document provides comprehensive technical details about the MRI Digital Twi
 ## 1. Problem Statement
 
 ### The MRI Efficiency Crisis
+
 - **Current State**: MRI departments experience 31-42% idle time despite 2-year wait lists
 - **Root Cause**: Serial workflow where patient prep happens inside the magnet room
 - **Impact**: Low throughput, long wait times, poor resource utilization
 
 ### The "Utilization Paradox"
+
 Traditional metrics show high "occupied time" but hide low "value-added time":
+
 - **Occupied Time**: Total time magnet is in use (prep + scan)
 - **Busy Time**: Time magnet is actually scanning (value-added)
 - **Serial Workflow**: Occupied = 92%, Busy = 22% (looks good, is bad)
@@ -21,23 +24,27 @@ Traditional metrics show high "occupied time" but hide low "value-added time":
 ## 2. Solution Approach
 
 ### The "Pit Crew" Model
+
 Inspired by Formula 1 pit stops - parallel processing:
+
 1. **Prep happens outside** the magnet room
 2. **Waiting Room buffer** stages prepped patients
 3. **Magnet focuses on scanning** only
 4. **Result**: Higher throughput, better efficiency
 
 ```mermaid
-graph LR
-    A[Prep] --> B[Waiting Room Buffer]
-    B --> C[Magnet (Scan Only)]
-    
-    style B fill:#f9f,stroke:#333,stroke-width:2px,color:black
-    style C fill:#9f9,stroke:#333,stroke-width:2px,color:black
+graph LR;
+    A[Prep] --> B[Waiting Room Buffer];
+    B --> C[Magnet (Scan Only)];
+
+    style B fill:#f9f,stroke:#333,stroke-width:2px;
+    style C fill:#9f9,stroke:#333,stroke-width:2px;
 ```
 
 ### Digital Twin Implementation
+
 Real-time agent-based simulation combining:
+
 - **SimPy**: Discrete-event simulation engine
 - **PyGame**: Real-time visualization
 - **Statistical Tracking**: Comprehensive data collection
@@ -104,6 +111,7 @@ classDiagram
 ```
 
 ### Key Design Patterns
+
 - **Separation of Concerns**: Each module has single responsibility
 - **Observer Pattern**: Stats tracking doesn't clutter simulation
 - **Bridge Pattern**: Engine connects SimPy (discrete-event) and PyGame (real-time)
@@ -112,9 +120,11 @@ classDiagram
 ## 3.5 Version 2.0 Features (Advanced Workflow Logic)
 
 ### Smart Gatekeeper Logic
+
 **Purpose**: Replace fixed cooldown with intelligent capacity-aware shutdown
 
 **Implementation** (`src/core/workflow.py` - `patient_generator`):
+
 ```python
 # Dynamic calculation every iteration
 queue_burden = (stats.patients_in_system * config.AVG_CYCLE_TIME) / magnet_count
@@ -128,24 +138,29 @@ if queue_burden > time_remaining or (env.now > duration - config.MAX_SCAN_TIME a
 ```
 
 **Constants** (`src/config.py`):
+
 - `AVG_CYCLE_TIME = 45` minutes (average patient throughput)
 - `MAX_SCAN_TIME = 70` minutes (longest scan type: Cardiac Infiltrative)
 - `PROB_INPATIENT = 0.10` (10% high-acuity cases)
 
 **Visual Feedback** (`src/visuals/layout.py`):
+
 - Status changes to "CLOSED (Flushing Queue)" in **red text** (200, 0, 0)
 - Displays "Est Clear: XXm" showing remaining queue burden
 - Prevents excessive overtime while ensuring all patients are served
 
 ### Inpatient/High-Acuity Workflow (v3.0 Priority Gating)
+
 **Purpose**: Model complex cases requiring anesthesia and parallel processing, while ensuring they take clinical precedence.
 
 **Priority Gating** (`src/core/engine.py`):
+
 - **Clinical bottleneck**: All patients must request `magnet_access` (PriorityResource) before taking a magnet.
 - **Inpatients (Priority 0)**: Jump to the front of the queue, seizing the next available magnet before any waiting outpatient.
 - **Outpatients (Priority 1)**: Follow standard FCFS logic for remaining capacity.
 
 **Patient Classification** (`src/core/workflow.py` - `patient_journey`):
+
 ```python
 is_inpatient = random.random() < config.PROB_INPATIENT
 if is_inpatient:
@@ -157,6 +172,7 @@ else:
 ```
 
 **Inpatient Path** (`src/core/inpatient_workflow.py`):
+
 1. **Bypass Registration**: Skip Admin TA, go directly to Room 311
 2. **Holding/Transfer Room**: Large room (420, 250, 250×250) for prep
 3. **Parallel Processing**: Anesthesia setup (10-25 min) outside magnet
@@ -164,21 +180,25 @@ else:
 5. **Direct Exit**: Skip change room on exit
 
 **Resource** (`src/core/engine.py`):
+
 ```python
 'holding_room': simpy.Resource(env, capacity=1)
 ```
 
 **Visual Distinction**:
+
 - **Dark Pink patients**: Bypass queue, visible in Room 311
 - **Blue patients**: Standard workflow through change rooms/waiting areas
 - **Decoupling**: Complex cases don't block routine flow
 
 ### Race Condition Mitigation
+
 **Problem**: Multiple patients walking into same room simultaneously
 
 **Solution**: Staging + Seize + Check-First Logic
 
 **Implementation** (`src/core/workflow.py`):
+
 ```python
 # OLD: Move to staging, then check
 patient.move_to(*staging_loc)
@@ -204,6 +224,7 @@ patient.move_to(*room_target)  # Move to seized room
 ```
 
 **Helper Functions** (`src/core/engine.py`):
+
 ```python
 def get_free_change_room():
     room_keys = ['change_1', 'change_2', 'change_3']
@@ -215,6 +236,7 @@ def get_free_change_room():
 ```
 
 **Resources** (`src/core/engine.py`):
+
 ```python
 'change_1': simpy.Resource(env, capacity=1),
 'change_2': simpy.Resource(env, capacity=1),
@@ -224,6 +246,7 @@ def get_free_change_room():
 ```
 
 **Result**:
+
 - Zero sprite overlaps
 - Patients only pause when ALL rooms occupied
 - Fair room distribution (no bias toward Room 1)
@@ -233,7 +256,7 @@ def get_free_change_room():
 
 ### Patient Journey (7 Steps)
 
-```python
+````python
 ### Patient Journey (Modified "Pit Crew" Workflow)
 
 ```python
@@ -288,16 +311,18 @@ def get_free_change_room():
      * **Slow Flip**: If different exam type -> Porter required for deep clean + coils.
    - **Visuals**: Magnet remains **Dirty (Tan)** until Porter finishes cleaning.
    - **Reset**: Magnet turns **White (Clean)** and becomes available.
-```
+````
 
 ## 5. Visual Design Updates
 
 ### New State Colors
+
 - **Magnet - BUSY**: Light Green (230, 255, 230) - Active Scanning.
 - **Magnet - DIRTY**: Tan/Brown (210, 180, 140) - Waiting for cleaning/turnover.
 - **Magnet - CLEAN**: White (255, 255, 255) - Idle/Ready.
 
 ### Sidebar Indicators
+
 - **Status Panel**:
   - `WARM UP`: First 60 minutes.
   - `NORMAL SHIFT`: Standard operation.
@@ -310,13 +335,17 @@ def get_free_change_room():
 ## 6. Simulation Engine Logic
 
 ### 3-Phase Execution Model
+
 To ensure accurate throughput measurement without "cutoff" bias:
+
 1.  **Warm-Up & Normal Shift**: Runs for `DURATION` minutes.
 2.  **Cool-Down**: Arrivals stop `COOLDOWN_DURATION` (30 mins) before end.
 3.  **Run-to-Clear Overtime**: If patients remain after `DURATION`, the clock continues ("Overtime") until the system is fully empty.
 
 ### Auto-Termination
+
 The simulation window automatically closes ONLY when:
+
 1.  Shift time has expired.
 2.  AND `patients_in_system == 0`.
 
@@ -325,25 +354,32 @@ This guarantees that every patient who entered the system is fully processed and
 ## 7. Comprehensive Analytics (v3.0)
 
 ### The Database (`tracker.py`)
+
 Simulation data is now structured into rich objects for deep analysis:
+
 - **PatientMetrics**: Captures the complete journey of every patient, including timestamps and durations for 7 distinct stages.
 - **MagnetMetrics**: Breaks down magnet time into:
-    - **Green Time**: Value-added scanning.
-    - **Brown Time**: Necessary overhead (Setup, Exit, Bed Flip).
-    - **Idle Time**: True availability gaps.
+  - **Green Time**: Value-added scanning.
+  - **Brown Time**: Necessary overhead (Setup, Exit, Bed Flip).
+  - **Idle Time**: True availability gaps.
 
 ### The Reporter (`reporter.py`)
+
 At the end of every run, a performance dashboard is generated:
+
 1. **Throughput Summary**: Arrivals vs. Completions vs. Gatekeeper shut-offs.
 2. **Value Stream Mapping**: Avg/Max durations for registration, changing, prep, and scanning.
 3. **Efficiency Analysis**: Calculates the **Bowen Metric** for each bay.
 
 ### The Bowen Metric (Process Efficiency)
+
 $$Efficiency = \frac{Scan Time}{Occupied Time} \times 100$$
+
 - **Benchmark**: A "Healthy" parallel department should target >70% efficiency.
 - **Detection**: Automatically identifies "Outlier Bleeding" where max times deviate significantly from averages.
 
 ### Data Exports
+
 - `*_patient_performance.csv`: Individual patient audit trails.
 - `*_magnet_performance.csv`: Aggregate magnet productivity metrics.
 
@@ -352,6 +388,7 @@ $$Efficiency = \frac{Scan Time}{Occupied Time} \times 100$$
 ### SimStats Tracker
 
 **Logs Collected:**
+
 1. **Patient Movements** (`*_movements.csv`)
    - Columns: `patient_id`, `zone`, `timestamp`, `event_type`
    - Every zone transition recorded
@@ -377,10 +414,12 @@ uv run main.py --duration 720
 ### Typical Scenarios
 
 **Quick Test (Default):**
+
 - Duration: 120 minutes (2 hours)
 - Expected patients: ~7-8
 
 **Full Shift (Standard):**
+
 - Duration: 720 minutes (12 hours)
 - Expected patients: ~22-26
 - **Note**: Simulation will run slightly longer than 720m to clear the queue.
@@ -388,6 +427,7 @@ uv run main.py --duration 720
 ### Output Files
 
 All saved to `results/` directory:
+
 - `mri_digital_twin_movements.csv` - Movement log
 - `mri_digital_twin_states.csv` - State transitions
 - `mri_digital_twin_waiting_room.csv` - Buffer usage
@@ -399,12 +439,14 @@ All saved to `results/` directory:
 ### The Utilization Paradox Demonstrated
 
 **Serial Workflow (Current State):**
+
 - Magnet Occupied: 92%
 - Magnet Busy (Value-Added): 22%
 - Magnet Idle: 8%
 - **Interpretation**: Looks efficient but wastes 70% of magnet time on prep
 
 **Parallel Workflow (Pit Crew Model - Total Dept):**
+
 - Magnet Occupied (Average): 75%
 - Magnet Busy (Value-Added Average): 73%
 - Magnet Idle (Average): 25%
@@ -429,16 +471,19 @@ All saved to `results/` directory:
 ### Why SimPy + PyGame?
 
 **SimPy Advantages:**
+
 - Discrete-event simulation (efficient for long time spans)
 - Resource management (staff, magnets)
 - Process-based modeling (natural workflow representation)
 
 **PyGame Advantages:**
+
 - Real-time visualization (60 FPS)
 - Immediate feedback
 - Engaging demonstration
 
 **Integration Challenge:**
+
 - SimPy wants to jump time (event-driven)
 - PyGame needs smooth frames (time-driven)
 - **Solution**: Advance SimPy in small steps (0.0333 min/frame)
@@ -448,6 +493,7 @@ All saved to `results/` directory:
 **Problem:** SimPy `timeout()` causes instant jumps
 
 **Solution:**
+
 1. Set target position: `agent.move_to(x, y)`
 2. Check frequently: `while not agent.is_at_target(): yield env.timeout(0.01)`
 3. PyGame updates position smoothly every frame
@@ -458,9 +504,11 @@ All saved to `results/` directory:
 **Challenge:** Keep SimPy state and PyGame visuals in sync
 
 **Solution:**
+
 - SimPy controls logic (when to move, state changes)
 - Agents store visual state (position, color)
 - PyGame renders current state each frame
+
 ### Key Implementation Patterns
 
 - **Digital Signage Metaphor**: Patients monitor magnet status independently. When the simulation grants a magnet resource, the `patient_journey` triggers autonomous movement from the Waiting Room to the Magnet Room, bypassing the need for a technician escort.
@@ -486,6 +534,7 @@ uv run python main.py --duration 5 --patients 2
 ### Visual Verification
 
 Watch for:
+
 - ✓ Patients spawn in Zone 1 (bottom)
 - ✓ Patients form a line if Admin is busy (do not stack)
 - ✓ Patients go to Admin TA and turn Maroon (Registered)
@@ -503,6 +552,7 @@ Watch for:
 ### Data Verification
 
 Check CSV files:
+
 - ✓ Movement log shows zone transitions
 - ✓ State log shows color changes
 - ✓ Waiting room log shows buffer usage
@@ -531,28 +581,33 @@ Check CSV files:
 ### Suggested Structure
 
 **1. Introduction**
+
 - Problem: MRI wait times and idle time paradox
 - Solution: Parallel processing "Pit Crew" model
 - Approach: Agent-based digital twin simulation
 
 **2. Methodology**
+
 - System architecture (modular design)
 - Workflow implementation (7-step process)
 - Data sources (empirical distributions)
 - Validation approach
 
 **3. Results**
+
 - Utilization paradox demonstrated
 - Throughput improvements quantified
 - Buffer effectiveness shown
 - Visual evidence (screenshots)
 
 **4. Discussion**
+
 - Why parallel is better (value-added time)
 - Implementation challenges
 - Scalability considerations
 
 **5. Conclusion**
+
 - Key findings summary
 - Recommendations
 - Future work
@@ -681,6 +736,7 @@ AGENT_SPEED = {
 ### Total Runtime Calculation
 
 **Simulation Timeline:**
+
 ```
 Phase 1: Warm-Up
 - Duration: 60 minutes
@@ -696,6 +752,7 @@ Total Simulation Time: 780 minutes (13 hours)
 ```
 
 **Real-Time Duration:**
+
 ```python
 # With SIM_SPEED = 0.25 (1 sim minute = 0.25 real seconds)
 total_sim_minutes = 180 (default)
@@ -707,6 +764,7 @@ real_time_minutes = real_time_seconds / 60
 ```
 
 **Video Recording:**
+
 - If `--record` flag is used, generates `simulation_video.mp4`
 - Video length: ~6.5 minutes
 - Resolution: 1600×800 pixels
@@ -715,17 +773,20 @@ real_time_minutes = real_time_seconds / 60
 ### Expected Outcomes
 
 **Patient Throughput:**
+
 - Arrival rate: ~15 minutes per patient
 - Warm-up arrivals: ~4 patients (not counted in final stats)
 - Data collection arrivals: ~48 patients (over 12 hours)
 - Expected completions: ~45-48 patients
 
 **Magnet Utilization (Parallel Workflow):**
+
 - Busy % (Value-Added): 70-75%
 - Occupied %: 75-80%
 - Idle %: 20-25%
 
 **Buffer Performance:**
+
 - Average wait time: 2-3 minutes
 - Maximum queue length: 2-3 patients
 - Demonstrates effective decoupling
@@ -733,16 +794,19 @@ real_time_minutes = real_time_seconds / 60
 ### Execution Commands
 
 **Standard Production Run:**
+
 ```bash
 uv run python main.py --duration 720
 ```
 
 **With Video Recording:**
+
 ```bash
 uv run python main.py --duration 720 --record
 ```
 
 **Quick Verification (2 hours):**
+
 ```bash
 uv run python main.py --duration 120
 ```
@@ -752,25 +816,30 @@ uv run python main.py --duration 120
 All files saved to `results/` directory with timestamp:
 
 1. **`mri_digital_twin_movements.csv`**
+
    - All patient zone transitions
    - Timestamps relative to end of warm-up (start at 0)
    - Columns: `patient_id`, `zone`, `timestamp`, `event_type`
 
 2. **`mri_digital_twin_states.csv`**
+
    - All state changes (arriving → changing → prepped → scanning → exited)
    - Columns: `patient_id`, `old_state`, `new_state`, `timestamp`
 
 3. **`mri_digital_twin_waiting_room.csv`**
+
    - Buffer entry/exit events
    - Proves decoupling buffer effectiveness
    - Columns: `patient_id`, `timestamp`, `action`
 
 4. **`mri_digital_twin_summary.csv`**
+
    - Single-row summary with all KPIs
    - Use for scenario comparison
    - Columns: `throughput`, `magnet_busy_pct`, `magnet_idle_pct`, etc.
 
 5. **`mri_digital_twin_report.txt`**
+
    - Human-readable analysis
    - Explains Utilization Paradox
    - Includes recommendations
@@ -785,10 +854,12 @@ All files saved to `results/` directory with timestamp:
 **Why 60-Minute Warm-Up is Sufficient:**
 
 1. **Longest Process Chain:**
+
    - Arrival → Change (3.5 min) → Prep (8 min) → Scan (22 min) → Exit
    - Total: ~34 minutes
 
 2. **System Priming:**
+
    - After 60 minutes, multiple patients are in system
    - All rooms have been used
    - Staff have completed multiple cycles
@@ -817,6 +888,7 @@ Before running production simulation:
 ### Post-Simulation Analysis
 
 **Immediate Verification:**
+
 ```bash
 # Check that files were created
 ls -lh results/
@@ -832,6 +904,7 @@ print(f'Magnet Idle: {summary[\"magnet_idle_pct\"].values[0]}%')
 ```
 
 **Detailed Analysis:**
+
 ```python
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -873,6 +946,7 @@ This configuration represents the **production-ready** state of the MRI Digital 
 5. **Reproducibility**: All parameters documented and version-controlled
 
 The simulation is ready for:
+
 - Academic presentations
 - Process improvement demonstrations
 - Workflow comparison studies
