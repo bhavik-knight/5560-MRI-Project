@@ -75,6 +75,7 @@ src/
    - Patient arrives from RIGHT entrance (Row A Door)
    - Spawns at (1150, 675) as Grey circle
    - Walks to Admin TA Desk at (850, 675)
+   - **Queueing**: If Admin is busy, patients form a line to the right of the desk (30px spacing).
    - **Registration**:
      * Resource: Admin TA (Royal Blue #305CDE)
      * Interaction: Patient turns **Maroon** (Registered)
@@ -172,7 +173,10 @@ src/
 
 **Color Scheme:**
 - Background: Corridor grey (230, 230, 230)
-- All rooms: Medical white (turns Grey when occupied)
+- Background: Corridor grey (230, 230, 230)
+- All rooms: Medical white (turns **Green** when seized/occupied)
+- **Note**: Waiting Room and Corridors do NOT change color.
+- Borders: Black (0, 0, 0), 2px width
 - Borders: Black (0, 0, 0), 2px width
 - Text: Black, Arial 14pt (crisp, professional)
 
@@ -592,7 +596,9 @@ All saved to `results/` directory:
 - **Strict Porter sequence**: Implementing a high-fidelity turnover. The Magnet resource is held throughout: `Scan Complete` → `Patient Exit` → `Porter Request` → `Porter Arrival` → `Bed Flip`. The resource is only released once the Porter completes the reset.
 - **Priority-Based Tasks**: Using `simpy.PriorityResource`, the Porter (Priority 0) clears magnets before handling new arrivals (Priority 1), preventing department bottlenecks.
 - **Staff Localization**: Agents (Backup Techs/Scan Techs) use `return_home()` to stay in their specialized functional zones, significantly reducing non-value-added travel time.
-- **Dynamic Grid Management**: A `PositionManager` tracks slot occupancy in waiting zones. It handles vertical-first filling and prevents "Z-fighting" (overlapping sprites) by assigning deterministic grid coordinates based on arrival sequence.
+- **Strict Occupancy Logic**: Rooms only change color (to Green) when an agent is **stationary** inside them. Passing through does not trigger the "occupied" state, preventing visual flickering.
+- **Dynamic Grid Management**: A `PositionManager` tracks slot occupancy in waiting zones. it handles vertical-first filling and prevents "Z-fighting" (overlapping sprites).
+- **Admin Queueing**: `ADMIN_QUEUE` global list manages proper line formation for patients waiting for registration, ensuring they queue spatially rather than stacking.
 
 ## 12. Validation and Verification
 
@@ -610,6 +616,7 @@ uv run python main.py --duration 5 --patients 2
 
 Watch for:
 - ✓ Patients spawn in Zone 1 (bottom)
+- ✓ Patients form a line if Admin is busy (do not stack)
 - ✓ Patients go to Admin TA and turn Maroon (Registered)
 - ✓ Porter (triangle) escorts to change rooms
 - ✓ Patients turn blue while changing
@@ -618,6 +625,7 @@ Watch for:
 - ✓ Patients turn yellow in Waiting Room (unaccompanied)
 - ✓ Patients move independently to magnet room (Digital Signage logic)
 - ✓ Patients turn green while scanning
+- ✓ Magnet Room turns **Light Green** while patient is occupying it
 - ✓ Porter arrives for Bed Flip after patient exit
 - ✓ Patients exit to the right
 
