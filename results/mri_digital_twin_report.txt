@@ -3,23 +3,23 @@ MRI DIGITAL TWIN - SIMULATION REPORT
 ============================================================
 
 Simulation Duration: 120.06666666666497 minutes
-Report Generated: 2025-12-18 05:41:20
+Report Generated: 2025-12-18 05:47:39
 
 ------------------------------------------------------------
 THROUGHPUT METRICS
 ------------------------------------------------------------
-Total Arrivals:        7
+Total Arrivals:        3
 Completed Patients:    1
   - 3T Magnet Scans:   1
   - 1.5T Magnet Scans: 0
-Still in System:       7
+Still in System:       3
 
 ------------------------------------------------------------
 MAGNET UTILIZATION (The Utilization Paradox)
 ------------------------------------------------------------
-Busy Time (Value-Added):  2.19%
-Occupied Time (Total):    32.07%
-Idle Time:                67.93%
+Busy Time (Value-Added):  3.5%
+Occupied Time (Total):    34.05%
+Idle Time:                65.95%
 
 NOTE: In Serial workflow, Occupied > Busy (prep happens in magnet)
       In Parallel workflow, Occupied ≈ Busy (prep happens elsewhere)
@@ -27,13 +27,13 @@ NOTE: In Serial workflow, Occupied > Busy (prep happens in magnet)
 ------------------------------------------------------------
 WAITING ROOM BUFFER
 ------------------------------------------------------------
-Average Wait Time:    1.28 min
-Maximum Wait Time:    10.27 min
+Average Wait Time:    0.0 min
+Maximum Wait Time:    0.0 min
 
 ------------------------------------------------------------
 DATA LOGS
 ------------------------------------------------------------
-Total Movements:      21
-Total State Changes:  18
+Total Movements:      10
+Total State Changes:  10
 
 ============================================================

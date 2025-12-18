@@ -159,8 +159,8 @@ class RenderEngine:
             if isinstance(sprite, Patient):
                 # Check collision with all defined rooms
                 for room_key, coords in ROOM_COORDINATES.items():
-                    # Skip building border and shared corridors/control zones
-                    if room_key in ['building', 'zone1', 'control']: continue
+                    # Skip building border and shared corridors/control zones/waiting room
+                    if room_key in ['building', 'zone1', 'control', 'waiting_room']: continue
                     
                     room_rect = pygame.Rect(*coords)
                     if room_rect.collidepoint(sprite.x, sprite.y):

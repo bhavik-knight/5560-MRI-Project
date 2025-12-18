@@ -90,6 +90,20 @@ class PositionManager:
 # Global position manager instance
 pos_manager = PositionManager()
 
+# Global Admin Queue for visual line formation
+ADMIN_QUEUE = []
+
+def update_admin_queue():
+    """Update positions of all patients waiting for Admin."""
+    base_x, base_y = AGENT_POSITIONS['admin_home']
+    # Queue starts to the right of the desk (towards entrance)
+    queue_start_x = base_x + 50 
+    spacing = 30
+    
+    for i, patient in enumerate(ADMIN_QUEUE):
+        target_x = queue_start_x + (i * spacing)
+        patient.move_to(target_x, base_y)
+
 def get_time(task):
     """Refined triangular sampling from config."""
     return random.triangular(*PROCESS_TIMES[task])
@@ -186,14 +200,24 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     yield env.timeout(1)  # Brief arrival pause
     
     # ========== 1b. ADMIN REGISTRATION (Gatekeeper) ==========
+    
+    # Join visual queue
+    ADMIN_QUEUE.append(patient)
+    update_admin_queue()
+    
     with resources['admin_ta'].request() as req:
+        yield req
+        
+        # Leave visual queue (Service started)
+        if patient in ADMIN_QUEUE:
+            ADMIN_QUEUE.remove(patient)
+            update_admin_queue()
+            
         # Move to Admin Desk for registration (Offset to prevent overlap)
         admin_x, admin_y = AGENT_POSITIONS['admin_home']
         patient.move_to(admin_x, admin_y + 25) # Stand below the desk
         while not patient.is_at_target():
              yield env.timeout(0.01)
-
-        yield req
         
         # Visual: Interaction with TA (Patient turns Purple)
         # They are "Registered" now.
