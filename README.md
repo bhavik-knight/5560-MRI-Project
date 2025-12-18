@@ -71,7 +71,9 @@ mri-project/
 - **Medical White Aesthetic**: High-contrast white rooms on grey background
 - **80/20 Layout**: 1200px simulation area + 400px sidebar
 - **Smooth Animation**: 60 FPS with agent movement at 5-6 pixels/frame
-- **Live Statistics**: Real-time throughput, utilization, and queue metrics
+- **Live Statistics**: Real-time throughput (Total, 3T, and 1.5T), utilization, and queue metrics
+- **Load Balancing Router**: Intelligent patient routing to the magnet with the shortest queue
+
 
 ### 3. Comprehensive Data Collection
 - Patient movement logs (zone transitions)
@@ -106,15 +108,15 @@ uv sync
 
 ### Running the Simulation
 
-**Default 12-hour shift:**
+**Default 2-hour test shift:**
 ```bash
 uv run python main.py
 ```
 
 **Custom duration:**
 ```bash
-uv run python main.py --duration 120    # 2 hour test
-uv run python main.py --duration 360    # 6 hour shift
+uv run python main.py --duration 120    # 2 hour test (default)
+uv run python main.py --duration 720    # 12 hour shift
 ```
 
 **With video recording:**
@@ -125,9 +127,9 @@ uv run python main.py --record          # Generates simulation_video.mp4
 ### What to Expect
 
 **Simulation Duration:**
-- Total runtime: 780 minutes (60 warm-up + 720 data collection)
-- Real-time duration: ~6.5 minutes (with SIM_SPEED = 0.5)
-- Video length: ~6.5 minutes (if recording)
+- Total runtime: 180 minutes (60 warm-up + 120 data collection) by default
+- Real-time duration: ~45 seconds (with SIM_SPEED = 0.25)
+- Video length: ~45 seconds (if recording)
 
 **Visual Output:**
 - PyGame window (1600×800) with animated agents
@@ -149,7 +151,8 @@ uv run python main.py --record          # Generates simulation_video.mp4
 
 ### Throughput
 - Number of patients who completed scans during shift
-- Expected: ~22-24 patients per 12-hour shift
+- Breakdowns for **3T** and **1.5T** magnet throughput
+- Expected: ~22-24 patients per standard 12-hour shift
 
 ### Magnet Utilization
 - **Busy %**: Time actually scanning (value-added work)
@@ -165,9 +168,9 @@ uv run python main.py --record          # Generates simulation_video.mp4
 
 ### Simulation Parameters
 ```python
-DEFAULT_DURATION = 720      # 12 hours
+DEFAULT_DURATION = 120      # 2 hours
 WARM_UP_DURATION = 60       # 1 hour
-SIM_SPEED = 0.5             # 1 sim minute = 0.5 real seconds
+SIM_SPEED = 0.25            # 1 sim minute = 0.25 real seconds
 FPS = 60                    # Smooth animation
 ```
 

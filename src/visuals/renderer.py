@@ -120,6 +120,19 @@ class RenderEngine:
         self.all_sprites.remove(sprite)
         sprite.kill()
     
+    def save_screenshot(self, filename='results/layout_screenshot.png'):
+        """
+        Save a screenshot of the current PyGame window.
+        """
+        try:
+            os.makedirs('results', exist_ok=True)
+            pygame.image.save(self.screen, filename)
+            print(f"✓ Screenshot saved to {filename}")
+        except Exception as e:
+            print(f"✗ Failed to save screenshot: {e}")
+        
+        return True
+    
     def render_frame(self, stats_dict=None):
         """
         Render a single frame.

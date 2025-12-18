@@ -45,6 +45,39 @@ def draw_room(surface, rect, label_text, font):
             text_rect = text_surf.get_rect(centerx=rect.centerx, top=start_y + (i * line_height))
             surface.blit(text_surf, text_rect)
 
+def draw_coordinates(surface, font, building_rect):
+    """
+    Draw X and Y coordinate markers along the building border.
+    """
+    if not font:
+        return
+        
+    x_start, y_start, width, height = building_rect
+    x_end = x_start + width
+    y_end = y_start + height
+    
+    # Draw X coordinates (Top and Bottom)
+    for x in range(0, 1201, 100):
+        # Top
+        if x_start <= x <= x_end:
+            text = font.render(str(x), True, (120, 120, 120))
+            surface.blit(text, (x, y_start + 5))
+        # Bottom
+        if x_start <= x <= x_end:
+            text = font.render(str(x), True, (120, 120, 120))
+            surface.blit(text, (x, y_end - 15))
+            
+    # Draw Y coordinates (Left and Right)
+    for y in range(0, 801, 100):
+        # Left
+        if y_start <= y <= y_end:
+            text = font.render(str(y), True, (120, 120, 120))
+            surface.blit(text, (x_start + 5, y + 2))
+        # Right
+        if y_start <= y <= y_end:
+            text = font.render(str(y), True, (120, 120, 120))
+            surface.blit(text, (x_end - 30, y + 2))
+
 def draw_floor_plan(surface, font_room=None, font_zone=None):
     """
     Draw the complete MRI floor plan with medical white aesthetic.
@@ -60,6 +93,9 @@ def draw_floor_plan(surface, font_room=None, font_zone=None):
     # Draw building border
     building_rect = pygame.Rect(*ROOM_COORDINATES['building'])
     pygame.draw.rect(surface, WALL_BLACK, building_rect, 5)
+    
+    # Draw coordinates
+    draw_coordinates(surface, font_room, building_rect)
     
     # Draw all rooms in order (all WHITE with BLACK borders)
     rooms_to_draw = [

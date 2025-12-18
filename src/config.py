@@ -59,27 +59,27 @@ YELLOW_ROOM = (255, 215, 0)
 
 ROOM_COORDINATES = {
     # Zone 1: Public Corridor (Bottom)
-    'zone1': (20, 680, 1160, 100),
+    'zone1': (50, 600, 1070, 150),
     
     # Zone 2: The Hub (Left/Center)
-    'change_1': (20, 20, 100, 90),       # Big/Accessible
-    'change_2': (20, 110, 70, 60),       # Standard
-    'change_3': (20, 170, 70, 60),       # Standard
+    'change_1': (50, 50, 100, 100),       # Big/Accessible
+    'change_2': (50, 160, 75, 75),       # Standard
+    'change_3': (50, 245, 75, 75),       # Standard
     
-    'washroom_1': (130, 20, 50, 50),     # Accessible
-    'washroom_2': (190, 20, 50, 50),     # Standard
+    'washroom_1': (160, 50, 75, 75),     # Accessible
+    'washroom_2': (245, 50, 75, 75),     # Standard
     
-    'prep_1': (250, 20, 130, 100),       # IV Prep Room 308
-    'prep_2': (390, 20, 130, 100),       # IV Prep Room 309
+    'prep_1': (350, 50, 150, 150),       # IV Prep Room 308
+    'prep_2': (520, 50, 150, 150),       # IV Prep Room 309
     
-    'gowned_waiting': (130, 180, 220, 130),  # Original Hub Buffer
+    'gowned_waiting': (200, 250, 250, 200),  # Original Hub Buffer
     
     # Zone 3: Control (Vertical Strip)
-    'control': (700, 50, 110, 480),
+    'control': (750, 50, 100, 520),
     
     # Zone 4: Magnets (Right Side)
-    'magnet_3t': (820, 50, 260, 220),    # 3T MRI (Room 319)
-    'magnet_15t': (820, 300, 260, 220),  # 1.5T MRI (Room 315)
+    'magnet_3t': (870, 50, 250, 250),    # 3T MRI (Room 319)
+    'magnet_15t': (870, 320, 250, 250),  # 1.5T MRI (Room 315)
     
     # Building Border
     'building': (10, 10, 1180, 770),
@@ -87,29 +87,29 @@ ROOM_COORDINATES = {
 
 # Agent Spawn/Target Positions (x, y tuples)
 AGENT_POSITIONS = {
-    'zone1_center': (600, 650),
-    'change_1_center': (70, 65),
-    'change_2_center': (55, 140),
-    'change_3_center': (55, 200),
-    'prep_1_center': (315, 70),
-    'prep_2_center': (455, 70),
-    'gowned_waiting_center': (275, 325),
-    'magnet_3t_center': (950, 160),
-    'magnet_15t_center': (950, 550),
-    'exit': (1180, 730),
+    'zone1_center': (585, 675),
+    'change_1_center': (100, 100),
+    'change_2_center': (87, 197),
+    'change_3_center': (87, 282),
+    'prep_1_center': (425, 125),
+    'prep_2_center': (595, 125),
+    'gowned_waiting_center': (325, 350),
+    'magnet_3t_center': (995, 175),
+    'magnet_15t_center': (995, 445),
+    'exit': (1180, 675),
     
     # Staff Staging Positions
-    'porter_home': (550, 730),
-    'backup_staging': (280, 245),
-    'scan_staging_3t': (870, 160),
-    'scan_staging_15t': (870, 410),
+    'porter_home': (500, 675),
+    'backup_staging': (450, 125),
+    'scan_staging_3t': (800, 175),
+    'scan_staging_15t': (800, 445),
 }
 
 # Waiting Areas (Rectangles for spatial scatter: x_min, x_max, y_min, y_max)
-ZONE1_TOP_Y = 680
-ZONE1_SUBWAITING_AREA = (1000, 1150, 600, 700)
-GOWNED_WAITING_AREA = (150, 400, 200, 450)
-GOWNED_WAITING_LOC = (240, 245)
+ZONE1_TOP_Y = 600
+ZONE1_SUBWAITING_AREA = (900, 1050, 620, 730)
+GOWNED_WAITING_AREA = (220, 430, 270, 430)
+GOWNED_WAITING_LOC = (325, 350)
 
 # ============================================================================
 # SIMULATION CONSTANTS
@@ -144,8 +144,8 @@ MAGNET_RESOURCES = {
 }
 
 # Magnet Locations
-MAGNET_3T_LOC = (950, 160)   # Top scan room
-MAGNET_15T_LOC = (950, 550)  # Bottom scan room
+MAGNET_3T_LOC = (995, 175)   # Top scan room
+MAGNET_15T_LOC = (995, 445)  # Bottom scan room
 
 # Agent Movement
 AGENT_SPEED = {
@@ -193,7 +193,7 @@ PROBABILITIES = {
 # ============================================================================
 
 ROOM_LABELS = {
-    'zone1': 'ZONE 1: PUBLIC CORRIDOR',
+    'zone1': 'PUBLIC CORRIDOR',
     'change_1': 'Change 1',
     'change_2': 'Change 2',
     'change_3': 'Change 3',
@@ -202,7 +202,7 @@ ROOM_LABELS = {
     'prep_1': 'IV Prep 1',
     'prep_2': 'IV Prep 2',
     'gowned_waiting': 'GOWNED WAIT\n(Max 3)',
-    'control': 'CONTROL ROOM',
+    'control': 'CONTROL',
     'magnet_3t': '3T MRI',
     'magnet_15t': '1.5T MRI',
 }

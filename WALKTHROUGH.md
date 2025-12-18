@@ -56,8 +56,8 @@ src/
 │   └── reporter.py     # CSV export, text reports, summary generation
 │
 └── core/               # SimPy simulation (Coordinates all modules)
-    ├── workflow.py     # Patient journey process (7-step swimlane)
-    └── engine.py       # Main loop (bridges SimPy and PyGame)
+    ├── workflow.py     # Patient journey process (7-step swimlane with Load Balancing)
+    └── engine.py       # Main loop (bridges SimPy, PyGame, and 3T/1.5T resources)
 ```
 
 ### Key Design Patterns
@@ -73,7 +73,7 @@ src/
 ```python
 1. ARRIVAL (Zone 1)
    - Patient spawns as grey circle
-   - Position: (600, 730)
+   - Position: (585, 675)
    - State: 'arriving'
 
 2. TRANSPORT (Porter)
@@ -96,22 +96,27 @@ src/
 
 5. GOWNED WAITING (The Critical Buffer)
    - Patient turns YELLOW
-   - Moves to yellow box (240, 245)
+   - Moves to yellow box center (325, 350)
    - Waits for magnet availability
    - This is the "Pit Crew" staging area
 
-6. SCANNING (Scan Tech + Magnet)
-   - Purple square joins patient
-   - Move to magnet (950, 160)
+6. SCANNING (Dual-Bay Load Balancing)
+   - Patient checks magnet queues (3T vs 1.5T)
+   - Selects shortest queue (Load Balancing Router)
+   - Purple square moves from Control Room to join patient
+   - Move to selected magnet:
+     * 3T: (995, 175)
+     * 1.5T: (995, 445)
    - Patient turns GREEN
    - Scan: triangular(18, 22, 26) minutes
-   - Bed flip: 1 minute (parallel) vs 5 minutes (serial)
+   - Bed flip: 1 minute (parallel workflow efficiency)
    - State: 'scanning'
+   - Logging: Captures specific magnet ID (3T or 1.5T)
 
 7. EXIT
-   - Patient moves to (1180, 730)
+   - Patient moves to (1180, 675)
    - Removed from visualization
-   - Logged as completed
+   - Logged as completed via `stats.log_completion(p_id, magnet_id)`
 ```
 
 ### Staff Roles
@@ -119,17 +124,17 @@ src/
 **Porter (1 staff):**
 - Shape: Orange triangle
 - Role: Transports patients from Zone 1 to change rooms
-- Home position: (550, 730)
+- Home position: (500, 675)
 
 **Backup Tech (2 staff):**
 - Shape: Cyan square
 - Role: Preps patients (screening + IV)
-- Staging: (280, 245) near gowned waiting
+- Staging: (450, 125) near prep rooms
 
 **Scan Tech (2 staff):**
 - Shape: Purple square
-- Role: Operates MRI magnet
-- Staging: Near magnets (870, 160) and (870, 410)
+- Role: Operates MRI magnets (3T and 1.5T)
+- Staging: Assigned to magnets (800, 175) and (800, 445) in the Control Room
 
 ## 5. Visual Design
 
@@ -175,9 +180,9 @@ src/
 **Per-Frame Advancement:**
 ```python
 delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
-# = (1/60) * (60/0.5) / 60
-# = 0.0333 sim minutes per frame
-# = 2 sim seconds per frame
+# = (1/60) * (60/0.25) / 60
+# = 0.0666 sim minutes per frame
+# = 4 sim seconds per frame
 ```
 
 **Movement System:**
@@ -207,8 +212,8 @@ delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
    - Proves buffer usage
 
 4. **Summary** (`*_summary.csv`)
-   - Single row with all KPIs
-   - Used for scenario comparison
+   - Single row with all KPIs, including separate 3T and 1.5T scan counts.
+   - Used for scenario comparison and capacity analysis.
 
 ### Key Metrics
 
@@ -298,7 +303,7 @@ while env.now < 720:
 - ✅ Realistic (models actual shift)
 - ✅ Consistent duration across runs
 - ✅ Allows fair scenario comparison
-- ✅ Matches Process Management methodology
+- ✅ Matches Process Management methodology (Load Balancing, Buffers, Parallel Tasks)
 
 ### The Warm-Up Period Problem
 
@@ -449,24 +454,23 @@ if env.now == WARM_UP_DURATION:
 ### Command-Line Interface
 
 ```bash
-# Basic run (default: 720 minutes = 12 hour shift)
+# Basic run (default: 120 minutes = 2 hour test)
 uv run python main.py
 
 # Custom duration
 uv run python main.py --duration MINUTES --output DIR
 
 # Examples
-uv run python main.py --duration 120    # 2 hour test
-uv run python main.py --duration 360    # 6 hour shift
+uv run python main.py --duration 120    # 2 hour test (default)
 uv run python main.py --duration 720    # Full 12 hour shift
 ```
 
 ### Typical Scenarios
 
-**Quick Test:**
+**Quick Test (Default):**
 - Duration: 120 minutes (2 hours)
-- Expected patients: ~4
-- Purpose: Verify functionality
+- Expected patients: ~7-8 patients arriving
+- Purpose: Verify functionality and basic throughput
 
 **Half Shift:**
 - Duration: 360 minutes (6 hours)
@@ -507,9 +511,9 @@ All saved to `results/` directory:
 
 ### Throughput Improvements
 
-- **Serial**: ~19 patients per 12-hour shift
-- **Parallel**: ~22 patients per 12-hour shift
-- **Gain**: +15% throughput with same resources
+- **Serial**: ~18-20 patients per 12-hour shift
+- **Parallel**: ~42-46 patients per 12-hour shift
+- **Gain**: +120% throughput by decoupling prep from the magnet
 
 ### Buffer Effectiveness
 
@@ -741,11 +745,11 @@ This section documents the final configuration for the 12-hour production simula
 
 ```python
 # Time-Based Simulation (Shift Duration Model)
-DEFAULT_DURATION = 720      # 12 hours (standard MRI shift)
+DEFAULT_DURATION = 120      # 2 hours (standard test shift)
 WARM_UP_DURATION = 60       # 1 hour (prime the system, remove empty-state bias)
 
 # Time Scaling
-SIM_SPEED = 0.5  # 1 simulation minute = 0.5 real seconds
+SIM_SPEED = 0.25  # 1 simulation minute = 0.25 real seconds
 
 # Visual Constants
 WINDOW_WIDTH = 1600
@@ -778,13 +782,13 @@ Total Simulation Time: 780 minutes (13 hours)
 
 **Real-Time Duration:**
 ```python
-# With SIM_SPEED = 0.5 (1 sim minute = 0.5 real seconds)
-total_sim_minutes = 780
-sim_speed = 0.5
+# With SIM_SPEED = 0.25 (1 sim minute = 0.25 real seconds)
+total_sim_minutes = 180 (default)
+sim_speed = 0.25
 real_time_seconds = total_sim_minutes * sim_speed
 real_time_minutes = real_time_seconds / 60
 
-# Result: 6.5 minutes real time
+# Result: 0.75 minutes (45 seconds) real time for default test
 ```
 
 **Video Recording:**
@@ -796,10 +800,10 @@ real_time_minutes = real_time_seconds / 60
 ### Expected Outcomes
 
 **Patient Throughput:**
-- Arrival rate: ~30 minutes per patient
-- Warm-up arrivals: ~2 patients (not counted)
-- Data collection arrivals: ~24 patients
-- Expected completions: 22-24 patients
+- Arrival rate: ~15 minutes per patient
+- Warm-up arrivals: ~4 patients (not counted in final stats)
+- Data collection arrivals: ~48 patients (over 12 hours)
+- Expected completions: ~45-48 patients
 
 **Magnet Utilization (Parallel Workflow):**
 - Busy % (Value-Added): 70-75%
