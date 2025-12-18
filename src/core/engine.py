@@ -9,7 +9,7 @@ import sys
 import pygame
 from src.config import (
     STAFF_COUNT, AGENT_POSITIONS, SIM_SPEED, FPS, 
-    DEFAULT_DURATION, WARM_UP_DURATION, COOLDOWN_DURATION,
+    DEFAULT_DURATION, WARM_UP_DURATION,
     MAGNET_3T_LOC, MAGNET_15T_LOC
 )
 from src.visuals.renderer import RenderEngine
@@ -153,8 +153,8 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
         # Determine Status Label
         if env.now < WARM_UP_DURATION:
             status = "WARM UP"
-        elif env.now > (duration - COOLDOWN_DURATION):
-            status = "COOL DOWN (No New Patients)"
+        elif not stats.generator_active:
+            status = "CLOSED (Flushing Queue)"
         else:
             status = "NORMAL SHIFT"
             
@@ -163,7 +163,8 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
             'Sim Time': int(env.now),
             'Patients': stats.patients_completed,
             'In System': stats.patients_in_system,
-            'Status': status
+            'Status': status,
+            'Est Clear': f"{stats.est_clearing_time:.0f}m"
         }
         
         # Render frame (returns False if window closed)

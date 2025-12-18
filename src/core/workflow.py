@@ -513,16 +513,38 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
 
 def patient_generator(env, staff_dict, resources, stats, renderer, duration):
     """
-    Generate patients at scheduled intervals until shift ends.
-    Includes COOL-DOWN period (stops generation 30 mins before end).
+    Generate patients at scheduled intervals with Smart Gatekeeper Logic.
+    Stops accepting new patients when queue burden exceeding remaining time.
     """
     from src.visuals.sprites import Patient
     
     p_id = 0
-    # Stop generating patients COOLDOWN_DURATION minutes before defined duration
-    generation_cutoff = max(0, duration - config.COOLDOWN_DURATION)
+    stats.generator_active = True
     
-    while env.now < generation_cutoff:
+    while True:
+        # Smart Gatekeeper Logic
+        # Estimate time to clear current system
+        # Assuming 2 magnets working in parallel
+        # Burden = (Patients * Avg Time) / Magnets
+        magnet_count = 2
+        queue_burden = (stats.patients_in_system * config.AVG_CYCLE_TIME) / magnet_count
+        stats.est_clearing_time = queue_burden
+        
+        time_remaining = duration - env.now
+        
+        # Closing Condition:
+        # If we need more time to clear current patients than we have left in the shift,
+        # we strictly close the gate.
+        # We also add a small buffer (MAX_SCAN_TIME) to ensure the last patient can finish reasonably.
+        if (queue_burden > time_remaining) or (env.now > duration - config.MAX_SCAN_TIME and stats.patients_in_system > 0):
+             print(f"Gatekeeper Closing at {env.now:.1f}m: Queue Burden {queue_burden:.1f}m > Time Left {time_remaining:.1f}m")
+             stats.generator_active = False
+             break
+        
+        if env.now >= duration:
+             stats.generator_active = False
+             break
+        
         p_id += 1
         
         # Create patient sprite
@@ -538,3 +560,5 @@ def patient_generator(env, staff_dict, resources, stats, renderer, duration):
         # Wait for next patient
         inter_arrival = poisson_sample(PROCESS_TIMES['mean_inter_arrival'])
         yield env.timeout(inter_arrival)
+        
+    stats.generator_active = False

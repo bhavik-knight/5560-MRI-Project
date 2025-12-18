@@ -54,6 +54,10 @@ class SimStats:
         
         # Queue tracking
         self.waiting_room_log = []  # Track buffer usage
+        
+        # Smart Gatekeeper Status
+        self.generator_active = True
+        self.est_clearing_time = 0.0
 
         
     def log_movement(self, patient_id, zone, timestamp):

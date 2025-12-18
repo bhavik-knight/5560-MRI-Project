@@ -181,7 +181,19 @@ def draw_sidebar(surface, stats_dict, font):
     # Stats
     if stats_dict:
         for key, value in stats_dict.items():
-            text = font.render(f"{key}: {value}", True, LABEL_BLACK)
+            # Default color
+            color = LABEL_BLACK
+            
+            # Special conditional coloring for Status
+            if key == 'Status':
+                if "CLOSED" in str(value):
+                    color = (200, 0, 0) # Dark Red
+                elif "OVERTIME" in str(value):
+                    color = (200, 100, 0) # Orange-Red
+                elif "WARM UP" in str(value):
+                    color = (100, 100, 200) # Soft Blue
+                    
+            text = font.render(f"{key}: {value}", True, color)
             surface.blit(text, (SIDEBAR_X + 20, y_offset))
             y_offset += 30
     

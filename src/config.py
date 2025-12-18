@@ -172,7 +172,9 @@ AGENT_SPEED = {
 PROB_IV_NEEDED = 0.33
 PROB_DIFFICULT_IV = 0.01
 PROB_WASHROOM_USAGE = 0.2 # Source 17
-COOLDOWN_DURATION = 30 # Stop arrivals before end
+# Dynamic Capacity Constants [Source 172]
+MAX_SCAN_TIME = 70      # Max time for complex case
+AVG_CYCLE_TIME = 45     # Avg throughput time per patient
 
 # All times in MINUTES
 # Format: (min, mode, max) for triangular distribution
