@@ -43,8 +43,8 @@ src/
 │   ├── Visual constants (1600x800, medical white colors)
 │   ├── Room coordinates (13 rooms, scaled to 1200px simulation area)
 │   ├── Agent positions (spawn points, staging areas)
-│   ├── Process times (triangular distributions from empirical data)
-│   └── Probabilities (IV needs: 70%, difficult IV: 15%)
+│   ├── Process times (Triangular: screening, change, iv, scan_setup, scan, scan_exit, flip)
+│   └── Probabilities (IV needs: 33%, difficult IV: 1%)
 │
 ├── visuals/            # PyGame rendering (NO simulation logic)
 │   ├── layout.py       # Static floor plan with medical white aesthetic
@@ -86,32 +86,30 @@ src/
    - Duration: triangular(2, 3.5, 5) minutes
    - State: 'changing'
 
-4. PREP (Backup Tech)
-   - Cyan square escorts to prep room (random: 1 or 2)
-   - Screening: triangular(2, 3, 5) minutes
-   - IV Setup (70% probability):
-     * Normal: triangular(1, 2.5, 4) minutes
-     * Difficult (15%): triangular(3, 5, 8) minutes
+4. PREP (Backup Tech Localization)
+   - Patient moves autonomously from Change Room to Waiting Room buffer
+   - Backup Tech (localized to Zone 2) meets patient in Waiting Room
+   - Escort to prep room for Screening: triangular(2.08, 3.20, 5.15) min
+   - IV Setup (33% probability):
+     * Normal: triangular(1.53, 2.56, 4.08) minutes
+     * Difficult (1%): triangular(7, 7.8, 9) minutes
+   - Backup Tech returns patient to Waiting Room and returns to Prep Room
    - State: 'prepped'
 
-5. WAITING ROOM (The Critical Buffer)
-   - Patient turns YELLOW
-   - Moves to yellow box center (325, 350)
-   - Waits for magnet availability
-   - This is the "Pit Crew" staging area
+5. WAITING FOR MAGNET (Autonomous Signage)
+   - Patient waits in yellow box center (325, 350)
+   - Trigger: Magnet resource becomes free
+   - Patient moves UNACCOMPANIED to Magnet Room (simulating digital signage)
+   - Scan Tech remains in Control Room (Zone 3)
 
-6. SCANNING (Dual-Bay Load Balancing)
-   - Patient checks magnet queues (3T vs 1.5T)
-   - Selects shortest queue (Load Balancing Router)
-   - Purple square moves from Control Room to join patient
-   - Move to selected magnet:
-     * 3T: (995, 175)
-     * 1.5T: (995, 445)
-   - Patient turns GREEN
-   - Scan: triangular(18, 22, 26) minutes
-   - Bed flip: 1 minute (parallel workflow efficiency)
+6. SCANNING (Dual-Bay Phased Workflow)
+   - Selection: Shortest queue (Load Balancing)
+   - Task 1: Setup (occupied, not scanning) - triangular(1.52, 3.96, 7.48) min
+   - Task 2: Scan (Value-Added) - triangular(18.1, 22, 26.5) min
+   - Task 3: Exit (occupied, not scanning) - triangular(0.35, 2.56, 4.52) min
+   - Task 4: Bed Flip (Porter Trigger) - triangular(0.58, 1, 1.33) min
    - State: 'scanning'
-   - Logging: Captures specific magnet ID (3T or 1.5T)
+   - Metric: Captures "Hidden Time" vs "Value-Added" time
 
 7. EXIT
    - Patient moves to (1180, 675)
@@ -123,18 +121,18 @@ src/
 
 **Porter (1 staff):**
 - Shape: Orange triangle
-- Role: Transports patients from Zone 1 to change rooms
+- Role: Transport to Change Room + **Magnet Bed Flip**
 - Home position: (500, 675)
 
 **Backup Tech (2 staff):**
 - Shape: Cyan square
 - Role: Preps patients (screening + IV)
-- Staging: (450, 125) near prep rooms
+- Staging: Localized to IV Prep Rooms (Zone 2)
 
 **Scan Tech (2 staff):**
 - Shape: Purple square
-- Role: Operates MRI magnets (3T and 1.5T)
-- Staging: Assigned to magnets (800, 175) and (800, 445) in the Control Room
+- Role: Specialized console operation (Zone 3)
+- Staging: Stays at staging positions (800, 175) and (800, 445)
 
 ## 5. Visual Design
 
@@ -245,18 +243,19 @@ From GE iCenter analytics and workflow studies:
 
 | Process | Min | Mode | Max | Units |
 |---------|-----|------|-----|-------|
-| Screening | 2 | 3 | 5 | minutes |
-| Changing | 2 | 3.5 | 5 | minutes |
-| IV Setup | 1 | 2.5 | 4 | minutes |
-| IV Difficult | 3 | 5 | 8 | minutes |
-| Scan | 18 | 22 | 26 | minutes |
-| Bed Flip (Current) | - | 5 | - | minutes |
-| Bed Flip (Future) | - | 1 | - | minutes |
+| Screening | 2.08 | 3.20 | 5.15 | minutes |
+| Changing | 1.53 | 3.17 | 5.78 | minutes |
+| IV Setup | 1.53 | 2.56 | 4.08 | minutes |
+| IV Difficult | 7 | 7.8 | 9 | minutes |
+| Scan Setup | 1.52 | 3.96 | 7.48 | minutes |
+| Scan Duration| 18.1 | 22 | 26.5 | minutes |
+| Scan Exit | 0.35 | 2.56 | 4.52 | minutes |
+| Bed Flip | 0.58 | 1 | 1.33 | minutes |
 
 ### Probabilities
 
-- **Needs IV**: 70% (from patient demographics)
-- **Difficult IV**: 15% (of those needing IV)
+- **Needs IV**: 33% (Source 33)
+- **Difficult IV**: 1% (Source 33)
 
 ### Arrival Pattern
 
@@ -893,7 +892,7 @@ Before running production simulation:
 
 - [ ] Verify `DEFAULT_DURATION = 720` in `src/config.py`
 - [ ] Verify `WARM_UP_DURATION = 60` in `src/config.py`
-- [ ] Verify `SIM_SPEED = 0.5` in `src/config.py`
+- [ ] Verify `SIM_SPEED = 0.25` in `src/config.py`
 - [ ] Run `uv sync` to ensure all dependencies installed
 - [ ] Clear `results/` directory or use unique `--output` name
 - [ ] Close other applications to ensure smooth 60 FPS
