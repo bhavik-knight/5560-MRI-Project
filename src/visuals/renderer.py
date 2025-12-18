@@ -8,8 +8,9 @@ import pygame
 import cv2
 import numpy as np
 import os
-from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, BLACK, RECORD_INTERVAL
+from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, BLACK, RECORD_INTERVAL, ROOM_COORDINATES
 from src.visuals.layout import draw_floor_plan, draw_dashboard
+from src.visuals.sprites import Patient
 
 class RenderEngine:
     """
@@ -152,8 +153,21 @@ class RenderEngine:
             if event.type == pygame.QUIT:
                 return False
         
+        # Calculate occupied rooms
+        occupied_rooms = set()
+        for sprite in self.all_sprites:
+            if isinstance(sprite, Patient):
+                # Check collision with all defined rooms
+                for room_key, coords in ROOM_COORDINATES.items():
+                    # Skip building border and shared corridors/control zones
+                    if room_key in ['building', 'zone1', 'control']: continue
+                    
+                    room_rect = pygame.Rect(*coords)
+                    if room_rect.collidepoint(sprite.x, sprite.y):
+                        occupied_rooms.add(room_key)
+        
         # 1. Draw static floor plan (fills background with corridor grey)
-        draw_floor_plan(self.screen, self.font_room, self.font_zone)
+        draw_floor_plan(self.screen, self.font_room, self.font_zone, occupied_rooms)
         
         # 2. Update agent positions
         self.all_sprites.update()

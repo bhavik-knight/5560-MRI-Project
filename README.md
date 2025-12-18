@@ -140,6 +140,7 @@ uv run python main.py --record          # Generates simulation_video.mp4
   - Yellow → Prepped (waiting room)
   - Green → Scanning
 - Staff (triangles/squares) escort patients
+- Rooms darken when occupied
 
 **Data Output (in `results/` folder):**
 - `*_movements.csv` - All patient zone transitions

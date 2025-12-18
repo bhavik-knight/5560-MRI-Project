@@ -24,6 +24,7 @@ CORRIDOR_GREY = (230, 230, 230)      # Background
 WALL_BLACK = (0, 0, 0)               # Room borders
 LABEL_BLACK = (0, 0, 0)              # Text
 SEPARATOR_BLACK = (0, 0, 0)          # Sidebar divider
+GREY_OCCUPIED = (225, 225, 235)      # Slightly grey/blueish for occupied rooms
 
 # ============================================================================
 # RGB COLORS - Agent States

@@ -11,25 +11,26 @@ from src.config import (
     SIDEBAR_X, WINDOW_WIDTH, WINDOW_HEIGHT,
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING, GREY_DARK,
     ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y, BLUE_ADMIN,
-    PURPLE_REGISTERED
+    PURPLE_REGISTERED, GREY_OCCUPIED
 )
 
 
 
-def draw_room(surface, rect, label_text, font):
+def draw_room(surface, rect, label_text, font, bg_color=MEDICAL_WHITE):
     """
     Draw a single room with medical white aesthetic.
     
-    All rooms are WHITE with BLACK borders and BLACK centered text.
+    All rooms are WHITE (or bg_color) with BLACK borders and BLACK centered text.
     
     Args:
         surface: pygame.Surface to draw on
         rect: pygame.Rect defining room boundaries
         label_text: Text to display (supports \\n for multi-line)
         font: pygame.Font object (or None)
+        bg_color: Background color for the room
     """
-    # 1. Fill with medical white
-    pygame.draw.rect(surface, MEDICAL_WHITE, rect)
+    # 1. Fill with background color
+    pygame.draw.rect(surface, bg_color, rect)
     
     # 2. Draw black border (walls)
     pygame.draw.rect(surface, WALL_BLACK, rect, 2)
@@ -79,7 +80,7 @@ def draw_coordinates(surface, font, building_rect):
             text = font.render(str(y), True, (120, 120, 120))
             surface.blit(text, (x_end - 30, y + 2))
 
-def draw_floor_plan(surface, font_room=None, font_zone=None):
+def draw_floor_plan(surface, font_room=None, font_zone=None, occupied_rooms=None):
     """
     Draw the complete MRI floor plan with medical white aesthetic.
     
@@ -87,7 +88,11 @@ def draw_floor_plan(surface, font_room=None, font_zone=None):
         surface: pygame.Surface to draw on
         font_room: pygame.Font for room labels (size 14)
         font_zone: pygame.Font for zone labels (larger)
+        occupied_rooms: Set of room keys that are currently occupied
     """
+    if occupied_rooms is None:
+        occupied_rooms = set()
+        
     # Fill background with corridor grey
     surface.fill(CORRIDOR_GREY)
     
@@ -98,7 +103,7 @@ def draw_floor_plan(surface, font_room=None, font_zone=None):
     # Draw coordinates
     draw_coordinates(surface, font_room, building_rect)
     
-    # Draw all rooms in order (all WHITE with BLACK borders)
+    # Draw all rooms in order
     rooms_to_draw = [
         # Zone 1 (bottom)
         ('zone1', font_zone),
@@ -125,7 +130,12 @@ def draw_floor_plan(surface, font_room=None, font_zone=None):
     for room_key, font in rooms_to_draw:
         rect = pygame.Rect(*ROOM_COORDINATES[room_key])
         label = ROOM_LABELS[room_key]
-        draw_room(surface, rect, label, font)
+        
+        # Determine background color
+        is_occupied = room_key in occupied_rooms
+        bg_color = GREY_OCCUPIED if is_occupied else MEDICAL_WHITE
+        
+        draw_room(surface, rect, label, font, bg_color)
 
 
 def draw_sidebar(surface, stats_dict, font):

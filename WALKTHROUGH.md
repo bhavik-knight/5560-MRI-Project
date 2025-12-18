@@ -172,7 +172,7 @@ src/
 
 **Color Scheme:**
 - Background: Corridor grey (230, 230, 230)
-- All rooms: Medical white (255, 255, 255)
+- All rooms: Medical white (turns Grey when occupied)
 - Borders: Black (0, 0, 0), 2px width
 - Text: Black, Arial 14pt (crisp, professional)
 
