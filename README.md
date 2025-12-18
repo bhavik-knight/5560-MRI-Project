@@ -28,12 +28,13 @@ Traditional MRI departments show high equipment "occupied time" (92%) but hide c
 ```mermaid
 graph LR;
   A[Arrival] --> B[Registration];
-  B --> C[Change Room];
+  B --> C[Change Room - Gowned];
   C --> D[Waiting Room Buffer];
   D --> E[Prep and IV];
   E --> D;
   D --> F[Magnet Scan];
-  F --> G[Exit];
+  F --> H[Change Room - Exit];
+  H --> G[Exit];
 
   style D fill:#ffcc00,stroke:#000,stroke-width:3px,color:#000;
   style F fill:#00a2ff,stroke:#000,stroke-width:3px,color:#000;
