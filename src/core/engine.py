@@ -73,6 +73,9 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
         'scan_techs': simpy.Resource(env, capacity=STAFF_COUNT['scan_tech']),
         'admin_ta': simpy.Resource(env, capacity=STAFF_COUNT['admin']),
         'magnet_pool': simpy.Store(env, capacity=2),
+        'change_1': simpy.Resource(env, capacity=1),
+        'change_2': simpy.Resource(env, capacity=1),
+        'change_3': simpy.Resource(env, capacity=1),
         'washroom_1': simpy.Resource(env, capacity=1),
         'washroom_2': simpy.Resource(env, capacity=1),
     }

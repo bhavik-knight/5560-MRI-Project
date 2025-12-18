@@ -96,8 +96,10 @@ ROOM_COORDINATES = {
 AGENT_POSITIONS = {
     'zone1_center': (1150, 675),
     'change_1_center': (100, 100),
-    'change_2_center': (87, 197),
+    'change_2_center': (87, 192),
     'change_3_center': (87, 282),
+    'washroom_1_center': (87, 467),
+    'washroom_2_center': (87, 557),
     'prep_1_center': (425, 125),
     'prep_2_center': (595, 125),
     'waiting_room_center': (325, 350),
@@ -111,6 +113,10 @@ AGENT_POSITIONS = {
     'scan_staging_3t': (800, 175),
     'scan_staging_15t': (800, 445),
     'admin_home': (850, 675),
+
+    # Staging Areas
+    'change_staging': (150, 250), # Hallway outside change rooms
+    'washroom_staging': (150, 500), # Hallway outside washrooms
 }
 
 # Waiting Areas (Rectangles for spatial scatter: x_min, x_max, y_min, y_max)
