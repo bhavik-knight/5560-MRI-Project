@@ -91,7 +91,8 @@ class StaffManager:
                     
                     # 2. Backup moves to EXACT Scan Tech Station (Hot Seat)
                     backup_tech.cover_position(staff.home_x, staff.home_y)
-                    print(f"[{self.env.now:.1f}] HANDSHAKE START: Backup {idx} moving to Station for Scan Tech {idx}")
+                    if not config.HEADLESS:
+                        print(f"[{self.env.now:.1f}] HANDSHAKE START: Backup {idx} moving to Station for Scan Tech {idx}")
                     
                     # 3. HANDSHAKE: Scan tech WAITS for Backup to arrive
                     while not backup_tech.is_at_target():
@@ -99,7 +100,8 @@ class StaffManager:
                         
                     # 4. HANDOVER DELAY (User Request: 2 seconds)
                     yield self.env.timeout(2)
-                    print(f"[{self.env.now:.1f}] HANDSHAKE COMPLETE: Scan Tech {idx} leaving for break.")
+                    if not config.HEADLESS:
+                        print(f"[{self.env.now:.1f}] HANDSHAKE COMPLETE: Scan Tech {idx} leaving for break.")
                     
                     # Now Backup is "in command" - Scan Tech free to leave
                     

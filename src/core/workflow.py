@@ -767,12 +767,14 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     resources['magnet_access'].release(access_req)
     yield resources['magnet_pool'].put(magnet_config)
 
-def patient_generator(env, staff_dict, resources, stats, renderer, duration):
+def patient_generator(env, staff_dict, resources, stats, renderer, duration, patient_class=None):
     """
     Generate patients at scheduled intervals with Smart Gatekeeper Logic.
     Stops accepting new patients when queue burden exceeding remaining time.
     """
-    from src.visuals.sprites import Patient
+    if patient_class is None:
+        from src.visuals.sprites import Patient
+        patient_class = Patient
     
     p_id = 0
     stats.generator_active = True
@@ -793,7 +795,8 @@ def patient_generator(env, staff_dict, resources, stats, renderer, duration):
         # we strictly close the gate.
         # We also add a small buffer (MAX_SCAN_TIME) to ensure the last patient can finish reasonably.
         if (queue_burden > time_remaining) or (env.now > duration - config.MAX_SCAN_TIME and stats.patients_in_system > 0):
-             print(f"Gatekeeper Closing at {env.now:.1f}m: Queue Burden {queue_burden:.1f}m > Time Left {time_remaining:.1f}m")
+             if not config.HEADLESS:
+                 print(f"Gatekeeper Closing at {env.now:.1f}m: Queue Burden {queue_burden:.1f}m > Time Left {time_remaining:.1f}m")
              stats.generator_active = False
              break
         
@@ -813,7 +816,7 @@ def patient_generator(env, staff_dict, resources, stats, renderer, duration):
             env.process(handle_no_show_gap(env, resources, stats, config.PROCESS_TIMES['no_show_wait']))
         else:
             # Create patient sprite
-            patient = Patient(p_id, *AGENT_POSITIONS['zone1_center'])
+            patient = patient_class(p_id, *AGENT_POSITIONS['zone1_center'])
             patient.exam_type = random.choice(EXAM_TYPES)
             
             # Compliance tracking

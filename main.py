@@ -53,30 +53,60 @@ Examples:
         help='Use MKV format instead of MP4 (default: MP4)'
     )
     
-    args = parser.parse_args()
-    
-    # Determine video format
-    video_format = 'mkv' if args.mkv else 'mp4'
-    
-    # Run simulation
-    results = run_simulation(
-        duration=args.duration,
-        output_dir=args.output,
-        record=args.record,
-        video_format=video_format
+    parser.add_argument(
+        '--mode',
+        type=str,
+        default='visual',
+        choices=['visual', 'batch'],
+        help='Simulation mode: visual (PyGame) or batch (Headless Monte Carlo)'
     )
     
-    # Print final summary
-    print("\n" + "=" * 60)
-    print("FINAL RESULTS")
-    print("=" * 60)
-    utilization = results['utilization']
-    print(f"Throughput:           {utilization['throughput']} patients")
-    print(f"Magnet Busy (Value):  {utilization['magnet_busy_pct']}%")
-    print(f"Magnet Idle:          {utilization['magnet_idle_pct']}%")
-    print("=" * 60)
+    parser.add_argument(
+        '--sims',
+        type=int,
+        default=1000,
+        help='Number of simulations per epoch (Batch mode only)'
+    )
     
-    return 0
+    parser.add_argument(
+        '--epochs',
+        type=int,
+        default=1,
+        help='Number of epochs (Batch mode only)'
+    )
+    
+    args = parser.parse_args()
+    
+    if args.mode == 'batch':
+        # --- BATCH HEADLESS MODE ---
+        from src.batch_run import execute_batch
+        execute_batch(sims=args.sims, epochs=args.epochs)
+        return 0
+        
+    else:
+        # --- VISUAL MODE ---
+        # Determine video format
+        video_format = 'mkv' if args.mkv else 'mp4'
+        
+        # Run simulation
+        results = run_simulation(
+            duration=args.duration,
+            output_dir=args.output,
+            record=args.record,
+            video_format=video_format
+        )
+        
+        # Print final summary
+        print("\n" + "=" * 60)
+        print("FINAL RESULTS")
+        print("=" * 60)
+        utilization = results['utilization']
+        print(f"Throughput:           {utilization['throughput']} patients")
+        print(f"Magnet Busy (Value):  {utilization['magnet_busy_pct']}%")
+        print(f"Magnet Idle:          {utilization['magnet_idle_pct']}%")
+        print("=" * 60)
+        
+        return 0
 
 if __name__ == "__main__":
     exit(main())
