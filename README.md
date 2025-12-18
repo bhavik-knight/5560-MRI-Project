@@ -30,9 +30,9 @@ graph LR;
   A[Arrival] --> B[Registration];
   B --> C[Change Room];
   C --> D[Waiting Room Buffer];
-  D --> E[Prep/IV];
+  D --> E[Prep and IV];
   E --> D;
-  D --> F[Magnet (Scan)];
+  D --> F[Magnet Scan];
   F --> G[Exit];
 
   style D fill:#f9f,stroke:#333,stroke-width:2px;

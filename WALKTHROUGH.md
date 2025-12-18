@@ -35,7 +35,7 @@ Inspired by Formula 1 pit stops - parallel processing:
 ```mermaid
 graph LR;
     A[Prep] --> B[Waiting Room Buffer];
-    B --> C[Magnet (Scan Only)];
+    B --> C[Magnet Scan Only];
 
     style B fill:#f9f,stroke:#333,stroke-width:2px;
     style C fill:#9f9,stroke:#333,stroke-width:2px;
