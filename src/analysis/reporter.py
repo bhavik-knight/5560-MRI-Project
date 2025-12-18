@@ -47,14 +47,14 @@ def export_to_csv(stats_object, output_dir='results', filename=None):
             writer.writerows(stats_object.state_changes)
     created_files['states'] = state_file
     
-    # 3. Export gowned waiting log
-    gowned_file = os.path.join(output_dir, f'{base_name}_gowned_waiting.csv')
-    with open(gowned_file, 'w', newline='') as f:
-        if stats_object.gowned_waiting_log:
-            writer = csv.DictWriter(f, fieldnames=stats_object.gowned_waiting_log[0].keys())
+    # 3. Export waiting room log
+    waiting_file = os.path.join(output_dir, f'{base_name}_waiting_room.csv')
+    with open(waiting_file, 'w', newline='') as f:
+        if stats_object.waiting_room_log:
+            writer = csv.DictWriter(f, fieldnames=stats_object.waiting_room_log[0].keys())
             writer.writeheader()
-            writer.writerows(stats_object.gowned_waiting_log)
-    created_files['gowned_waiting'] = gowned_file
+            writer.writerows(stats_object.waiting_room_log)
+    created_files['waiting_room'] = waiting_file
     
     return created_files
 
@@ -131,6 +131,8 @@ def generate_report(stats_object, total_sim_time, output_dir='results', filename
         f.write("-" * 60 + "\n")
         f.write(f"Total Arrivals:        {summary['total_arrivals']}\n")
         f.write(f"Completed Patients:    {summary['throughput']}\n")
+        f.write(f"  - 3T Magnet Scans:   {summary['scans_3t']}\n")
+        f.write(f"  - 1.5T Magnet Scans: {summary['scans_15t']}\n")
         f.write(f"Still in System:       {summary['patients_in_system']}\n\n")
         
         f.write("-" * 60 + "\n")
@@ -144,10 +146,10 @@ def generate_report(stats_object, total_sim_time, output_dir='results', filename
         f.write("      In Parallel workflow, Occupied ≈ Busy (prep happens elsewhere)\n\n")
         
         f.write("-" * 60 + "\n")
-        f.write("GOWNED WAITING BUFFER\n")
+        f.write("WAITING ROOM BUFFER\n")
         f.write("-" * 60 + "\n")
-        f.write(f"Average Wait Time:    {summary['avg_gowned_wait_time']} min\n")
-        f.write(f"Maximum Wait Time:    {summary['max_gowned_wait_time']} min\n\n")
+        f.write(f"Average Wait Time:    {summary['avg_wait_time']} min\n")
+        f.write(f"Maximum Wait Time:    {summary['max_wait_time']} min\n\n")
         
         f.write("-" * 60 + "\n")
         f.write("DATA LOGS\n")
@@ -178,7 +180,9 @@ def print_summary(stats_object, total_sim_time):
     print("=" * 60)
     print(f"Duration: {total_sim_time} minutes")
     print(f"Throughput: {summary['throughput']} patients")
+    print(f"  - 3T Magnet Scans:   {summary['scans_3t']}")
+    print(f"  - 1.5T Magnet Scans: {summary['scans_15t']}")
     print(f"Magnet Busy (Value-Added): {summary['magnet_busy_pct']}%")
     print(f"Magnet Idle: {summary['magnet_idle_pct']}%")
-    print(f"Avg Gowned Wait: {summary['avg_gowned_wait_time']} min")
+    print(f"Avg Wait Time: {summary['avg_wait_time']} min")
     print("=" * 60 + "\n")

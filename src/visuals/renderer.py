@@ -8,8 +8,9 @@ import pygame
 import cv2
 import numpy as np
 import os
-from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, BLACK
+from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, BLACK, RECORD_INTERVAL, ROOM_COORDINATES
 from src.visuals.layout import draw_floor_plan, draw_dashboard
+from src.visuals.sprites import Patient
 
 class RenderEngine:
     """
@@ -50,6 +51,9 @@ class RenderEngine:
         self.video_writer = None
         if record_video:
             self._init_video_writer()
+            
+        # Frame counter for skipping frames (optimization)
+        self.frame_count = 0
     
     def _init_fonts(self):
         """Initialize fonts with fallback handling."""
@@ -124,6 +128,19 @@ class RenderEngine:
         self.all_sprites.remove(sprite)
         sprite.kill()
     
+    def save_screenshot(self, filename='results/layout_screenshot.png'):
+        """
+        Save a screenshot of the current PyGame window.
+        """
+        try:
+            os.makedirs('results', exist_ok=True)
+            pygame.image.save(self.screen, filename)
+            print(f"✓ Screenshot saved to {filename}")
+        except Exception as e:
+            print(f"✗ Failed to save screenshot: {e}")
+        
+        return True
+    
     def render_frame(self, stats_dict=None):
         """
         Render a single frame.
@@ -140,8 +157,21 @@ class RenderEngine:
             if event.type == pygame.QUIT:
                 return False
         
+        # Calculate occupied rooms
+        occupied_rooms = set()
+        for sprite in self.all_sprites:
+            if isinstance(sprite, Patient):
+                # Check collision with all defined rooms
+                for room_key, coords in ROOM_COORDINATES.items():
+                    # Skip building border and shared corridors/control zones/waiting room
+                    if room_key in ['building', 'zone1', 'control', 'waiting_room']: continue
+                    
+                    room_rect = pygame.Rect(*coords)
+                    if room_rect.collidepoint(sprite.x, sprite.y) and sprite.is_at_target():
+                        occupied_rooms.add(room_key)
+        
         # 1. Draw static floor plan (fills background with corridor grey)
-        draw_floor_plan(self.screen, self.font_room, self.font_zone)
+        draw_floor_plan(self.screen, self.font_room, self.font_zone, occupied_rooms)
         
         # 2. Update agent positions
         self.all_sprites.update()
@@ -159,21 +189,24 @@ class RenderEngine:
         pygame.display.flip()
         
         # 6. Capture frame for video recording (if enabled)
+        self.frame_count += 1
         if self.record_video and self.video_writer is not None:
-            try:
-                # Capture screen as numpy array
-                view = pygame.surfarray.array3d(self.screen)
-                
-                # Transpose from (width, height, 3) to (height, width, 3)
-                view = view.transpose([1, 0, 2])
-                
-                # Convert RGB to BGR for OpenCV
-                frame_bgr = cv2.cvtColor(view, cv2.COLOR_RGB2BGR)
-                
-                # Write frame
-                self.video_writer.write(frame_bgr)
-            except Exception as e:
-                print(f"⚠ Frame capture error: {e}")
+             # Optimization: Only record every Nth frame based on RECORD_INTERVAL
+             if self.frame_count % RECORD_INTERVAL == 0:
+                try:
+                    # Capture screen as numpy array
+                    view = pygame.surfarray.array3d(self.screen)
+                    
+                    # Transpose from (width, height, 3) to (height, width, 3)
+                    view = view.transpose([1, 0, 2])
+                    
+                    # Convert RGB to BGR for OpenCV
+                    frame_bgr = cv2.cvtColor(view, cv2.COLOR_RGB2BGR)
+                    
+                    # Write frame
+                    self.video_writer.write(frame_bgr)
+                except Exception as e:
+                    print(f"⚠ Frame capture error: {e}")
         
         # 7. Control frame rate
         self.clock.tick(self.fps)

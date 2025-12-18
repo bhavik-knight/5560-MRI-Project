@@ -1,2 +1,2 @@
-magnet_busy_pct,magnet_occupied_pct,magnet_idle_pct,throughput,patients_in_system,total_arrivals,avg_gowned_wait_time,max_gowned_wait_time,total_movements,total_state_changes,total_sim_time,timestamp
-36.25,36.25,63.75,2,7,9,0.4,1.2,11,9,120.06666666666497,20251217_161109
+magnet_busy_pct,magnet_occupied_pct,magnet_idle_pct,throughput,patients_in_system,total_arrivals,scans_3t,scans_15t,avg_wait_time,max_wait_time,total_movements,total_state_changes,total_sim_time,timestamp
+9.04,48.44,51.56,21,34,34,11,10,12.34,58.13,205,178,720.0000000001415,20251218_055753

@@ -5,7 +5,11 @@ Orchestrates the integration of SimPy, PyGame, and Statistics modules.
 """
 
 import simpy
-from src.config import STAFF_COUNT, AGENT_POSITIONS, SIM_SPEED, FPS, DEFAULT_DURATION, WARM_UP_DURATION
+from src.config import (
+    STAFF_COUNT, AGENT_POSITIONS, SIM_SPEED, FPS, 
+    DEFAULT_DURATION, WARM_UP_DURATION,
+    MAGNET_3T_LOC, MAGNET_15T_LOC
+)
 from src.visuals.renderer import RenderEngine
 from src.visuals.sprites import Staff
 from src.analysis.tracker import SimStats
@@ -60,27 +64,44 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
     
     # 3. Statistics Tracker
     stats = SimStats()
-    
     # 4. Create SimPy Resources
     resources = {
-        'porter': simpy.Resource(env, capacity=STAFF_COUNT['porter']),
+        'porter': simpy.PriorityResource(env, capacity=STAFF_COUNT['porter']),
         'backup_techs': simpy.Resource(env, capacity=STAFF_COUNT['backup_tech']),
         'scan_techs': simpy.Resource(env, capacity=STAFF_COUNT['scan_tech']),
-        'magnet': simpy.Resource(env, capacity=1),  # Only 1 patient can scan at a time
+        'admin_ta': simpy.Resource(env, capacity=STAFF_COUNT['admin']),
+        'magnet_pool': simpy.Store(env, capacity=2),
     }
+
+    # Populate magnet pool
+    resources['magnet_pool'].put({
+        'id': '3T',
+        'resource': simpy.Resource(env, capacity=1),
+        'loc': MAGNET_3T_LOC,
+        'name': 'magnet_3t',
+        'staging': AGENT_POSITIONS['scan_staging_3t']
+    })
+    resources['magnet_pool'].put({
+        'id': '1.5T',
+        'resource': simpy.Resource(env, capacity=1),
+        'loc': MAGNET_15T_LOC,
+        'name': 'magnet_15t',
+        'staging': AGENT_POSITIONS['scan_staging_15t']
+    })
+
     
     # 5. Create Staff Sprites
     staff_dict = {
         'porter': Staff('porter', *AGENT_POSITIONS['porter_home']),
         'backup': [
-            Staff('backup', AGENT_POSITIONS['backup_staging'][0] + i*30, 
-                  AGENT_POSITIONS['backup_staging'][1])
-            for i in range(STAFF_COUNT['backup_tech'])
+            Staff('backup', *AGENT_POSITIONS[f'prep_{i+1}_center'])
+            for i in range(min(2, STAFF_COUNT['backup_tech']))
         ],
         'scan': [
             Staff('scan', *AGENT_POSITIONS['scan_staging_3t']),
             Staff('scan', *AGENT_POSITIONS['scan_staging_15t'])
-        ][:STAFF_COUNT['scan_tech']]
+        ][:STAFF_COUNT['scan_tech']],
+        'admin': Staff('admin', *AGENT_POSITIONS['admin_home']),
     }
     
     # Add staff to renderer
@@ -89,6 +110,7 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
         renderer.add_sprite(tech)
     for tech in staff_dict['scan']:
         renderer.add_sprite(tech)
+    renderer.add_sprite(staff_dict['admin'])
     
     # ========== START SIMULATION ==========
     

@@ -21,9 +21,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main.py                        # Default: 12 hour shift (720 min)
-  python main.py --duration 120         # 2 hour test
+  python main.py                        # Default: 2 hour shift (120 min)
   python main.py --duration 480         # 8 hour shift
+  python main.py --duration 720         # 12 hour shift
         """
     )
     
@@ -31,7 +31,7 @@ Examples:
         '--duration',
         type=int,
         default=None,  # Will use DEFAULT_DURATION from config
-        help='Simulation duration in minutes (default: 720 = 12 hours)'
+        help='Simulation duration in minutes (default: 120 = 2 hours)'
     )
     
     parser.add_argument(

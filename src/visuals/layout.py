@@ -9,24 +9,28 @@ from src.config import (
     ROOM_COORDINATES, ROOM_LABELS,
     MEDICAL_WHITE, CORRIDOR_GREY, WALL_BLACK, LABEL_BLACK, SEPARATOR_BLACK,
     SIDEBAR_X, WINDOW_WIDTH, WINDOW_HEIGHT,
-    GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING,
-    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN
+    GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING, GREY_DARK,
+    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y, BLUE_ADMIN,
+    PURPLE_REGISTERED, GREY_OCCUPIED, GREEN_OCCUPIED
 )
 
-def draw_room(surface, rect, label_text, font):
+
+
+def draw_room(surface, rect, label_text, font, bg_color=MEDICAL_WHITE):
     """
     Draw a single room with medical white aesthetic.
     
-    All rooms are WHITE with BLACK borders and BLACK centered text.
+    All rooms are WHITE (or bg_color) with BLACK borders and BLACK centered text.
     
     Args:
         surface: pygame.Surface to draw on
         rect: pygame.Rect defining room boundaries
         label_text: Text to display (supports \\n for multi-line)
         font: pygame.Font object (or None)
+        bg_color: Background color for the room
     """
-    # 1. Fill with medical white
-    pygame.draw.rect(surface, MEDICAL_WHITE, rect)
+    # 1. Fill with background color
+    pygame.draw.rect(surface, bg_color, rect)
     
     # 2. Draw black border (walls)
     pygame.draw.rect(surface, WALL_BLACK, rect, 2)
@@ -43,7 +47,40 @@ def draw_room(surface, rect, label_text, font):
             text_rect = text_surf.get_rect(centerx=rect.centerx, top=start_y + (i * line_height))
             surface.blit(text_surf, text_rect)
 
-def draw_floor_plan(surface, font_room=None, font_zone=None):
+def draw_coordinates(surface, font, building_rect):
+    """
+    Draw X and Y coordinate markers along the building border.
+    """
+    if not font:
+        return
+        
+    x_start, y_start, width, height = building_rect
+    x_end = x_start + width
+    y_end = y_start + height
+    
+    # Draw X coordinates (Top and Bottom)
+    for x in range(0, 1201, 100):
+        # Top
+        if x_start <= x <= x_end:
+            text = font.render(str(x), True, (120, 120, 120))
+            surface.blit(text, (x, y_start + 5))
+        # Bottom
+        if x_start <= x <= x_end:
+            text = font.render(str(x), True, (120, 120, 120))
+            surface.blit(text, (x, y_end - 15))
+            
+    # Draw Y coordinates (Left and Right)
+    for y in range(0, 801, 100):
+        # Left
+        if y_start <= y <= y_end:
+            text = font.render(str(y), True, (120, 120, 120))
+            surface.blit(text, (x_start + 5, y + 2))
+        # Right
+        if y_start <= y <= y_end:
+            text = font.render(str(y), True, (120, 120, 120))
+            surface.blit(text, (x_end - 30, y + 2))
+
+def draw_floor_plan(surface, font_room=None, font_zone=None, occupied_rooms=None):
     """
     Draw the complete MRI floor plan with medical white aesthetic.
     
@@ -51,7 +88,11 @@ def draw_floor_plan(surface, font_room=None, font_zone=None):
         surface: pygame.Surface to draw on
         font_room: pygame.Font for room labels (size 14)
         font_zone: pygame.Font for zone labels (larger)
+        occupied_rooms: Set of room keys that are currently occupied
     """
+    if occupied_rooms is None:
+        occupied_rooms = set()
+        
     # Fill background with corridor grey
     surface.fill(CORRIDOR_GREY)
     
@@ -59,7 +100,10 @@ def draw_floor_plan(surface, font_room=None, font_zone=None):
     building_rect = pygame.Rect(*ROOM_COORDINATES['building'])
     pygame.draw.rect(surface, WALL_BLACK, building_rect, 5)
     
-    # Draw all rooms in order (all WHITE with BLACK borders)
+    # Draw coordinates
+    draw_coordinates(surface, font_room, building_rect)
+    
+    # Draw all rooms in order
     rooms_to_draw = [
         # Zone 1 (bottom)
         ('zone1', font_zone),
@@ -79,14 +123,20 @@ def draw_floor_plan(surface, font_room=None, font_zone=None):
         ('washroom_2', font_room),
         ('prep_1', font_room),
         ('prep_2', font_room),
-        ('gowned_waiting', font_room),
-        ('holding', font_room),
+        ('waiting_room', font_room),
     ]
+
     
     for room_key, font in rooms_to_draw:
         rect = pygame.Rect(*ROOM_COORDINATES[room_key])
         label = ROOM_LABELS[room_key]
-        draw_room(surface, rect, label, font)
+        
+        # Determine background color
+        is_occupied = room_key in occupied_rooms
+        bg_color = GREEN_OCCUPIED if is_occupied else MEDICAL_WHITE
+        
+        draw_room(surface, rect, label, font, bg_color)
+
 
 def draw_sidebar(surface, stats_dict, font):
     """
@@ -139,9 +189,11 @@ def draw_sidebar(surface, stats_dict, font):
     # Patient state legend
     patient_states = [
         (GREY_ARRIVING, "Arriving (Zone 1)"),
+        (PURPLE_REGISTERED, "Registered"),
         (BLUE_CHANGING, "Changing"),
         (YELLOW_PREPPED, "Prepped (Waiting)"),
         (GREEN_SCANNING, "Scanning"),
+        (GREY_DARK, "Exited (Leaving)"),
     ]
     
     for color, label in patient_states:
@@ -189,6 +241,14 @@ def draw_sidebar(surface, stats_dict, font):
     pygame.draw.rect(surface, PURPLE_SCAN, rect)
     pygame.draw.rect(surface, WALL_BLACK, rect, 2)
     text = font.render("Scan Tech", True, LABEL_BLACK)
+    surface.blit(text, (SIDEBAR_X + 50, y_offset - 8))
+    y_offset += 30
+
+    # Admin TA (square)
+    rect = pygame.Rect(SIDEBAR_X + 22, y_offset - 8, 16, 16)
+    pygame.draw.rect(surface, BLUE_ADMIN, rect)
+    pygame.draw.rect(surface, WALL_BLACK, rect, 2)
+    text = font.render("Admin TA", True, LABEL_BLACK)
     surface.blit(text, (SIDEBAR_X + 50, y_offset - 8))
 
 def draw_dashboard(surface, stats_dict, font):

@@ -21,7 +21,7 @@ Traditional MRI departments show high equipment "occupied time" (92%) but hide c
 
 **Root Cause:** In serial workflows, patient prep happens *inside* the magnet room, wasting expensive equipment time on low-value tasks.
 
-**Solution:** The "Pit Crew" model moves prep outside, using a **gowned waiting buffer** to stage prepped patients, allowing the magnet to focus exclusively on scanning.
+**Solution:** The "Pit Crew" model moves prep outside, using a **waiting room buffer** to stage prepped patients, allowing the magnet to focus exclusively on scanning.
 
 ## Architecture
 
@@ -71,12 +71,14 @@ mri-project/
 - **Medical White Aesthetic**: High-contrast white rooms on grey background
 - **80/20 Layout**: 1200px simulation area + 400px sidebar
 - **Smooth Animation**: 60 FPS with agent movement at 5-6 pixels/frame
-- **Live Statistics**: Real-time throughput, utilization, and queue metrics
+- **Live Statistics**: Real-time throughput (Total, 3T, and 1.5T), utilization, and queue metrics
+- **Load Balancing Router**: Intelligent patient routing to the magnet with the shortest queue
+
 
 ### 3. Comprehensive Data Collection
 - Patient movement logs (zone transitions)
 - State change logs (arriving → changing → prepped → scanning)
-- Gowned waiting buffer usage
+- Waiting room buffer usage
 - Magnet utilization (busy vs occupied time)
 - Summary statistics (CSV + text reports)
 
@@ -106,15 +108,15 @@ uv sync
 
 ### Running the Simulation
 
-**Default 12-hour shift:**
+**Default 2-hour test shift:**
 ```bash
 uv run python main.py
 ```
 
 **Custom duration:**
 ```bash
-uv run python main.py --duration 120    # 2 hour test
-uv run python main.py --duration 360    # 6 hour shift
+uv run python main.py --duration 120    # 2 hour test (default)
+uv run python main.py --duration 720    # 12 hour shift
 ```
 
 **With video recording:**
@@ -125,23 +127,25 @@ uv run python main.py --record          # Generates simulation_video.mp4
 ### What to Expect
 
 **Simulation Duration:**
-- Total runtime: 780 minutes (60 warm-up + 720 data collection)
-- Real-time duration: ~6.5 minutes (with SIM_SPEED = 0.5)
-- Video length: ~6.5 minutes (if recording)
+- Total runtime: 180 minutes (60 warm-up + 120 data collection) by default
+- Real-time duration: ~45 seconds (with SIM_SPEED = 0.25)
+- Video length: ~45 seconds (if recording)
 
 **Visual Output:**
 - PyGame window (1600×800) with animated agents
 - Patients (circles) change color by state:
   - Grey → Arriving
+  - Maroon → Registered
   - Teal → Changing
-  - Yellow → Prepped (waiting)
+  - Yellow → Prepped (waiting room)
   - Green → Scanning
 - Staff (triangles/squares) escort patients
+- Rooms darken when occupied
 
 **Data Output (in `results/` folder):**
 - `*_movements.csv` - All patient zone transitions
 - `*_states.csv` - State change log
-- `*_gowned_waiting.csv` - Buffer usage
+- `*_waiting_room.csv` - Buffer usage
 - `*_summary.csv` - Key performance indicators
 - `*_report.txt` - Human-readable analysis
 
@@ -149,7 +153,8 @@ uv run python main.py --record          # Generates simulation_video.mp4
 
 ### Throughput
 - Number of patients who completed scans during shift
-- Expected: ~22-24 patients per 12-hour shift
+- Breakdowns for **3T** and **1.5T** magnet throughput
+- Expected: ~22-24 patients per standard 12-hour shift
 
 ### Magnet Utilization
 - **Busy %**: Time actually scanning (value-added work)
@@ -157,7 +162,7 @@ uv run python main.py --record          # Generates simulation_video.mp4
 - **Idle %**: True idle time
 
 ### Buffer Performance
-- Average wait time in gowned waiting
+- Average wait time in waiting room
 - Maximum wait time
 - Demonstrates decoupling effect
 
@@ -165,9 +170,9 @@ uv run python main.py --record          # Generates simulation_video.mp4
 
 ### Simulation Parameters
 ```python
-DEFAULT_DURATION = 720      # 12 hours
+DEFAULT_DURATION = 120      # 2 hours
 WARM_UP_DURATION = 60       # 1 hour
-SIM_SPEED = 0.5             # 1 sim minute = 0.5 real seconds
+SIM_SPEED = 0.25            # 1 sim minute = 0.25 real seconds
 FPS = 60                    # Smooth animation
 ```
 
@@ -189,10 +194,11 @@ delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
 ### Visual Verification
 Watch for these behaviors:
 - ✓ Patients spawn in Zone 1 (bottom)
+- ✓ Patients go to Admin TA and turn Maroon (Registered)
 - ✓ Orange triangle (porter) escorts to change rooms
 - ✓ Patients turn teal while changing
 - ✓ Cyan square (backup tech) escorts to prep
-- ✓ Patients turn yellow in gowned waiting
+- ✓ Patients turn yellow in waiting room
 - ✓ Purple square (scan tech) escorts to magnet
 - ✓ Patients turn green while scanning
 - ✓ Patients exit to the right

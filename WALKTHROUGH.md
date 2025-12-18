@@ -23,7 +23,7 @@ Traditional metrics show high "occupied time" but hide low "value-added time":
 ### The "Pit Crew" Model
 Inspired by Formula 1 pit stops - parallel processing:
 1. **Prep happens outside** the magnet room
-2. **Gowned Waiting buffer** stages prepped patients
+2. **Waiting Room buffer** stages prepped patients
 3. **Magnet focuses on scanning** only
 4. **Result**: Higher throughput, better efficiency
 
@@ -43,8 +43,8 @@ src/
 │   ├── Visual constants (1600x800, medical white colors)
 │   ├── Room coordinates (13 rooms, scaled to 1200px simulation area)
 │   ├── Agent positions (spawn points, staging areas)
-│   ├── Process times (triangular distributions from empirical data)
-│   └── Probabilities (IV needs: 70%, difficult IV: 15%)
+│   ├── Process times (Triangular: screening, change, iv, scan_setup, scan, scan_exit, flip)
+│   └── Probabilities (IV needs: 33%, difficult IV: 1%)
 │
 ├── visuals/            # PyGame rendering (NO simulation logic)
 │   ├── layout.py       # Static floor plan with medical white aesthetic
@@ -56,8 +56,8 @@ src/
 │   └── reporter.py     # CSV export, text reports, summary generation
 │
 └── core/               # SimPy simulation (Coordinates all modules)
-    ├── workflow.py     # Patient journey process (7-step swimlane)
-    └── engine.py       # Main loop (bridges SimPy and PyGame)
+    ├── workflow.py     # Patient journey process (7-step swimlane with Load Balancing)
+    └── engine.py       # Main loop (bridges SimPy, PyGame, and 3T/1.5T resources)
 ```
 
 ### Key Design Patterns
@@ -71,13 +71,19 @@ src/
 ### Patient Journey (7 Steps)
 
 ```python
-1. ARRIVAL (Zone 1)
-   - Patient spawns as grey circle
-   - Position: (600, 730)
-   - State: 'arriving'
+1. ARRIVAL & REGISTRATION (Zone 1 Gatekeeper)
+   - Patient arrives from RIGHT entrance (Row A Door)
+   - Spawns at (1150, 675) as Grey circle
+   - Walks to Admin TA Desk at (850, 675)
+   - **Registration**:
+     * Resource: Admin TA (Royal Blue #305CDE)
+     * Interaction: Patient turns **Maroon** (Registered)
+     * Duration: Screening time (~3.2 min)
+   - **Waiting**: Patient walks to LEFT side of Zone 1 (Grid Area) to wait for Porter
+   - State: 'registered' (Maroon)
 
 2. TRANSPORT (Porter)
-   - Orange triangle moves to patient
+   - Orange triangle picks up **Registered (Maroon)** patient from Zone 1 Left Grid
    - Both move to change room (random: 1, 2, or 3)
    - Porter returns to Zone 1
 
@@ -86,50 +92,67 @@ src/
    - Duration: triangular(2, 3.5, 5) minutes
    - State: 'changing'
 
-4. PREP (Backup Tech)
-   - Cyan square escorts to prep room (random: 1 or 2)
-   - Screening: triangular(2, 3, 5) minutes
-   - IV Setup (70% probability):
-     * Normal: triangular(1, 2.5, 4) minutes
-     * Difficult (15%): triangular(3, 5, 8) minutes
+4. PREP (Backup Tech Localization)
+   - Patient moves autonomously from Change Room to Waiting Room buffer
+   - Backup Tech (localized to Zone 2) meets patient in Waiting Room
+   - Escort to prep room for Screening: triangular(2.08, 3.20, 5.15) min
+   - IV Setup (33% probability):
+     * Normal: triangular(1.53, 2.56, 4.08) minutes
+     * Difficult (1%): triangular(7, 7.8, 9) minutes
+   - Backup Tech returns patient to Waiting Room and returns to Prep Room
    - State: 'prepped'
 
-5. GOWNED WAITING (The Critical Buffer)
-   - Patient turns YELLOW
-   - Moves to yellow box (240, 245)
-   - Waits for magnet availability
-   - This is the "Pit Crew" staging area
+5. WAITING FOR MAGNET (Autonomous Signage)
+   - Patient waits in yellow box center (325, 350)
+   - **Washroom Break**: 20% probability of random break (2-5 min) during wait.
+   - Trigger: Magnet resource becomes free
+   - Patient moves UNACCOMPANIED to Magnet Room (simulating digital signage)
+   - Scan Tech remains in Control Room (Zone 3)
 
-6. SCANNING (Scan Tech + Magnet)
-   - Purple square joins patient
-   - Move to magnet (950, 160)
-   - Patient turns GREEN
-   - Scan: triangular(18, 22, 26) minutes
-   - Bed flip: 1 minute (parallel) vs 5 minutes (serial)
+6. SCANNING (Dual-Bay Phased Workflow)
+   - Selection: First Available (Dynamic Pool)
+   - Task 1: Setup (occupied, not scanning) - triangular(1.52, 3.96, 7.48) min
+   - Task 2: Scan (Value-Added) - triangular(18.1, 22, 26.5) min
+   - Task 3: Exit (occupied, not scanning) - triangular(0.35, 2.56, 4.52) min
+   - Task 4: Bed Flip (Porter Trigger) - triangular(0.58, 1, 1.33) min
+     * **Parallel Workflow**: Triggered immediately upon patient exit; runs concurrently with Patient Change.
    - State: 'scanning'
+   - Metric: Captures "Hidden Time" vs "Value-Added" time
 
-7. EXIT
-   - Patient moves to (1180, 730)
-   - Removed from visualization
-   - Logged as completed
+7. EXIT (Post-Scan)
+   - Step 1: Return to Change Room (Street Clothes) - triangular(2, 3.5, 5) min
+   - State: 'changing' (Blue)
+   - Step 2: Leave Building
+   - State: 'exited' (Patient turns dark grey)
+   - Patient moves VISIBLY from Change Room to (1180, 675)
+   - Removed from simulation ONLY after reaching exit target
+   - Logged as completed via `stats.log_completion(p_id, magnet_id)`
 ```
 
 ### Staff Roles
 
 **Porter (1 staff):**
 - Shape: Orange triangle
-- Role: Transports patients from Zone 1 to change rooms
-- Home position: (550, 730)
+- Role: Transport (Priority 1) + **Magnet Bed Flip (Priority 0)**
+- Home position: (500, 675)
+- Strategy: **Queued Early** - Porter is requested as soon as scan ends, allowing movement during patient exit.
 
 **Backup Tech (2 staff):**
 - Shape: Cyan square
 - Role: Preps patients (screening + IV)
-- Staging: (280, 245) near gowned waiting
+- Staging: Localized to IV Prep Rooms (Zone 2)
+- Strategy: **Load Balancing (LRU)** - Assignment rotates between techs to ensure even workload distribution.
 
 **Scan Tech (2 staff):**
 - Shape: Purple square
-- Role: Operates MRI magnet
-- Staging: Near magnets (870, 160) and (870, 410)
+- Role: Specialized console operation (Zone 3)
+- Staging: Stays at staging positions (800, 175) and (800, 445)
+
+**Admin TA (1 staff):**
+- Shape: Royal Blue square (#305CDE)
+- Role: Gatekeeper / Registration
+- Home position: (850, 675) - Right side of Zone 1 (framing text)
+- Logic: Registers arriving patients, turning them Maroon before they can proceed.
 
 ## 5. Visual Design
 
@@ -140,9 +163,16 @@ src/
 - Simulation area: 0-1200px (floor plan)
 - Sidebar: 1200-1600px (stats + legend)
 
+### Patient Grid Positioning
+- **Zone 1 (Arrivals)**: Anchored to the left border with vertical-first grid filling.
+- **Waiting Room (Buffer)**: 
+  - **Changed Patients**: Staged on the left border of the room.
+  - **Prepped Patients**: Staged on the right border of the room.
+- **Overlap Prevention**: PositionManager ensures each patient has a unique 25px grid slot.
+
 **Color Scheme:**
 - Background: Corridor grey (230, 230, 230)
-- All rooms: Medical white (255, 255, 255)
+- All rooms: Medical white (turns Grey when occupied)
 - Borders: Black (0, 0, 0), 2px width
 - Text: Black, Arial 14pt (crisp, professional)
 
@@ -152,7 +182,7 @@ src/
   - 3 Change rooms (teal in legend, white in display)
   - 2 Washrooms
   - 2 IV Prep rooms
-  - Gowned Waiting buffer (yellow box)
+  - Waiting Room buffer (yellow box)
   - Holding area
 - **Zone 3** (vertical strip): Control rooms
 - **Zone 4** (right): 3T and 1.5T MRI magnets
@@ -175,9 +205,9 @@ src/
 **Per-Frame Advancement:**
 ```python
 delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
-# = (1/60) * (60/0.5) / 60
-# = 0.0333 sim minutes per frame
-# = 2 sim seconds per frame
+# = (1/60) * (60/0.25) / 60
+# = 0.0666 sim minutes per frame
+# = 4 sim seconds per frame
 ```
 
 **Movement System:**
@@ -202,13 +232,13 @@ delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
    - Columns: `patient_id`, `old_state`, `new_state`, `timestamp`
    - Tracks: arriving → changing → prepped → scanning → exited
 
-3. **Gowned Waiting** (`*_gowned_waiting.csv`)
+3. **Waiting Room** (`*_waiting_room.csv`)
    - Columns: `patient_id`, `timestamp`, `action` (enter/exit)
    - Proves buffer usage
 
 4. **Summary** (`*_summary.csv`)
-   - Single row with all KPIs
-   - Used for scenario comparison
+   - Single row with all KPIs, including separate 3T and 1.5T scan counts.
+   - Used for scenario comparison and capacity analysis.
 
 ### Key Metrics
 
@@ -223,7 +253,7 @@ delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
 - **Paradox**: Serial shows high occupied but low busy
 
 **Buffer Performance:**
-- Average wait time in gowned waiting
+- Average wait time in waiting room
 - Maximum wait time
 - Queue length over time
 
@@ -240,18 +270,19 @@ From GE iCenter analytics and workflow studies:
 
 | Process | Min | Mode | Max | Units |
 |---------|-----|------|-----|-------|
-| Screening | 2 | 3 | 5 | minutes |
-| Changing | 2 | 3.5 | 5 | minutes |
-| IV Setup | 1 | 2.5 | 4 | minutes |
-| IV Difficult | 3 | 5 | 8 | minutes |
-| Scan | 18 | 22 | 26 | minutes |
-| Bed Flip (Current) | - | 5 | - | minutes |
-| Bed Flip (Future) | - | 1 | - | minutes |
+| Screening | 2.08 | 3.20 | 5.15 | minutes |
+| Changing | 1.53 | 3.17 | 5.78 | minutes |
+| IV Setup | 1.53 | 2.56 | 4.08 | minutes |
+| IV Difficult | 7 | 7.8 | 9 | minutes |
+| Scan Setup | 1.52 | 3.96 | 7.48 | minutes |
+| Scan Duration| 18.1 | 22 | 26.5 | minutes |
+| Scan Exit | 0.35 | 2.56 | 4.52 | minutes |
+| Bed Flip | 0.58 | 1 | 1.33 | minutes |
 
 ### Probabilities
 
-- **Needs IV**: 70% (from patient demographics)
-- **Difficult IV**: 15% (of those needing IV)
+- **Needs IV**: 33% (Source 33)
+- **Difficult IV**: 1% (Source 33)
 
 ### Arrival Pattern
 
@@ -298,7 +329,7 @@ while env.now < 720:
 - ✅ Realistic (models actual shift)
 - ✅ Consistent duration across runs
 - ✅ Allows fair scenario comparison
-- ✅ Matches Process Management methodology
+- ✅ Matches Process Management methodology (Load Balancing, Buffers, Parallel Tasks)
 
 ### The Warm-Up Period Problem
 
@@ -449,24 +480,23 @@ if env.now == WARM_UP_DURATION:
 ### Command-Line Interface
 
 ```bash
-# Basic run (default: 720 minutes = 12 hour shift)
+# Basic run (default: 120 minutes = 2 hour test)
 uv run python main.py
 
 # Custom duration
 uv run python main.py --duration MINUTES --output DIR
 
 # Examples
-uv run python main.py --duration 120    # 2 hour test
-uv run python main.py --duration 360    # 6 hour shift
+uv run python main.py --duration 120    # 2 hour test (default)
 uv run python main.py --duration 720    # Full 12 hour shift
 ```
 
 ### Typical Scenarios
 
-**Quick Test:**
+**Quick Test (Default):**
 - Duration: 120 minutes (2 hours)
-- Expected patients: ~4
-- Purpose: Verify functionality
+- Expected patients: ~7-8 patients arriving
+- Purpose: Verify functionality and basic throughput
 
 **Half Shift:**
 - Duration: 360 minutes (6 hours)
@@ -485,7 +515,7 @@ uv run python main.py --duration 720    # Full 12 hour shift
 All saved to `results/` directory:
 - `mri_digital_twin_movements.csv` - Movement log
 - `mri_digital_twin_states.csv` - State transitions
-- `mri_digital_twin_gowned_waiting.csv` - Buffer usage
+- `mri_digital_twin_waiting_room.csv` - Buffer usage
 - `mri_digital_twin_summary.csv` - KPIs
 - `mri_digital_twin_report.txt` - Human-readable summary
 
@@ -499,21 +529,22 @@ All saved to `results/` directory:
 - Magnet Idle: 8%
 - **Interpretation**: Looks efficient but wastes 70% of magnet time on prep
 
-**Parallel Workflow (Pit Crew Model):**
-- Magnet Occupied: 75%
-- Magnet Busy (Value-Added): 73%
-- Magnet Idle: 25%
-- **Interpretation**: Lower occupied % but 3.3x more value-added time
+**Parallel Workflow (Pit Crew Model - Total Dept):**
+- Magnet Occupied (Average): 75%
+- Magnet Busy (Value-Added Average): 73%
+- Magnet Idle (Average): 25%
+- **Interpretation**: Lower individual occupied % but significantly higher cumulative value-added time across both bays.
 
 ### Throughput Improvements
 
-- **Serial**: ~19 patients per 12-hour shift
-- **Parallel**: ~22 patients per 12-hour shift
-- **Gain**: +15% throughput with same resources
+- **Serial (Current state for 2 magnets)**: ~32-36 patients per 12-hour shift
+- **Parallel (Pit Crew for 2 magnets)**: ~45-48 patients per 12-hour shift
+- **Gain**: ~30-40% throughput increase while arrivals are capped at 15-min intervals.
+- **Sustainability**: Decoupling prep ensures the department can scale to 10-min arrival intervals (~72 patients/shift) without adding resources.
 
 ### Buffer Effectiveness
 
-- **Gowned Waiting** acts as decoupling buffer
+- **Waiting Room** acts as decoupling buffer
 - Average wait: 2-3 minutes
 - Prevents magnet idle time
 - Enables continuous scanning
@@ -555,7 +586,13 @@ All saved to `results/` directory:
 - SimPy controls logic (when to move, state changes)
 - Agents store visual state (position, color)
 - PyGame renders current state each frame
-- No race conditions (single-threaded)
+### Key Implementation Patterns
+
+- **Digital Signage Metaphor**: Patients monitor magnet status independently. When the simulation grants a magnet resource, the `patient_journey` triggers autonomous movement from the Waiting Room to the Magnet Room, bypassing the need for a technician escort.
+- **Strict Porter sequence**: Implementing a high-fidelity turnover. The Magnet resource is held throughout: `Scan Complete` → `Patient Exit` → `Porter Request` → `Porter Arrival` → `Bed Flip`. The resource is only released once the Porter completes the reset.
+- **Priority-Based Tasks**: Using `simpy.PriorityResource`, the Porter (Priority 0) clears magnets before handling new arrivals (Priority 1), preventing department bottlenecks.
+- **Staff Localization**: Agents (Backup Techs/Scan Techs) use `return_home()` to stay in their specialized functional zones, significantly reducing non-value-added travel time.
+- **Dynamic Grid Management**: A `PositionManager` tracks slot occupancy in waiting zones. It handles vertical-first filling and prevents "Z-fighting" (overlapping sprites) by assigning deterministic grid coordinates based on arrival sequence.
 
 ## 12. Validation and Verification
 
@@ -573,12 +610,15 @@ uv run python main.py --duration 5 --patients 2
 
 Watch for:
 - ✓ Patients spawn in Zone 1 (bottom)
+- ✓ Patients go to Admin TA and turn Maroon (Registered)
 - ✓ Porter (triangle) escorts to change rooms
 - ✓ Patients turn blue while changing
-- ✓ Backup tech (cyan square) escorts to prep
-- ✓ Patients turn yellow in gowned waiting
-- ✓ Scan tech (purple square) escorts to magnet
+- ✓ Patients move independently to Waiting Room
+- ✓ Backup tech (cyan square) meets patient in Waiting Room and escorts to prep
+- ✓ Patients turn yellow in Waiting Room (unaccompanied)
+- ✓ Patients move independently to magnet room (Digital Signage logic)
 - ✓ Patients turn green while scanning
+- ✓ Porter arrives for Bed Flip after patient exit
 - ✓ Patients exit to the right
 
 ### Data Verification
@@ -586,26 +626,26 @@ Watch for:
 Check CSV files:
 - ✓ Movement log shows zone transitions
 - ✓ State log shows color changes
-- ✓ Gowned waiting log shows buffer usage
+- ✓ Waiting room log shows buffer usage
 - ✓ Summary shows reasonable metrics
 
 ## 13. Limitations and Future Work
 
 ### Current Limitations
 
-1. **Single Magnet Simulation**: Only uses 3T magnet
-2. **Simplified Routing**: Random room selection
-3. **No Patient Priorities**: FIFO queue only
-4. **Fixed Staff Count**: No dynamic staffing
-5. **No Equipment Failures**: Assumes 100% uptime
+1. **Deterministic Setup Times**: While scan times are stochastic, some setup phases use constant modes.
+2. **Simplified Routing**: Uses first-available dynamic routing between two magnets, but doesn't account for clinical priority (e.g., 3T-only scans).
+3. **No Patient Priorities**: First-Come, First-Served (FIFO) queue only.
+4. **Fixed Staff Count**: No modeling of breaks, shift changes, or dynamic staffing.
+5. **No Equipment Failures**: Assumes 100% uptime for both 3T and 1.5T magnets.
 
 ### Future Enhancements
 
-1. **Multi-Magnet**: Use both 3T and 1.5T
-2. **Smart Routing**: Assign rooms based on availability
-3. **Priority Queues**: Emergency vs routine scans
-4. **Staff Optimization**: Find optimal staffing levels
-5. **Reliability Modeling**: Equipment downtime, delays
+1. **Patient Acuity Levels**: Differentiate between routine, urgent, and complex patients.
+2. **Smart Clinical Routing**: Assign patients based on which magnet strength is clinically required.
+3. **Priority Queues**: Emergency vs. routine scans using priority simpy resources.
+4. **Staff Optimization**: Find optimal staffing levels for peak demand periods.
+5. **Reliability Modeling**: Inclusion of equipment downtime, maintenance windows, and random delays.
 
 ## 14. Report Writing Guide
 
@@ -645,7 +685,7 @@ Check CSV files:
 3. **Screenshot**: PyGame window with annotations
 4. **Utilization Comparison**: Serial vs Parallel bar chart
 5. **Throughput Graph**: Patients over time
-6. **Buffer Usage**: Gowned waiting queue length
+6. **Buffer Usage**: Waiting room queue length
 
 ### Key Tables
 
@@ -719,7 +759,7 @@ print(f"Average flow time: {flow_times['total_time'].mean():.1f} minutes")
 
 **Discrete-Event Simulation**: Modeling approach where system changes at discrete points in time
 
-**Gowned Waiting**: Buffer area where prepped patients wait for magnet availability
+**Waiting Room**: Buffer area where prepped patients wait for magnet availability
 
 **Pit Crew Model**: Parallel processing approach inspired by Formula 1 pit stops
 
@@ -741,11 +781,11 @@ This section documents the final configuration for the 12-hour production simula
 
 ```python
 # Time-Based Simulation (Shift Duration Model)
-DEFAULT_DURATION = 720      # 12 hours (standard MRI shift)
+DEFAULT_DURATION = 120      # 2 hours (standard test shift)
 WARM_UP_DURATION = 60       # 1 hour (prime the system, remove empty-state bias)
 
 # Time Scaling
-SIM_SPEED = 0.5  # 1 simulation minute = 0.5 real seconds
+SIM_SPEED = 0.25  # 1 simulation minute = 0.25 real seconds
 
 # Visual Constants
 WINDOW_WIDTH = 1600
@@ -778,13 +818,13 @@ Total Simulation Time: 780 minutes (13 hours)
 
 **Real-Time Duration:**
 ```python
-# With SIM_SPEED = 0.5 (1 sim minute = 0.5 real seconds)
-total_sim_minutes = 780
-sim_speed = 0.5
+# With SIM_SPEED = 0.25 (1 sim minute = 0.25 real seconds)
+total_sim_minutes = 180 (default)
+sim_speed = 0.25
 real_time_seconds = total_sim_minutes * sim_speed
 real_time_minutes = real_time_seconds / 60
 
-# Result: 6.5 minutes real time
+# Result: 0.75 minutes (45 seconds) real time for default test
 ```
 
 **Video Recording:**
@@ -796,10 +836,10 @@ real_time_minutes = real_time_seconds / 60
 ### Expected Outcomes
 
 **Patient Throughput:**
-- Arrival rate: ~30 minutes per patient
-- Warm-up arrivals: ~2 patients (not counted)
-- Data collection arrivals: ~24 patients
-- Expected completions: 22-24 patients
+- Arrival rate: ~15 minutes per patient
+- Warm-up arrivals: ~4 patients (not counted in final stats)
+- Data collection arrivals: ~48 patients (over 12 hours)
+- Expected completions: ~45-48 patients
 
 **Magnet Utilization (Parallel Workflow):**
 - Busy % (Value-Added): 70-75%
@@ -807,7 +847,7 @@ real_time_minutes = real_time_seconds / 60
 - Idle %: 20-25%
 
 **Buffer Performance:**
-- Average gowned waiting time: 2-3 minutes
+- Average wait time: 2-3 minutes
 - Maximum queue length: 2-3 patients
 - Demonstrates effective decoupling
 
@@ -841,7 +881,7 @@ All files saved to `results/` directory with timestamp:
    - All state changes (arriving → changing → prepped → scanning → exited)
    - Columns: `patient_id`, `old_state`, `new_state`, `timestamp`
 
-3. **`mri_digital_twin_gowned_waiting.csv`**
+3. **`mri_digital_twin_waiting_room.csv`**
    - Buffer entry/exit events
    - Proves decoupling buffer effectiveness
    - Columns: `patient_id`, `timestamp`, `action`
@@ -889,7 +929,7 @@ Before running production simulation:
 
 - [ ] Verify `DEFAULT_DURATION = 720` in `src/config.py`
 - [ ] Verify `WARM_UP_DURATION = 60` in `src/config.py`
-- [ ] Verify `SIM_SPEED = 0.5` in `src/config.py`
+- [ ] Verify `SIM_SPEED = 0.25` in `src/config.py`
 - [ ] Run `uv sync` to ensure all dependencies installed
 - [ ] Clear `results/` directory or use unique `--output` name
 - [ ] Close other applications to ensure smooth 60 FPS
@@ -937,10 +977,10 @@ print(f"Occupied (Total): {summary['magnet_occupied_pct'].values[0]:.1f}%")
 print(f"Idle: {summary['magnet_idle_pct'].values[0]:.1f}%")
 
 # Buffer effectiveness
-gowned = pd.read_csv('results/mri_digital_twin_gowned_waiting.csv')
+waiting_room = pd.read_csv('results/mri_digital_twin_waiting_room.csv')
 print(f"\nBuffer Usage:")
-print(f"Average wait: {summary['avg_gowned_wait_time'].values[0]:.1f} minutes")
-print(f"Max wait: {summary['max_gowned_wait_time'].values[0]:.1f} minutes")
+print(f"Average wait: {summary['avg_wait_time'].values[0]:.1f} minutes")
+print(f"Max wait: {summary['max_wait_time'].values[0]:.1f} minutes")
 ```
 
 ### Final Notes

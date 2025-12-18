@@ -8,8 +8,8 @@ import pygame
 import math
 from src.config import (
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING,
-    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN,
-    BLACK, AGENT_SPEED
+    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, BLUE_ADMIN,
+    BLACK, AGENT_SPEED, GREY_DARK
 )
 
 class Agent(pygame.sprite.Sprite):
@@ -100,6 +100,7 @@ class Patient(Agent):
             'changing': BLUE_CHANGING,
             'prepped': YELLOW_PREPPED,
             'scanning': GREEN_SCANNING,
+            'exited': GREY_DARK,
         }
         self.color = state_colors.get(state, GREY_ARRIVING)
     
@@ -136,12 +137,21 @@ class Staff(Agent):
             'porter': ORANGE_PORTER,
             'backup': CYAN_BACKUP,
             'scan': PURPLE_SCAN,
+            'admin': BLUE_ADMIN,
         }
         color = role_colors.get(role, CYAN_BACKUP)
         
         super().__init__(x, y, color, speed=AGENT_SPEED['staff'])
         self.role = role
         self.busy = False  # Track if staff is currently assisting a patient
+        
+        # Home position for returning when idle (e.g., Backup Techs stay near IV Prep)
+        self.home_x = x
+        self.home_y = y
+    
+    def return_home(self):
+        """Move staff back to their assigned home position."""
+        self.move_to(self.home_x, self.home_y)
     
     def draw(self, surface):
         """Draw staff member - shape depends on role. Apply offset when busy to avoid Z-fighting."""
