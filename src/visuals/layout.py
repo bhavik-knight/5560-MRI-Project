@@ -10,8 +10,10 @@ from src.config import (
     MEDICAL_WHITE, CORRIDOR_GREY, WALL_BLACK, LABEL_BLACK, SEPARATOR_BLACK,
     SIDEBAR_X, WINDOW_WIDTH, WINDOW_HEIGHT,
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING,
-    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN
+    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y
 )
+
+
 
 def draw_room(surface, rect, label_text, font):
     """
@@ -80,13 +82,14 @@ def draw_floor_plan(surface, font_room=None, font_zone=None):
         ('prep_1', font_room),
         ('prep_2', font_room),
         ('gowned_waiting', font_room),
-        ('holding', font_room),
     ]
+
     
     for room_key, font in rooms_to_draw:
         rect = pygame.Rect(*ROOM_COORDINATES[room_key])
         label = ROOM_LABELS[room_key]
         draw_room(surface, rect, label, font)
+
 
 def draw_sidebar(surface, stats_dict, font):
     """

@@ -131,6 +131,8 @@ def generate_report(stats_object, total_sim_time, output_dir='results', filename
         f.write("-" * 60 + "\n")
         f.write(f"Total Arrivals:        {summary['total_arrivals']}\n")
         f.write(f"Completed Patients:    {summary['throughput']}\n")
+        f.write(f"  - 3T Magnet Scans:   {summary['scans_3t']}\n")
+        f.write(f"  - 1.5T Magnet Scans: {summary['scans_15t']}\n")
         f.write(f"Still in System:       {summary['patients_in_system']}\n\n")
         
         f.write("-" * 60 + "\n")
@@ -178,6 +180,8 @@ def print_summary(stats_object, total_sim_time):
     print("=" * 60)
     print(f"Duration: {total_sim_time} minutes")
     print(f"Throughput: {summary['throughput']} patients")
+    print(f"  - 3T Magnet Scans:   {summary['scans_3t']}")
+    print(f"  - 1.5T Magnet Scans: {summary['scans_15t']}")
     print(f"Magnet Busy (Value-Added): {summary['magnet_busy_pct']}%")
     print(f"Magnet Idle: {summary['magnet_idle_pct']}%")
     print(f"Avg Gowned Wait: {summary['avg_gowned_wait_time']} min")

@@ -48,8 +48,13 @@ class SimStats:
         self.patients_completed = 0
         self.patients_in_system = 0
         
+        # Magnet throughput
+        self.count_3t = 0
+        self.count_15t = 0
+        
         # Queue tracking
         self.gowned_waiting_log = []  # Track buffer usage
+
         
     def log_movement(self, patient_id, zone, timestamp):
         """
@@ -88,8 +93,8 @@ class SimStats:
             self.patients_arrived += 1
             self.patients_in_system += 1
         elif old_state == 'scanning' and new_state == 'exited':
-            self.patients_completed += 1
             self.patients_in_system -= 1
+
         
         # Skip logging state changes during warm-up period
         if timestamp < self.warm_up_duration:
@@ -102,6 +107,18 @@ class SimStats:
             'timestamp': timestamp - self.warm_up_duration,  # Adjust timestamp
             'event_type': 'state_change'
         })
+    
+    def log_completion(self, patient_id, magnet_id):
+        """
+        Record patient completion and update magnet-specific throughput.
+        """
+        self.patients_completed += 1
+        
+        if magnet_id == '3T':
+            self.count_3t += 1
+        elif magnet_id == '1.5T':
+            self.count_15t += 1
+
     
     def log_magnet_start(self, timestamp, is_scanning=False):
         """
@@ -184,7 +201,10 @@ class SimStats:
             'throughput': self.patients_completed,
             'patients_in_system': self.patients_in_system,
             'total_arrivals': self.patients_arrived,
+            'scans_3t': self.count_3t,
+            'scans_15t': self.count_15t,
         }
+
     
     def get_summary_stats(self, total_sim_time):
         """

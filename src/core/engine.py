@@ -63,8 +63,10 @@ def run_simulation(duration=None, output_dir='results', record=False):
         'porter': simpy.Resource(env, capacity=STAFF_COUNT['porter']),
         'backup_techs': simpy.Resource(env, capacity=STAFF_COUNT['backup_tech']),
         'scan_techs': simpy.Resource(env, capacity=STAFF_COUNT['scan_tech']),
-        'magnet': simpy.Resource(env, capacity=1),  # Only 1 patient can scan at a time
+        'magnet_3t': simpy.Resource(env, capacity=1),
+        'magnet_15t': simpy.Resource(env, capacity=1),
     }
+
     
     # 5. Create Staff Sprites
     staff_dict = {

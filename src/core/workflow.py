@@ -157,42 +157,43 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     stats.log_movement(p_id, 'gowned_waiting', env.now)
     stats.log_gowned_waiting(p_id, env.now, 'enter')
     
-    # ========== 6. SCANNING (Dual-Bay Magnet Routing) ==========
-    with resources['magnet'].request() as req:
+    # ========== 6. SCANNING (Load Balancing Routing) ==========
+    # Select magnet with shortest queue
+    if len(resources['magnet_3t'].queue) <= len(resources['magnet_15t'].queue):
+        magnet_id = '3T'
+        resource_key = 'magnet_3t'
+        magnet_loc = MAGNET_3T_LOC
+        magnet_name = 'magnet_3t'
+        staging_pos = AGENT_POSITIONS['scan_staging_3t']
+    else:
+        magnet_id = '1.5T'
+        resource_key = 'magnet_15t'
+        magnet_loc = MAGNET_15T_LOC
+        magnet_name = 'magnet_15t'
+        staging_pos = AGENT_POSITIONS['scan_staging_15t']
+
+    with resources[resource_key].request() as req:
         yield req
         
         stats.log_gowned_waiting(p_id, env.now, 'exit')
         
-        # Determine which magnet to use (priority to 3T)
-        # Check if 3T scan tech is available
-        scan_tech_3t = staff_dict['scan'][0]  # First scan tech assigned to 3T
-        scan_tech_15t = staff_dict['scan'][1] if len(staff_dict['scan']) > 1 else staff_dict['scan'][0]
+        # Determine available scan tech
+        scan_tech_3t = staff_dict['scan'][0]
+        scan_tech_15t = staff_dict['scan'][1] if len(staff_dict['scan']) > 1 else scan_tech_3t
         
-        # Priority routing: prefer 3T, use 1.5T if 3T tech is busy
-        if not scan_tech_3t.busy:
-            # Use 3T magnet
+        # Assign tech based on chosen magnet if possible, or whichever is free
+        if magnet_id == '3T' and not scan_tech_3t.busy:
             scan_tech = scan_tech_3t
-            magnet_target = MAGNET_3T_LOC
-            magnet_name = 'magnet_3t'
-            staging_pos = AGENT_POSITIONS['scan_staging_3t']
-        elif not scan_tech_15t.busy:
-            # Use 1.5T magnet
+        elif magnet_id == '1.5T' and not scan_tech_15t.busy:
             scan_tech = scan_tech_15t
-            magnet_target = MAGNET_15T_LOC
-            magnet_name = 'magnet_15t'
-            staging_pos = AGENT_POSITIONS['scan_staging_15t']
         else:
-            # Both busy, use whichever becomes available (default to 3T)
-            scan_tech = scan_tech_3t
-            magnet_target = MAGNET_3T_LOC
-            magnet_name = 'magnet_3t'
-            staging_pos = AGENT_POSITIONS['scan_staging_3t']
-        
+            scan_tech = scan_tech_3t if not scan_tech_3t.busy else scan_tech_15t
+            
         scan_tech.busy = True
         
         # Move to selected magnet
-        patient.move_to(*magnet_target)
-        scan_tech.move_to(magnet_target[0] - 30, magnet_target[1])
+        patient.move_to(*magnet_loc)
+        scan_tech.move_to(magnet_loc[0] - 30, magnet_loc[1])
         
         while not patient.is_at_target():
             yield env.timeout(0.01)
@@ -207,7 +208,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         yield env.timeout(scan_time)
         
         # Bed flip
-        flip_time = PROCESS_TIMES['bed_flip_future']  # Using parallel workflow
+        flip_time = PROCESS_TIMES['bed_flip_future']
         yield env.timeout(flip_time)
         
         stats.log_magnet_end(env.now)
@@ -223,6 +224,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     
     stats.log_state_change(p_id, 'scanning', 'exited', env.now)
     stats.log_movement(p_id, 'exit', env.now)
+    stats.log_completion(p_id, magnet_id)
     
     # Remove patient from rendering
     renderer.remove_sprite(patient)

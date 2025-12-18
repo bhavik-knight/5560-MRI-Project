@@ -72,8 +72,7 @@ ROOM_COORDINATES = {
     'prep_1': (250, 20, 130, 100),       # IV Prep Room 308
     'prep_2': (390, 20, 130, 100),       # IV Prep Room 309
     
-    'gowned_waiting': (130, 180, 220, 130),  # CRITICAL: The Buffer (Room 302)
-    'holding': (300, 320, 180, 180),     # Holding/Transfer (Room 311)
+    'gowned_waiting': (130, 180, 220, 130),  # Original Hub Buffer
     
     # Zone 3: Control (Vertical Strip)
     'control': (700, 50, 110, 480),
@@ -88,15 +87,15 @@ ROOM_COORDINATES = {
 
 # Agent Spawn/Target Positions (x, y tuples)
 AGENT_POSITIONS = {
-    'zone1_center': (600, 730),
+    'zone1_center': (600, 650),
     'change_1_center': (70, 65),
     'change_2_center': (55, 140),
     'change_3_center': (55, 200),
     'prep_1_center': (315, 70),
     'prep_2_center': (455, 70),
-    'gowned_waiting_center': (240, 245),
+    'gowned_waiting_center': (275, 325),
     'magnet_3t_center': (950, 160),
-    'magnet_15t_center': (950, 410),
+    'magnet_15t_center': (950, 550),
     'exit': (1180, 730),
     
     # Staff Staging Positions
@@ -106,12 +105,18 @@ AGENT_POSITIONS = {
     'scan_staging_15t': (870, 410),
 }
 
+# Waiting Areas (Rectangles for spatial scatter: x_min, x_max, y_min, y_max)
+ZONE1_TOP_Y = 680
+ZONE1_SUBWAITING_AREA = (1000, 1150, 600, 700)
+GOWNED_WAITING_AREA = (150, 400, 200, 450)
+GOWNED_WAITING_LOC = (240, 245)
+
 # ============================================================================
 # SIMULATION CONSTANTS
 # ============================================================================
 
 # Time-Based Simulation (Shift Duration Model)
-DEFAULT_DURATION = 720      # 12 hours (standard MRI shift)
+DEFAULT_DURATION = 120      # 2 hours (standard test shift)
 WARM_UP_DURATION = 60       # 1 hour (prime the system, remove empty-state bias)
 
 # Time Scaling (Faster for video recording)
@@ -140,7 +145,7 @@ MAGNET_RESOURCES = {
 
 # Magnet Locations
 MAGNET_3T_LOC = (950, 160)   # Top scan room
-MAGNET_15T_LOC = (950, 410)  # Bottom scan room (adjusted from original 550)
+MAGNET_15T_LOC = (950, 550)  # Bottom scan room
 
 # Agent Movement
 AGENT_SPEED = {
@@ -154,7 +159,6 @@ AGENT_SPEED = {
 
 # All times in MINUTES
 # Format: (min, mode, max) for triangular distribution
-
 PROCESS_TIMES = {
     # Screening & Consent
     'screening': (2, 3, 5),
@@ -198,28 +202,7 @@ ROOM_LABELS = {
     'prep_1': 'IV Prep 1',
     'prep_2': 'IV Prep 2',
     'gowned_waiting': 'GOWNED WAIT\n(Max 3)',
-    'holding': 'Holding',
-    'control': 'CONTROL',
-    'magnet_3t': '3T MRI (Source 1)',
+    'control': 'CONTROL ROOM',
+    'magnet_3t': '3T MRI',
     'magnet_15t': '1.5T MRI',
-}
-
-# ============================================================================
-# ROOM COLORS (For Visualization)
-# ============================================================================
-
-ROOM_COLORS = {
-    'zone1': GREY_LIGHT,
-    'change_1': BLUE_TEAL,
-    'change_2': BLUE_TEAL,
-    'change_3': BLUE_TEAL,
-    'washroom_1': PINK_WR,
-    'washroom_2': PINK_WR,
-    'prep_1': ORANGE_PREP,
-    'prep_2': ORANGE_PREP,
-    'gowned_waiting': YELLOW_ROOM,
-    'holding': GREY_HOLDING,
-    'control': GREY_DARK,
-    'magnet_3t': CYAN_MAG,
-    'magnet_15t': CYAN_MAG,
 }
