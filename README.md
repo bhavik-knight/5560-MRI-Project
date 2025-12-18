@@ -78,24 +78,54 @@ mri-project/
 ### 1. Time-Based Simulation (Process Management Best Practice)
 - **3-Phase Execution Model**:
   1. **Warm-Up**: 60 minutes (excluded from stats)
-  2. **Normal Shift**: Runs until `duration - 30` minutes.
-  3. **Cool-Down**: Arrivals stop, remaining patients process.
-  4. **Run-to-Clear**: Overtime continues until system is completely empty.
+  2. **Normal Shift**: Runs with Smart Gatekeeper monitoring
+  3. **Smart Gatekeeper**: Dynamically stops arrivals based on queue burden vs. remaining time
+  4. **Run-to-Clear**: Overtime continues until system is completely empty
 
-### 2. Real-Time Visualization
+### 2. Smart Gatekeeper Logic (v2.0)
+- **Capacity-Aware Shutdown**: Replaces fixed cooldown with intelligent queue management
+- **Dynamic Calculation**: Uses `AVG_CYCLE_TIME` (45 min) and `MAX_SCAN_TIME` (70 min)
+- **Queue Burden Formula**: `(patients_in_system × 45) / 2 magnets`
+- **Closes Gate When**: Estimated clearing time > remaining shift time
+- **Visual Feedback**: Status changes to "CLOSED (Flushing Queue)" in red text
+- **Result**: Minimizes overtime while ensuring all patients are served
+
+### 3. Inpatient/High-Acuity Workflow (v2.0)
+- **Patient Classification**: 10% of arrivals are high-acuity inpatients
+- **Visual Distinction**:
+  - **Dark Pink (Fuschia)**: Inpatients - bypass standard flow
+  - **Dodger Blue**: Outpatients - standard workflow
+- **Room 311 (Holding/Transfer)**: Dedicated space for complex cases
+- **Parallel Processing**: Anesthesia prep (10-25 min) outside magnet
+- **Workflow Decoupling**: Inpatients skip registration, change rooms, and waiting areas
+- **Bed Transfer**: Quick transfer (3-8 min) from holding to magnet
+
+### 4. Race Condition Mitigation (v2.0)
+- **Staging + Seize Logic**: Patients wait at staging areas before room entry
+- **Distinct Resources**: Each change room (1, 2, 3) and washroom (1, 2) is a separate resource
+- **Randomized Selection**: Fair distribution prevents bias toward Room 1
+- **Check-First Optimization**: Immediate availability checking eliminates unnecessary pausing
+- **Visual Result**: Zero sprite overlaps; patients only queue when ALL rooms occupied
+
+### 5. Real-Time Visualization
 - **Medical White Aesthetic**: High-contrast white rooms on grey background
 - **Visual State Tracking**:
   - **Light Green**: Magnet Scanning (Busy)
   - **Tan/Brown**: Magnet Dirty (Needs Cleaning)
   - **White**: Magnet Clean (Idle)
-- **Live Statistics**: Status indicators (Warm Up -> Normal -> Overtime)
-- **Gatekeeper Logic**: Visible queuing at Admin desk if staff is away.
+  - **Light Green**: Room Occupied (patient present)
+- **Live Statistics**: 
+  - Status indicators (Warm Up → Normal → CLOSED → Overtime)
+  - Estimated clearing time display
+  - Patient type color coding
+- **Gatekeeper Logic**: Visible queuing at Admin desk
 
-### 3. Comprehensive Data Collection
+### 6. Comprehensive Data Collection
 - Patient movement logs (zone transitions)
-- State change logs (arriving → changing → prepped → scanning)
+- State change logs (arriving → registered → changing → prepped → scanning)
 - Waiting room buffer usage
 - Magnet utilization (busy vs occupied time)
+- Patient type tracking (inpatient vs outpatient)
 - Summary statistics (CSV + text reports)
 
 ### 4. Empirical Process Times

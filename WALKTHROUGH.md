@@ -109,6 +109,121 @@ classDiagram
 - **Bridge Pattern**: Engine connects SimPy (discrete-event) and PyGame (real-time)
 - **No Circular Dependencies**: Clean import hierarchy
 
+## 3.5 Version 2.0 Features (Advanced Workflow Logic)
+
+### Smart Gatekeeper Logic
+**Purpose**: Replace fixed cooldown with intelligent capacity-aware shutdown
+
+**Implementation** (`src/core/workflow.py` - `patient_generator`):
+```python
+# Dynamic calculation every iteration
+queue_burden = (stats.patients_in_system * config.AVG_CYCLE_TIME) / magnet_count
+stats.est_clearing_time = queue_burden
+time_remaining = duration - env.now
+
+# Close gate if burden exceeds remaining time
+if queue_burden > time_remaining or (env.now > duration - config.MAX_SCAN_TIME and stats.patients_in_system > 0):
+    stats.generator_active = False
+    break
+```
+
+**Constants** (`src/config.py`):
+- `AVG_CYCLE_TIME = 45` minutes (average patient throughput)
+- `MAX_SCAN_TIME = 70` minutes (longest scan type: Cardiac Infiltrative)
+- `PROB_INPATIENT = 0.10` (10% high-acuity cases)
+
+**Visual Feedback** (`src/visuals/layout.py`):
+- Status changes to "CLOSED (Flushing Queue)" in **red text** (200, 0, 0)
+- Displays "Est Clear: XXm" showing remaining queue burden
+- Prevents excessive overtime while ensuring all patients are served
+
+### Inpatient/High-Acuity Workflow
+**Purpose**: Model complex cases requiring anesthesia and parallel processing
+
+**Patient Classification** (`src/core/workflow.py` - `patient_journey`):
+```python
+is_inpatient = random.random() < config.PROB_INPATIENT
+if is_inpatient:
+    patient.color = config.COLOR_INPATIENT  # Dark Pink (233, 30, 99)
+    yield from inpatient_workflow(...)
+else:
+    patient.color = config.COLOR_OUTPATIENT  # Dodger Blue (30, 144, 255)
+    # Standard workflow continues
+```
+
+**Inpatient Path** (`src/core/inpatient_workflow.py`):
+1. **Bypass Registration**: Skip Admin TA, go directly to Room 311
+2. **Holding/Transfer Room**: Large room (420, 250, 250×250) for prep
+3. **Parallel Processing**: Anesthesia setup (10-25 min) outside magnet
+4. **Bed Transfer**: Quick transfer (3-8 min) to magnet
+5. **Direct Exit**: Skip change room on exit
+
+**Resource** (`src/core/engine.py`):
+```python
+'holding_room': simpy.Resource(env, capacity=1)
+```
+
+**Visual Distinction**:
+- **Dark Pink patients**: Bypass queue, visible in Room 311
+- **Blue patients**: Standard workflow through change rooms/waiting areas
+- **Decoupling**: Complex cases don't block routine flow
+
+### Race Condition Mitigation
+**Problem**: Multiple patients walking into same room simultaneously
+
+**Solution**: Staging + Seize + Check-First Logic
+
+**Implementation** (`src/core/workflow.py`):
+```python
+# OLD: Move to staging, then check
+patient.move_to(*staging_loc)
+while not selected_room:
+    for key in ['change_1', 'change_2', 'change_3']:
+        if resources[key].count < capacity:
+            selected_room = key
+            break
+    if not selected_room:
+        yield env.timeout(0.5)  # PAUSE even if rooms available!
+
+# NEW: Check-first, only move when available
+while not selected_room:
+    available_room = resources['get_free_change_room']()  # Helper function
+    if available_room:
+        selected_room = available_room
+        selected_req = resources[selected_room].request()
+        yield selected_req  # Seize BEFORE moving
+    else:
+        yield env.timeout(0.5)  # Only pause if ALL rooms occupied
+
+patient.move_to(*room_target)  # Move to seized room
+```
+
+**Helper Functions** (`src/core/engine.py`):
+```python
+def get_free_change_room():
+    room_keys = ['change_1', 'change_2', 'change_3']
+    random.shuffle(room_keys)  # Fair distribution
+    for key in room_keys:
+        if resources[key].count < resources[key].capacity:
+            return key
+    return None
+```
+
+**Resources** (`src/core/engine.py`):
+```python
+'change_1': simpy.Resource(env, capacity=1),
+'change_2': simpy.Resource(env, capacity=1),
+'change_3': simpy.Resource(env, capacity=1),
+'washroom_1': simpy.Resource(env, capacity=1),
+'washroom_2': simpy.Resource(env, capacity=1),
+```
+
+**Result**:
+- Zero sprite overlaps
+- Patients only pause when ALL rooms occupied
+- Fair room distribution (no bias toward Room 1)
+- Gowned patients stay in waiting room until washroom available
+
 ## 4. Workflow Implementation
 
 ### Patient Journey (7 Steps)
