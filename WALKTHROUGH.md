@@ -502,17 +502,18 @@ All saved to `results/` directory:
 - Magnet Idle: 8%
 - **Interpretation**: Looks efficient but wastes 70% of magnet time on prep
 
-**Parallel Workflow (Pit Crew Model):**
-- Magnet Occupied: 75%
-- Magnet Busy (Value-Added): 73%
-- Magnet Idle: 25%
-- **Interpretation**: Lower occupied % but 3.3x more value-added time
+**Parallel Workflow (Pit Crew Model - Total Dept):**
+- Magnet Occupied (Average): 75%
+- Magnet Busy (Value-Added Average): 73%
+- Magnet Idle (Average): 25%
+- **Interpretation**: Lower individual occupied % but significantly higher cumulative value-added time across both bays.
 
 ### Throughput Improvements
 
-- **Serial**: ~18-20 patients per 12-hour shift
-- **Parallel**: ~42-46 patients per 12-hour shift
-- **Gain**: +120% throughput by decoupling prep from the magnet
+- **Serial (Current state for 2 magnets)**: ~32-36 patients per 12-hour shift
+- **Parallel (Pit Crew for 2 magnets)**: ~45-48 patients per 12-hour shift
+- **Gain**: ~30-40% throughput increase while arrivals are capped at 15-min intervals.
+- **Sustainability**: Decoupling prep ensures the department can scale to 10-min arrival intervals (~72 patients/shift) without adding resources.
 
 ### Buffer Effectiveness
 
@@ -596,19 +597,19 @@ Check CSV files:
 
 ### Current Limitations
 
-1. **Single Magnet Simulation**: Only uses 3T magnet
-2. **Simplified Routing**: Random room selection
-3. **No Patient Priorities**: FIFO queue only
-4. **Fixed Staff Count**: No dynamic staffing
-5. **No Equipment Failures**: Assumes 100% uptime
+1. **Deterministic Setup Times**: While scan times are stochastic, some setup phases use constant modes.
+2. **Simplified Routing**: Load balances between two magnets, but doesn't account for clinical priority (e.g., 3T-only scans).
+3. **No Patient Priorities**: First-Come, First-Served (FIFO) queue only.
+4. **Fixed Staff Count**: No modeling of breaks, shift changes, or dynamic staffing.
+5. **No Equipment Failures**: Assumes 100% uptime for both 3T and 1.5T magnets.
 
 ### Future Enhancements
 
-1. **Multi-Magnet**: Use both 3T and 1.5T
-2. **Smart Routing**: Assign rooms based on availability
-3. **Priority Queues**: Emergency vs routine scans
-4. **Staff Optimization**: Find optimal staffing levels
-5. **Reliability Modeling**: Equipment downtime, delays
+1. **Patient Acuity Levels**: Differentiate between routine, urgent, and complex patients.
+2. **Smart Clinical Routing**: Assign patients based on which magnet strength is clinically required.
+3. **Priority Queues**: Emergency vs. routine scans using priority simpy resources.
+4. **Staff Optimization**: Find optimal staffing levels for peak demand periods.
+5. **Reliability Modeling**: Inclusion of equipment downtime, maintenance windows, and random delays.
 
 ## 14. Report Writing Guide
 
