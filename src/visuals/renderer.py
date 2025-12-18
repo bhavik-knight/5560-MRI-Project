@@ -177,18 +177,18 @@ class RenderEngine:
              if self.frame_count % RECORD_INTERVAL == 0:
                 try:
                     # Capture screen as numpy array
-                view = pygame.surfarray.array3d(self.screen)
-                
-                # Transpose from (width, height, 3) to (height, width, 3)
-                view = view.transpose([1, 0, 2])
-                
-                # Convert RGB to BGR for OpenCV
-                frame_bgr = cv2.cvtColor(view, cv2.COLOR_RGB2BGR)
-                
-                # Write frame
-                self.video_writer.write(frame_bgr)
-            except Exception as e:
-                print(f"⚠ Frame capture error: {e}")
+                    view = pygame.surfarray.array3d(self.screen)
+                    
+                    # Transpose from (width, height, 3) to (height, width, 3)
+                    view = view.transpose([1, 0, 2])
+                    
+                    # Convert RGB to BGR for OpenCV
+                    frame_bgr = cv2.cvtColor(view, cv2.COLOR_RGB2BGR)
+                    
+                    # Write frame
+                    self.video_writer.write(frame_bgr)
+                except Exception as e:
+                    print(f"⚠ Frame capture error: {e}")
         
         # 7. Control frame rate
         self.clock.tick(self.fps)
