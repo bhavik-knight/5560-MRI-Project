@@ -1,188 +1,124 @@
 """
-Reporter Module - Data Export and Reporting
-============================================
-Exports simulation statistics to CSV and generates summary reports.
+Reporter Module - Performance Reporting & Data Export
+=====================================================
+Generates detailed statistical reports and CSV exports 
+distinguishing between Value-Added (Scanning) and Non-Value-Added time.
 """
 
-import csv
-import os
+import pandas as pd
+import numpy as np
 from datetime import datetime
+import os
 
-def export_to_csv(stats_object, output_dir='results', filename=None):
-    """
-    Export simulation statistics to CSV files.
+def print_summary(stats, total_sim_time):
+    """Prints a quick summary matching the SimStats.get_summary_stats output."""
+    summary = stats.get_summary_stats(total_sim_time)
     
-    Args:
-        stats_object: SimStats instance with collected data
-        output_dir: Directory to save CSV files
-        filename: Optional custom filename (without extension)
-    
-    Returns:
-        dict: Paths to created files
+    print("\n" + "-"*30)
+    print("QUICK SUMMARY")
+    print("-"*30)
+    print(f"Throughput:           {summary['throughput']} patients")
+    print(f"Magnet Busy (Value):  {summary['magnet_busy_pct']}%")
+    print(f"Magnet Idle:          {summary['magnet_idle_pct']}%")
+    print(f"Avg Wait Time:        {summary['avg_wait_time']} min")
+    print("-"*30 + "\n")
+
+def generate_report(stats, duration, output_dir='results', filename='mri_digital_twin'):
     """
-    # Create output directory if it doesn't exist
+    Generate comprehensive simulation report.
+    1. Aggregates data from PatientMetrics and MagnetMetrics
+    2. Calculates performance ratios (Utilization, Efficiency)
+    3. Prints console summary
+    4. Exports to CSV
+    """
+    
+    # --- 1. Patient Data Analysis ---
+    if not stats.finished_patients:
+        print("No patients completed. Skipping report generation.")
+        return {}
+
+    patient_data = []
+    for p in stats.finished_patients:
+        row = {
+            'Patient_ID': p.id,
+            'Type': p.type,
+            'Has_IV': p.has_iv,
+            'Is_Difficult': p.is_difficult,
+            'Total_Time_In_System': round(p.total_time_in_system, 2),
+            **{f"Time_{k.capitalize()}": round(v, 2) for k, v in p.durations.items()}
+        }
+        patient_data.append(row)
+
+    df_patients = pd.DataFrame(patient_data)
+    
+    # --- 2. Magnet Data Analysis ---
+    magnet_report = []
+    for m_id, m in stats.magnets.items():
+        total_productive = m.total_scan_time
+        total_overhead = m.total_setup_time + m.total_flip_time + m.total_exit_time
+        total_occupied = total_productive + total_overhead
+        
+        # Calculate process efficiency
+        efficiency = (total_productive / total_occupied * 100) if total_occupied > 0 else 0
+        
+        magnet_report.append({
+            'Magnet_ID': m_id,
+            'Patients_Served': m.patients_served,
+            'Scan_Time_Green': round(m.total_scan_time, 2),
+            'Setup_Time_Brown': round(m.total_setup_time, 2),
+            'Flip_Time_Brown': round(m.total_flip_time, 2),
+            'Exit_Time_Brown': round(m.total_exit_time, 2),
+            'Efficiency_Pct': round(efficiency, 2)
+        })
+    df_magnets = pd.DataFrame(magnet_report)
+
+    # --- 3. Save to CSV ---
     os.makedirs(output_dir, exist_ok=True)
+    p_file = f"{output_dir}/{filename}_patient_performance.csv"
+    m_file = f"{output_dir}/{filename}_magnet_performance.csv"
     
-    # Generate timestamp for filenames
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    base_name = filename or f'simulation_{timestamp}'
-    
-    created_files = {}
-    
-    # 1. Export patient movement log
-    movement_file = os.path.join(output_dir, f'{base_name}_movements.csv')
-    with open(movement_file, 'w', newline='') as f:
-        if stats_object.patient_log:
-            writer = csv.DictWriter(f, fieldnames=stats_object.patient_log[0].keys())
-            writer.writeheader()
-            writer.writerows(stats_object.patient_log)
-    created_files['movements'] = movement_file
-    
-    # 2. Export state changes log
-    state_file = os.path.join(output_dir, f'{base_name}_states.csv')
-    with open(state_file, 'w', newline='') as f:
-        if stats_object.state_changes:
-            writer = csv.DictWriter(f, fieldnames=stats_object.state_changes[0].keys())
-            writer.writeheader()
-            writer.writerows(stats_object.state_changes)
-    created_files['states'] = state_file
-    
-    # 3. Export waiting room log
-    waiting_file = os.path.join(output_dir, f'{base_name}_waiting_room.csv')
-    with open(waiting_file, 'w', newline='') as f:
-        if stats_object.waiting_room_log:
-            writer = csv.DictWriter(f, fieldnames=stats_object.waiting_room_log[0].keys())
-            writer.writeheader()
-            writer.writerows(stats_object.waiting_room_log)
-    created_files['waiting_room'] = waiting_file
-    
-    return created_files
+    df_patients.to_csv(p_file, index=False)
+    df_magnets.to_csv(m_file, index=False)
 
-def export_summary_stats(stats_object, total_sim_time, output_dir='results', filename=None):
-    """
-    Export summary statistics to CSV.
+    # --- 4. Print Summary Report to Console ---
+    print("\n" + "="*60)
+    print("MRI DIGITAL TWIN - COMPREHENSIVE PERFORMANCE REPORT")
+    print("="*60)
     
-    Args:
-        stats_object: SimStats instance
-        total_sim_time: Total simulation duration in minutes
-        output_dir: Directory to save CSV file
-        filename: Optional custom filename
+    # THROUGHPUT
+    print(f"\nTHROUGHPUT SUMMARY:")
+    print(f"Total Arrivals:       {stats.patients_arrived}")
+    print(f"Completed Patients:   {stats.patients_completed}")
+    print(f"Late Arrivals (Closed): {stats.late_arrivals}")
     
-    Returns:
-        str: Path to created summary file
-    """
-    os.makedirs(output_dir, exist_ok=True)
+    # PATIENT STAGE AVERAGES (Value Stream Mapping)
+    print(f"\nSTAGE-BY-STAGE AVERAGES (Minutes):")
+    cols_to_avg = [c for c in df_patients.columns if c.startswith('Time_')]
+    for col in cols_to_avg:
+        avg = df_patients[col].mean()
+        max_val = df_patients[col].max()
+        print(f"  {col.replace('Time_', '').ljust(15)}: Avg={avg:5.1f} | Max={max_val:5.1f}")
     
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    base_name = filename or f'simulation_{timestamp}'
-    summary_file = os.path.join(output_dir, f'{base_name}_summary.csv')
+    # MAGNET PRODUCTIVITY (Green vs Brown Time)
+    print(f"\nMAGNET PRODUCTIVITY (Value-Added Analysis):")
+    for _, m in df_magnets.iterrows():
+        print(f" Magnet {m['Magnet_ID']}:")
+        print(f"  - Patients Served:  {m['Patients_Served']}")
+        print(f"  - Scan Time (Green): {m['Scan_Time_Green']:.1f} mins")
+        print(f"  - Overhead (Brown):  {(m['Setup_Time_Brown'] + m['Flip_Time_Brown'] + m['Exit_Time_Brown']):.1f} mins")
+        print(f"  - Process Efficiency: {m['Efficiency_Pct']}% [The Bowen Metric]")
     
-    # Get summary statistics
-    summary = stats_object.get_summary_stats(total_sim_time)
-    
-    # Add simulation metadata
-    summary['total_sim_time'] = total_sim_time
-    summary['timestamp'] = timestamp
-    
-    # Write to CSV
-    with open(summary_file, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=summary.keys())
-        writer.writeheader()
-        writer.writerow(summary)
-    
-    return summary_file
-
-def generate_report(stats_object, total_sim_time, output_dir='results', filename=None):
-    """
-    Generate comprehensive report with all statistics.
-    
-    Args:
-        stats_object: SimStats instance
-        total_sim_time: Total simulation duration in minutes
-        output_dir: Directory to save files
-        filename: Optional base filename
-    
-    Returns:
-        dict: Paths to all created files
-    """
-    # Export detailed logs
-    log_files = export_to_csv(stats_object, output_dir, filename)
-    
-    # Export summary
-    summary_file = export_summary_stats(stats_object, total_sim_time, output_dir, filename)
-    
-    # Generate text report
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    base_name = filename or f'simulation_{timestamp}'
-    report_file = os.path.join(output_dir, f'{base_name}_report.txt')
-    
-    summary = stats_object.get_summary_stats(total_sim_time)
-    
-    with open(report_file, 'w') as f:
-        f.write("=" * 60 + "\n")
-        f.write("MRI DIGITAL TWIN - SIMULATION REPORT\n")
-        f.write("=" * 60 + "\n\n")
-        
-        f.write(f"Simulation Duration: {total_sim_time} minutes\n")
-        f.write(f"Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        
-        f.write("-" * 60 + "\n")
-        f.write("THROUGHPUT METRICS\n")
-        f.write("-" * 60 + "\n")
-        f.write(f"Total Arrivals:        {summary['total_arrivals']}\n")
-        f.write(f"Completed Patients:    {summary['throughput']}\n")
-        f.write(f"  - 3T Magnet Scans:   {summary['scans_3t']}\n")
-        f.write(f"  - 1.5T Magnet Scans: {summary['scans_15t']}\n")
-        f.write(f"Still in System:       {summary['patients_in_system']}\n\n")
-        
-        f.write("-" * 60 + "\n")
-        f.write("MAGNET UTILIZATION (The Utilization Paradox)\n")
-        f.write("-" * 60 + "\n")
-        f.write(f"Busy Time (Value-Added):  {summary['magnet_busy_pct']}%\n")
-        f.write(f"Occupied Time (Total):    {summary['magnet_occupied_pct']}%\n")
-        f.write(f"Idle Time:                {summary['magnet_idle_pct']}%\n\n")
-        
-        f.write("NOTE: In Serial workflow, Occupied > Busy (prep happens in magnet)\n")
-        f.write("      In Parallel workflow, Occupied ≈ Busy (prep happens elsewhere)\n\n")
-        
-        f.write("-" * 60 + "\n")
-        f.write("WAITING ROOM BUFFER\n")
-        f.write("-" * 60 + "\n")
-        f.write(f"Average Wait Time:    {summary['avg_wait_time']} min\n")
-        f.write(f"Maximum Wait Time:    {summary['max_wait_time']} min\n\n")
-        
-        f.write("-" * 60 + "\n")
-        f.write("DATA LOGS\n")
-        f.write("-" * 60 + "\n")
-        f.write(f"Total Movements:      {summary['total_movements']}\n")
-        f.write(f"Total State Changes:  {summary['total_state_changes']}\n\n")
-        
-        f.write("=" * 60 + "\n")
+    # SYSTEM TOTALS
+    system_avg = df_patients['Total_Time_In_System'].mean()
+    system_max = df_patients['Total_Time_In_System'].max()
+    print(f"\nOVERALL SYSTEM PERFORMANCE:")
+    print(f"Avg Time in System:   {system_avg:.1f} minutes")
+    print(f"Max Time in System:   {system_max:.1f} minutes")
+    print("="*60)
+    print(f"CSV data exported to '{output_dir}'")
+    print("="*60 + "\n")
     
     return {
-        **log_files,
-        'summary': summary_file,
-        'report': report_file
+        'patients': p_file,
+        'magnets': m_file
     }
-
-def print_summary(stats_object, total_sim_time):
-    """
-    Print summary statistics to console.
-    
-    Args:
-        stats_object: SimStats instance
-        total_sim_time: Total simulation duration in minutes
-    """
-    summary = stats_object.get_summary_stats(total_sim_time)
-    
-    print("\n" + "=" * 60)
-    print("SIMULATION SUMMARY")
-    print("=" * 60)
-    print(f"Duration: {total_sim_time} minutes")
-    print(f"Throughput: {summary['throughput']} patients")
-    print(f"  - 3T Magnet Scans:   {summary['scans_3t']}")
-    print(f"  - 1.5T Magnet Scans: {summary['scans_15t']}")
-    print(f"Magnet Busy (Value-Added): {summary['magnet_busy_pct']}%")
-    print(f"Magnet Idle: {summary['magnet_idle_pct']}%")
-    print(f"Avg Wait Time: {summary['avg_wait_time']} min")
-    print("=" * 60 + "\n")

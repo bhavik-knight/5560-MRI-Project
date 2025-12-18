@@ -18,6 +18,7 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
     """
     # Step 1: Arrival (no registration)
     patient.set_state('arriving')
+    patient.arrival_time = env.now
     stats.log_state_change(p_id, None, 'arriving', env.now)
     
     # Step 2: Move directly to Holding/Transfer Room 311
@@ -36,13 +37,17 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
         stats.log_state_change(p_id, 'arriving', 'prepped', env.now)
         
         # Parallel processing: Anesthesia prep outside magnet
+        patient.start_timer('holding_room', env.now)
         prep_time = get_time('holding_prep')
         yield env.timeout(prep_time)
+        patient.stop_timer('holding_room', env.now)
     
     # Step 4: Wait for magnet (with HIGH PRIORITY)
     # 4a. Request priority access to the magnet pool (Priority 0)
+    patient.start_timer('wait_room', env.now)
     access_req = resources['magnet_access'].request(priority=config.PRIORITY_INPATIENT)
     yield access_req
+    patient.stop_timer('wait_room', env.now)
     
     # 4b. Actually get a specific magnet from the available pool
     magnet_config = yield resources['magnet_pool'].get()
@@ -53,9 +58,11 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
     yield magnet_req
     
     # Step 5: Bed transfer to magnet
+    patient.start_timer('holding_room', env.now) # Transfer counts as holding egress
     transfer_time = get_time('bed_transfer')
     patient.move_to(*magnet_config['loc'])
     yield env.timeout(transfer_time)
+    patient.stop_timer('holding_room', env.now)
     while not patient.is_at_target():
         yield env.timeout(0.01)
     
@@ -71,11 +78,17 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
     
     magnet_config['visual_state'] = 'busy'
     stats.log_magnet_start(env.now, is_scanning=True)
-    yield env.timeout(get_time('scan_duration'))
+    patient.start_timer('scan_room', env.now)
+    
+    scan_time = get_time('scan_duration')
+    yield env.timeout(scan_time)
+    
+    stats.log_magnet_metric(magnet_config['id'], 'scan', scan_time)
+    patient.stop_timer('scan_room', env.now)
     stats.log_magnet_end(env.now)
     
     # Step 7: Exit (inpatients exit directly, no change room)
-    stats.log_completion(p_id, magnet_config['id'])
+    # stats.log_completion(p_id, magnet_config['id']) # Legacy
     magnet_config['visual_state'] = 'dirty'
     
     # Bed flip
@@ -89,7 +102,10 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
         while not porter.is_at_target():
             yield env.timeout(0.01)
         
-        yield env.timeout(get_time('bed_flip_slow'))
+        flip_time = get_time('bed_flip_slow')
+        yield env.timeout(flip_time)
+        stats.log_magnet_metric(magnet_config['id'], 'flip', flip_time)
+        
         magnet_config['visual_state'] = 'clean'
         stats.log_magnet_end(env.now)
         porter.busy = False
@@ -101,6 +117,7 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
     scan_tech.return_home()
     magnet_res.release(magnet_req)
     resources['magnet_access'].release(access_req)
+    stats.log_patient_finished(patient, env.now)
     yield resources['magnet_pool'].put(magnet_config)
     
     # Exit directly

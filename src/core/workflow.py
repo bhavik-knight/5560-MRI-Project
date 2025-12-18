@@ -201,7 +201,9 @@ def patient_exit_process(env, patient, renderer, stats, p_id, magnet_id, resourc
         yield env.timeout(0.01)
         
     stats.log_movement(p_id, 'change_room_exit', env.now)
+    patient.start_timer('change', env.now)
     yield env.timeout(get_time('change_back'))
+    patient.stop_timer('change', env.now)
     
     # Release Room
     resources[selected_room].release(selected_req)
@@ -224,7 +226,7 @@ def patient_exit_process(env, patient, renderer, stats, p_id, magnet_id, resourc
     
     renderer.remove_sprite(patient)
     stats.log_movement(p_id, 'exit', env.now)
-    stats.log_completion(p_id, magnet_id)
+    stats.log_patient_finished(patient, env.now)
 
 def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     """
@@ -250,6 +252,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         return  # Exit after inpatient workflow completes
     else:
         patient.color = config.COLOR_OUTPATIENT  # Dodger Blue
+        patient.arrival_time = env.now
     
     # ========== Step 1: Arrival & Gatekeeper Queue ==========
     patient.set_state('arriving')
@@ -290,7 +293,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         # Now Registration Process
         patient.color = PURPLE_REGISTERED
         stats.log_state_change(p_id, 'arriving', 'registered', env.now)
+        patient.start_timer('admin', env.now)
         yield env.timeout(get_time('registration'))
+        patient.stop_timer('admin', env.now)
         
         # ========== Step 3 & 4: Transport Decision (Dynamic Look-Ahead) ==========
         porter_res = resources['porter']
@@ -405,7 +410,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     # Change into gown
     patient.set_state('changing')
     stats.log_state_change(p_id, 'registered', 'changing', env.now)
+    patient.start_timer('change', env.now)
     yield env.timeout(get_time('changing'))
+    patient.stop_timer('change', env.now)
     
     # Release Room
     resources[selected_room].release(selected_req)
@@ -418,10 +425,12 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     
     stats.log_movement(p_id, 'waiting_room', env.now)
     stats.log_waiting_room(p_id, env.now, 'enter')
+    patient.start_timer('wait_room', env.now)
 
     # ========== Step 6: Backup Tech Prep ==========
     with resources['backup_techs'].request() as req:
         yield req
+        patient.stop_timer('wait_room', env.now)
         stats.log_waiting_room(p_id, env.now, 'exit')
         
         # Load Balancing Tech Selection
@@ -445,11 +454,15 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         stats.log_movement(p_id, 'prep_room', env.now)
         
         # IV Logic
+        patient.start_timer('prep', env.now)
         if random.random() < PROB_IV_NEEDED:
+            patient.has_iv = True
             iv_time = get_time('iv_difficult') if random.random() < PROB_DIFFICULT_IV else get_time('iv_prep')
+            if random.random() < PROB_DIFFICULT_IV: patient.is_difficult = True
             yield env.timeout(iv_time)
             
         yield env.timeout(get_time('screening')) # Clinical interview
+        patient.stop_timer('prep', env.now)
         
         patient.set_state('prepped')
         stats.log_state_change(p_id, 'changing', 'prepped', env.now)
@@ -462,6 +475,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         
         stats.log_movement(p_id, 'waiting_room', env.now)
         stats.log_waiting_room(p_id, env.now, 'enter')
+        patient.start_timer('wait_room', env.now)
         
         tech.busy = False
         tech.return_home()
@@ -504,7 +518,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
          while not patient.is_at_target(): yield env.timeout(0.01)
          
          stats.log_movement(patient.p_id, 'washroom', env.now)
+         patient.start_timer('washroom', env.now)
          yield env.timeout(get_time('washroom'))
+         patient.stop_timer('washroom', env.now)
          
          # Release Washroom
          resources[selected_wr].release(selected_wr_req)
@@ -521,6 +537,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     # 8a. Request priority access to the magnet pool (Priority 1)
     access_req = resources['magnet_access'].request(priority=config.PRIORITY_OUTPATIENT)
     yield access_req
+    patient.stop_timer('wait_room', env.now)
     
     # 8b. Get first available magnet
     magnet_config = yield resources['magnet_pool'].get()
@@ -547,27 +564,37 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     patient.set_state('scanning')
     stats.log_state_change(p_id, 'prepped', 'scanning', env.now)
     stats.log_movement(p_id, magnet_config['name'], env.now)
+    patient.start_timer('scan_room', env.now)
     
     # Scan Workflow - Visual: Scanning = Busy (Green)
     magnet_config['visual_state'] = 'busy'
     stats.log_magnet_start(env.now, is_scanning=False)
-    yield env.timeout(get_time('scan_setup'))
+    
+    # SETUP (Brown)
+    setup_time = get_time('scan_setup')
+    yield env.timeout(setup_time)
+    stats.log_magnet_metric(magnet_config['id'], 'setup', setup_time)
     stats.log_magnet_end(env.now)
     
+    # SCAN (Green)
     stats.log_magnet_start(env.now, is_scanning=True)
-    yield env.timeout(get_time('scan_duration'))
+    scan_time = get_time('scan_duration')
+    yield env.timeout(scan_time)
+    stats.log_magnet_metric(magnet_config['id'], 'scan', scan_time)
     stats.log_magnet_end(env.now)
     
     # Exit Phase - Request Porter EARLY
     # Visual: Scan Done, Patient Leaving = Dirty (Brown)
-    stats.log_completion(p_id, magnet_config['id']) # Increment count immediately
+    stats.log_magnet_start(env.now, is_scanning=False)
+    exit_time = get_time('scan_exit')
+    yield env.timeout(exit_time)
+    stats.log_magnet_metric(magnet_config['id'], 'exit', exit_time)
+    stats.log_magnet_end(env.now)
+    
+    patient.stop_timer('scan_room', env.now)
     magnet_config['visual_state'] = 'dirty'
     
     porter_req = resources['porter'].request(priority=0) # High priority
-    
-    stats.log_magnet_start(env.now, is_scanning=False)
-    yield env.timeout(get_time('scan_exit'))
-    stats.log_magnet_end(env.now)
     
     # Force patient exit process
     env.process(patient_exit_process(env, patient, renderer, stats, p_id, magnet_config['id'], resources))
@@ -591,7 +618,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
             porter.move_to(*magnet_config['loc'])
             while not porter.is_at_target(): yield env.timeout(0.01)
             
-            yield env.timeout(get_time('bed_flip_fast'))
+            flip_time = get_time('bed_flip_fast')
+            yield env.timeout(flip_time)
+            stats.log_magnet_metric(magnet_config['id'], 'flip', flip_time)
             
             # Tech returns to control
             scan_tech.return_home() # This needs to be defined for scan techs or they stay put
@@ -609,6 +638,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
             duration = max(t_porter, t_tech)
             
             yield env.timeout(duration)
+            stats.log_magnet_metric(magnet_config['id'], 'flip', duration)
             
         # Update last exam type
         magnet_res.last_exam_type = patient.exam_type

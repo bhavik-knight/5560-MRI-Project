@@ -8,7 +8,40 @@ Includes warm-up period handling to remove empty-system bias.
 """
 
 from datetime import datetime
+import src.config as config
 from src.config import WARM_UP_DURATION
+
+class PatientMetrics:
+    """Individual patient performance data."""
+    def __init__(self, p_id, p_type, arrival_time):
+        self.id = p_id
+        self.type = p_type
+        self.arrival_time = arrival_time
+        self.has_iv = False
+        self.is_difficult = False
+        self.durations = {
+            'admin': 0.0,
+            'change': 0.0,
+            'washroom': 0.0,
+            'prep': 0.0,
+            'wait_room': 0.0,
+            'scan_room': 0.0,
+            'holding_room': 0.0,
+            'bed_flip': 0.0
+        }
+        self.total_time_in_system = 0.0
+
+class MagnetMetrics:
+    """Magnet-specific throughput and utilization data."""
+    def __init__(self, m_id):
+        self.id = m_id
+        self.patients_served = 0
+        self.total_scan_time = 0.0     # Green Time (Value Added)
+        self.total_setup_time = 0.0    # Brown Time (Necessary Non-Value)
+        self.total_flip_time = 0.0     # Brown Time (Necessary Non-Value)
+        self.total_exit_time = 0.0
+        self.total_idle_time = 0.0
+        self.last_event_time = 0.0
 
 class SimStats:
     """
@@ -37,23 +70,27 @@ class SimStats:
         # Resource utilization tracking
         self.magnet_busy_time = 0.0      # Time actually scanning (value-added)
         self.magnet_occupied_time = 0.0  # Time occupied (prep + scan in serial)
-        self.prep_room_usage = []
         
-        # Magnet state tracking
+        # Comprehensive Analytics (User Request - Step 2)
+        self.finished_patients = []
+        self.magnets = {
+            '3T': MagnetMetrics('3T'),
+            '1.5T': MagnetMetrics('1.5T')
+        }
+        self.late_arrivals = 0
+        self.critical_transfers = 0
+        
+        # Magnet state tracking (legacy support, but better used via MagnetMetrics)
         self._magnet_start_time = None
-        self._magnet_state = 'idle'  # 'idle', 'prep', 'scanning'
+        self._magnet_state = 'idle'
         
         # Patient tracking
         self.patients_arrived = 0
         self.patients_completed = 0
         self.patients_in_system = 0
         
-        # Magnet throughput
-        self.count_3t = 0
-        self.count_15t = 0
-        
         # Queue tracking
-        self.waiting_room_log = []  # Track buffer usage
+        self.waiting_room_log = []
         
         # Smart Gatekeeper Status
         self.generator_active = True
@@ -116,16 +153,38 @@ class SimStats:
             'event_type': 'state_change'
         })
     
-    def log_completion(self, patient_id, magnet_id):
-        """
-        Record patient completion and update magnet-specific throughput.
-        """
-        self.patients_completed += 1
+    def log_patient_finished(self, patient_sprite, env_now):
+        """Record all metrics for a patient exiting the system."""
+        metrics = PatientMetrics(
+            patient_sprite.p_id, 
+            patient_sprite.patient_type,
+            patient_sprite.arrival_time
+        )
+        metrics.has_iv = patient_sprite.has_iv
+        metrics.is_difficult = patient_sprite.is_difficult
+        metrics.durations.update(patient_sprite.metrics)
+        metrics.total_time_in_system = env_now - patient_sprite.arrival_time
         
-        if magnet_id == '3T':
-            self.count_3t += 1
-        elif magnet_id == '1.5T':
-            self.count_15t += 1
+        self.finished_patients.append(metrics)
+        self.patients_completed += 1
+
+    def log_magnet_metric(self, m_id, category, duration):
+        """Record magnet-specific performance (Value Added vs Non-Value Added)."""
+        if m_id in self.magnets:
+            magnet = self.magnets[m_id]
+            if category == 'scan':
+                magnet.total_scan_time += duration
+                magnet.patients_served += 1
+            elif category == 'setup':
+                magnet.total_setup_time += duration
+            elif category == 'flip':
+                magnet.total_flip_time += duration
+            elif category == 'exit':
+                magnet.total_exit_time += duration
+
+    def log_completion(self, patient_id, magnet_id):
+        """Legacy support - replaced by log_patient_finished."""
+        pass
 
     
     def log_magnet_start(self, timestamp, is_scanning=False):
@@ -209,8 +268,8 @@ class SimStats:
             'throughput': self.patients_completed,
             'patients_in_system': self.patients_in_system,
             'total_arrivals': self.patients_arrived,
-            'scans_3t': self.count_3t,
-            'scans_15t': self.count_15t,
+            'scans_3t': self.magnets['3T'].patients_served,
+            'scans_15t': self.magnets['1.5T'].patients_served,
         }
 
     
@@ -226,17 +285,7 @@ class SimStats:
         """
         utilization = self.calculate_utilization(total_sim_time)
         
-        # Calculate average time in waiting room
-        wait_times = []
-        patient_enter_times = {}
-        
-        for log in self.waiting_room_log:
-            if log['action'] == 'enter':
-                patient_enter_times[log['patient_id']] = log['timestamp']
-            elif log['action'] == 'exit' and log['patient_id'] in patient_enter_times:
-                wait_time = log['timestamp'] - patient_enter_times[log['patient_id']]
-                wait_times.append(wait_time)
-        
+        wait_times = [p.durations.get('wait_room', 0) for p in self.finished_patients]
         avg_wait = sum(wait_times) / len(wait_times) if wait_times else 0
         
         return {

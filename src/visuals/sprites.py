@@ -90,6 +90,29 @@ class Patient(Agent):
         super().__init__(x, y, GREY_ARRIVING, speed=AGENT_SPEED['patient'])
         self.p_id = p_id
         self.state = 'arriving'
+        
+        # Comprehensive Data Collection (User Request - Step 3)
+        self.patient_type = 'outpatient' # Default
+        self.has_iv = False
+        self.is_difficult = False
+        self.arrival_time = 0.0
+        
+        # Metrics Storage
+        self.metrics = {}      # Stage -> Duration
+        self.timestamps = {}   # Stage -> Start Time
+    
+    def start_timer(self, stage, now):
+        """Record start time for a simulation stage."""
+        self.timestamps[stage] = now
+        
+    def stop_timer(self, stage, now):
+        """Calculate and store duration for a simulation stage."""
+        if stage in self.timestamps:
+            start_time = self.timestamps.pop(stage)
+            duration = now - start_time
+            self.metrics[stage] = self.metrics.get(stage, 0.0) + duration
+            return duration
+        return 0.0
     
     def set_state(self, state):
         """
