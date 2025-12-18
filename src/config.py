@@ -31,6 +31,7 @@ SEPARATOR_BLACK = (0, 0, 0)          # Sidebar divider
 
 # Patient State Colors
 GREY_ARRIVING = (180, 180, 180)      # Arriving in Zone 1
+PURPLE_REGISTERED = (160, 32, 240)   # Registered (Purple)
 BLUE_CHANGING = (0, 128, 128)        # Changing (Teal)
 YELLOW_PREPPED = (255, 215, 0)       # Prepped/Waiting (Gold)
 GREEN_SCANNING = (0, 255, 0)         # Scanning (Bright Green)
@@ -40,7 +41,7 @@ NEON_YELLOW = (255, 255, 0)          # High-visibility yellow
 ORANGE_PORTER = (255, 140, 0)        # Porter (Dark Orange)
 CYAN_BACKUP = (0, 255, 255)          # Backup Tech (Cyan)
 PURPLE_SCAN = (128, 0, 128)          # Scan Tech (Purple)
-BLUE_ADMIN = (0, 0, 139)             # Admin TA (Dark Blue)
+BLUE_ADMIN = (48, 92, 222)           # Admin TA (Royal Blue #305CDE)
 
 # Room/Zone Colors
 WHITE = (255, 255, 255)
@@ -88,7 +89,7 @@ ROOM_COORDINATES = {
 
 # Agent Spawn/Target Positions (x, y tuples)
 AGENT_POSITIONS = {
-    'zone1_center': (585, 675),
+    'zone1_center': (1150, 675),
     'change_1_center': (100, 100),
     'change_2_center': (87, 197),
     'change_3_center': (87, 282),
@@ -100,11 +101,11 @@ AGENT_POSITIONS = {
     'exit': (1180, 675),
     
     # Staff Staging Positions
-    'porter_home': (500, 675),
+    'porter_home': (350, 675),
     'backup_staging': (450, 125),
     'scan_staging_3t': (800, 175),
     'scan_staging_15t': (800, 445),
-    'admin_home': (450, 650),
+    'admin_home': (850, 675),
 }
 
 # Waiting Areas (Rectangles for spatial scatter: x_min, x_max, y_min, y_max)
@@ -123,6 +124,7 @@ WARM_UP_DURATION = 60       # 1 hour (prime the system, remove empty-state bias)
 
 # Time Scaling (Faster for video recording)
 SIM_SPEED = 0.25  # 1 simulation minute = 0.25 real seconds (~3 min video for 12h shift)
+RECORD_INTERVAL = 2  # 1 = Record all, 2 = Record every 2nd frame (2x speed)
 
 # Staffing
 STAFF_COUNT = {

@@ -8,7 +8,7 @@ import pygame
 import math
 from src.config import (
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING,
-    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN,
+    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, BLUE_ADMIN,
     BLACK, AGENT_SPEED, GREY_DARK
 )
 
@@ -137,6 +137,7 @@ class Staff(Agent):
             'porter': ORANGE_PORTER,
             'backup': CYAN_BACKUP,
             'scan': PURPLE_SCAN,
+            'admin': BLUE_ADMIN,
         }
         color = role_colors.get(role, CYAN_BACKUP)
         

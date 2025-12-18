@@ -8,7 +8,7 @@ import pygame
 import cv2
 import numpy as np
 import os
-from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, BLACK
+from src.config import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, BLACK, RECORD_INTERVAL
 from src.visuals.layout import draw_floor_plan, draw_dashboard
 
 class RenderEngine:
@@ -48,6 +48,9 @@ class RenderEngine:
         self.video_writer = None
         if record_video:
             self._init_video_writer()
+            
+        # Frame counter for skipping frames (optimization)
+        self.frame_count = 0
     
     def _init_fonts(self):
         """Initialize fonts with fallback handling."""
@@ -168,9 +171,12 @@ class RenderEngine:
         pygame.display.flip()
         
         # 6. Capture frame for video recording (if enabled)
+        self.frame_count += 1
         if self.record_video and self.video_writer is not None:
-            try:
-                # Capture screen as numpy array
+             # Optimization: Only record every Nth frame based on RECORD_INTERVAL
+             if self.frame_count % RECORD_INTERVAL == 0:
+                try:
+                    # Capture screen as numpy array
                 view = pygame.surfarray.array3d(self.screen)
                 
                 # Transpose from (width, height, 3) to (height, width, 3)

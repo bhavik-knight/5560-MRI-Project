@@ -8,10 +8,12 @@ Includes dual-bay magnet routing with Poisson arrivals.
 import random
 import simpy
 import src.config as config
+from src.config import (
     AGENT_POSITIONS, PROCESS_TIMES,
     MAGNET_3T_LOC, MAGNET_15T_LOC,
     PROB_IV_NEEDED, PROB_DIFFICULT_IV,
-    ROOM_COORDINATES, PROB_WASHROOM_USAGE
+    ROOM_COORDINATES, PROB_WASHROOM_USAGE,
+    PURPLE_REGISTERED
 )
 
 class PositionManager:
@@ -39,10 +41,10 @@ class PositionManager:
         # Override specific area boundaries based on user request
         if area == 'zone1':
             # Public room - left border
-            base_x = start_x + 20
+            base_x = 100
             base_y = start_y + 20
             max_y = start_y + height - 20
-            spacing = 25
+            spacing = 35
         elif area == 'waiting_room_left':
             # Waiting room - changed patients - left border
             base_x = start_x + 20
@@ -185,28 +187,27 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     
     # ========== 1b. ADMIN REGISTRATION (Gatekeeper) ==========
     with resources['admin_ta'].request() as req:
+        # Move to Admin Desk for registration (Offset to prevent overlap)
+        admin_x, admin_y = AGENT_POSITIONS['admin_home']
+        patient.move_to(admin_x, admin_y + 25) # Stand below the desk
+        while not patient.is_at_target():
+             yield env.timeout(0.01)
+
         yield req
         
-        # Visual: Interaction with TA
-        # Patient moves to desk? Or just changes color?
-        # User requested: "Visual: Patient turns Red (Busy/Registration)"
-        # Note: We need a RED color. Let's use a temporary string or import
-        # For now, let's assume 'changing' color or similar, OR define RED in sprites/config
-        # User said: "Visual: Patient turns Red (Busy/Registration)."
-        # I need to update sprites to handle 'registration' state, or hack the color manually.
-        # Let's revert to 'arriving' state but maybe just log it. 
-        # Actually, let's act busy.
-        
-        # Assuming we added RED_BUSY to config in a previous step? No, I only added BLUE_ADMIN.
-        # Let's use BLUE_CHANGING for now relative to the prompt "turns Red". 
-        # Wait, I can define RED in config or just use (255, 0, 0).
-        # Better: patient.color = (255, 0, 0) manual override.
-        original_color = patient.color
-        patient.color = (255, 0, 0) 
+        # Visual: Interaction with TA (Patient turns Purple)
+        # They are "Registered" now.
+        patient.color = PURPLE_REGISTERED
+        stats.log_state_change(p_id, 'arriving', 'registered', env.now)
         
         yield env.timeout(get_time('screening'))
         
-        patient.color = original_color # Revert to grey/arriving
+        # Move back to "Registered Waiting Area" (Zone 1 Grid on Left)
+        patient.move_to(*arrival_pos)
+        while not patient.is_at_target():
+             yield env.timeout(0.01)
+        
+        # Patient stays PURPLE while waiting for Porter
     
     # ========== 2. TRANSPORT TO CHANGE ROOM (Porter) ==========
     with resources['porter'].request(priority=1) as req: # Lower priority than flips

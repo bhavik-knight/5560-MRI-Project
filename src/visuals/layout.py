@@ -10,7 +10,8 @@ from src.config import (
     MEDICAL_WHITE, CORRIDOR_GREY, WALL_BLACK, LABEL_BLACK, SEPARATOR_BLACK,
     SIDEBAR_X, WINDOW_WIDTH, WINDOW_HEIGHT,
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING, GREY_DARK,
-    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y, BLUE_ADMIN
+    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y, BLUE_ADMIN,
+    PURPLE_REGISTERED
 )
 
 
@@ -178,6 +179,7 @@ def draw_sidebar(surface, stats_dict, font):
     # Patient state legend
     patient_states = [
         (GREY_ARRIVING, "Arriving (Zone 1)"),
+        (PURPLE_REGISTERED, "Registered"),
         (BLUE_CHANGING, "Changing"),
         (YELLOW_PREPPED, "Prepped (Waiting)"),
         (GREEN_SCANNING, "Scanning"),

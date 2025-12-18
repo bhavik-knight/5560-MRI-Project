@@ -97,7 +97,6 @@ def run_simulation(duration=None, output_dir='results', record=False):
         'scan': [
             Staff('scan', *AGENT_POSITIONS['scan_staging_3t']),
             Staff('scan', *AGENT_POSITIONS['scan_staging_15t'])
-            Staff('scan', *AGENT_POSITIONS['scan_staging_15t'])
         ][:STAFF_COUNT['scan_tech']],
         'admin': Staff('admin', *AGENT_POSITIONS['admin_home']),
     }

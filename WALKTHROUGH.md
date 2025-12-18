@@ -71,13 +71,19 @@ src/
 ### Patient Journey (7 Steps)
 
 ```python
-1. ARRIVAL (Zone 1)
-   - Patient spawns as grey circle
-   - Position: (585, 675)
-   - State: 'arriving'
+1. ARRIVAL & REGISTRATION (Zone 1 Gatekeeper)
+   - Patient arrives from RIGHT entrance (Row A Door)
+   - Spawns at (1150, 675) as Grey circle
+   - Walks to Admin TA Desk at (850, 675)
+   - **Registration**:
+     * Resource: Admin TA (Royal Blue #305CDE)
+     * Interaction: Patient turns **Purple** (Registered)
+     * Duration: Screening time (~3.2 min)
+   - **Waiting**: Patient walks to LEFT side of Zone 1 (Grid Area) to wait for Porter
+   - State: 'registered' (Purple)
 
 2. TRANSPORT (Porter)
-   - Orange triangle moves to patient
+   - Orange triangle picks up **Registered (Purple)** patient from Zone 1 Left Grid
    - Both move to change room (random: 1, 2, or 3)
    - Porter returns to Zone 1
 
@@ -141,6 +147,12 @@ src/
 - Shape: Purple square
 - Role: Specialized console operation (Zone 3)
 - Staging: Stays at staging positions (800, 175) and (800, 445)
+
+**Admin TA (1 staff):**
+- Shape: Royal Blue square (#305CDE)
+- Role: Gatekeeper / Registration
+- Home position: (850, 675) - Right side of Zone 1 (framing text)
+- Logic: Registers arriving patients, turning them Purple before they can proceed.
 
 ## 5. Visual Design
 
