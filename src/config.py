@@ -140,8 +140,8 @@ WAITING_ROOM_LOC = (325, 350)
 # ============================================================================
 
 # Time-Based Simulation (Shift Duration Model)
-DEFAULT_DURATION = 120      # 2 hours (standard test shift)
-WARM_UP_DURATION = 60       # 1 hour (prime the system, remove empty-state bias)
+DEFAULT_DURATION = 720      # 12 hours
+WARM_UP_DURATION = 60       # 1 hour
 
 # Time Scaling (Faster for video recording)
 # Source 118: SIM_SPEED = 0.25 (Note: Adjust higher if running 720 hours, but keep 0.25 for demo)
@@ -230,6 +230,7 @@ PROCESS_TIMES = {
     'holding_prep': (10, 15, 25),  # Anesthesia setup outside magnet
     'bed_transfer': (3, 5, 8),     # Moving from Room 311 to Magnet
     
+    # Arrival Schedule (Poisson Process) 
     # Arrival Schedule (Poisson Process)
     'mean_inter_arrival': 30,
 }
