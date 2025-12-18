@@ -37,8 +37,8 @@ graph LR;
     A[Prep] --> B[Waiting Room Buffer];
     B --> C[Magnet Scan Only];
 
-    style B fill:#f9f,stroke:#333,stroke-width:2px;
-    style C fill:#9f9,stroke:#333,stroke-width:2px;
+    style B fill:#ffcc00,stroke:#000,stroke-width:3px,color:#000;
+    style C fill:#00a2ff,stroke:#000,stroke-width:3px,color:#000;
 ```
 
 ### Digital Twin Implementation
