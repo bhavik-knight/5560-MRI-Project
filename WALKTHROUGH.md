@@ -1,4 +1,4 @@
-# MRI Digital Twin - Technical Walkthrough for Report Writing
+# MRI Digital Twin - Technical Walkthrough (Version 3.0)
 
 ## Project Overview
 
@@ -137,8 +137,13 @@ if queue_burden > time_remaining or (env.now > duration - config.MAX_SCAN_TIME a
 - Displays "Est Clear: XXm" showing remaining queue burden
 - Prevents excessive overtime while ensuring all patients are served
 
-### Inpatient/High-Acuity Workflow
-**Purpose**: Model complex cases requiring anesthesia and parallel processing
+### Inpatient/High-Acuity Workflow (v3.0 Priority Gating)
+**Purpose**: Model complex cases requiring anesthesia and parallel processing, while ensuring they take clinical precedence.
+
+**Priority Gating** (`src/core/engine.py`):
+- **Clinical bottleneck**: All patients must request `magnet_access` (PriorityResource) before taking a magnet.
+- **Inpatients (Priority 0)**: Jump to the front of the queue, seizing the next available magnet before any waiting outpatient.
+- **Outpatients (Priority 1)**: Follow standard FCFS logic for remaining capacity.
 
 **Patient Classification** (`src/core/workflow.py` - `patient_journey`):
 ```python
@@ -317,7 +322,32 @@ The simulation window automatically closes ONLY when:
 
 This guarantees that every patient who entered the system is fully processed and counted.
 
-## 7. Data Collection
+## 7. Comprehensive Analytics (v3.0)
+
+### The Database (`tracker.py`)
+Simulation data is now structured into rich objects for deep analysis:
+- **PatientMetrics**: Captures the complete journey of every patient, including timestamps and durations for 7 distinct stages.
+- **MagnetMetrics**: Breaks down magnet time into:
+    - **Green Time**: Value-added scanning.
+    - **Brown Time**: Necessary overhead (Setup, Exit, Bed Flip).
+    - **Idle Time**: True availability gaps.
+
+### The Reporter (`reporter.py`)
+At the end of every run, a performance dashboard is generated:
+1. **Throughput Summary**: Arrivals vs. Completions vs. Gatekeeper shut-offs.
+2. **Value Stream Mapping**: Avg/Max durations for registration, changing, prep, and scanning.
+3. **Efficiency Analysis**: Calculates the **Bowen Metric** for each bay.
+
+### The Bowen Metric (Process Efficiency)
+$$Efficiency = \frac{Scan Time}{Occupied Time} \times 100$$
+- **Benchmark**: A "Healthy" parallel department should target >70% efficiency.
+- **Detection**: Automatically identifies "Outlier Bleeding" where max times deviate significantly from averages.
+
+### Data Exports
+- `*_patient_performance.csv`: Individual patient audit trails.
+- `*_magnet_performance.csv`: Aggregate magnet productivity metrics.
+
+## 8. Data Collection
 
 ### SimStats Tracker
 
@@ -332,7 +362,7 @@ This guarantees that every patient who entered the system is fully processed and
 4. **Summary** (`*_summary.csv`)
    - Single row with all KPIs, including separate 3T and 1.5T scan counts.
 
-## 10. Running Experiments
+## 9. Running Experiments
 
 ### Command-Line Interface
 

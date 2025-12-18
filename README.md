@@ -2,6 +2,8 @@
 
 **A discrete-event simulation demonstrating the "Utilization Paradox" in MRI department workflows**
 
+**Version 3.0: Clinical Priority & Workflow Analytics**
+
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -114,19 +116,22 @@ mri-project/
   - **Tan/Brown**: Magnet Dirty (Needs Cleaning)
   - **White**: Magnet Clean (Idle)
   - **Light Green**: Room Occupied (patient present)
+  - **Maroon**: Registered (waiting for Porter)
+  - **Dark Pink**: Inpatient (high acuity)
 - **Live Statistics**: 
   - Status indicators (Warm Up → Normal → CLOSED → Overtime)
   - Estimated clearing time display
   - Patient type color coding
 - **Gatekeeper Logic**: Visible queuing at Admin desk
 
-### 6. Comprehensive Data Collection
-- Patient movement logs (zone transitions)
-- State change logs (arriving → registered → changing → prepped → scanning)
-- Waiting room buffer usage
-- Magnet utilization (busy vs occupied time)
-- Patient type tracking (inpatient vs outpatient)
-- Summary statistics (CSV + text reports)
+### 6. Comprehensive Data Collection (v3.0)
+- **Granular Patient Metrics**: Tracks durations for admin, change, prep, staging, and scan.
+- **Magnet Performance**: Separates "Green Time" (Value-Added) from "Brown Time" (Setup/Flip).
+- **The Bowen Metric**: Calculates Process Efficiency % [(Scan Time) / (Occupied Time)].
+- **Clinical Stratification**: Tracks performance by patient type (Inpatient vs Outpatient).
+- **CSV Data Exports**: 
+  - `detailed_patient_performance.csv` (Audit trail of every patient journey).
+  - `magnet_performance_summary.csv` (Productivity analysis for both bays).
 
 ### 4. Empirical Process Times
 All durations based on real MRI department data:
