@@ -141,23 +141,20 @@ class RenderEngine:
         
         return True
     
-    def render_frame(self, stats_dict=None):
+    def render_frame(self, stats_dict=None, room_visual_states=None):
         """
         Render a single frame.
         
         Args:
             stats_dict: Optional dictionary of statistics to display
-                       e.g., {'Sim Time': 45, 'Patients': 3}
-        
-        Returns:
-            bool: False if user closed window, True otherwise
+            room_visual_states: Optional dict of room_key -> state ('busy', 'dirty', 'clean')
         """
         # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
         
-        # Calculate occupied rooms
+        # Calculate occupied rooms (Logic A: Agent presence)
         occupied_rooms = set()
         for sprite in self.all_sprites:
             if isinstance(sprite, Patient):
@@ -169,9 +166,36 @@ class RenderEngine:
                     room_rect = pygame.Rect(*coords)
                     if room_rect.collidepoint(sprite.x, sprite.y) and sprite.is_at_target():
                         occupied_rooms.add(room_key)
+                        
+        # Logic B: Override with explicit states (e.g., Dirty Magnets)
+        # We merge these into a final display state map
+        # visual_states: room_key -> color
+        final_room_states = {}
         
+        # Default occupancy (Green-ish)
+        for room in occupied_rooms:
+            final_room_states[room] = 'occupied'
+            
+        # Explicit states (Busy/Dirty/Clean) overrides
+        if room_visual_states:
+            for room, state in room_visual_states.items():
+                if state == 'busy':
+                    final_room_states[room] = 'busy' # Green
+                elif state == 'dirty':
+                    final_room_states[room] = 'dirty' # Brown
+                elif state == 'clean':
+                    # Only override 'occupied' if we strictly want to show it as clean, 
+                    # but usually if agent in there it's occupied. 
+                    # If empty and clean -> white.
+                    if room in final_room_states and final_room_states[room] == 'occupied':
+                        pass # Keep occupied color? Or force clean?
+                        # Actually 'clean' is default white.
+                        if room in final_room_states:
+                           del final_room_states[room] # Remove occupied status to show white?
+                    pass
+
         # 1. Draw static floor plan (fills background with corridor grey)
-        draw_floor_plan(self.screen, self.font_room, self.font_zone, occupied_rooms)
+        draw_floor_plan(self.screen, self.font_room, self.font_zone, occupied_rooms=final_room_states)
         
         # 2. Update agent positions
         self.all_sprites.update()

@@ -10,10 +10,10 @@ from src.config import (
     MEDICAL_WHITE, CORRIDOR_GREY, WALL_BLACK, LABEL_BLACK, SEPARATOR_BLACK,
     SIDEBAR_X, WINDOW_WIDTH, WINDOW_HEIGHT,
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING, GREY_DARK,
-    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y, BLUE_ADMIN,
-    PURPLE_REGISTERED, GREY_OCCUPIED, GREEN_OCCUPIED
+    ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN,    ZONE1_TOP_Y, BLUE_ADMIN,
+    PURPLE_REGISTERED, GREY_OCCUPIED, GREEN_OCCUPIED,
+    COLOR_MAGNET_CLEAN, COLOR_MAGNET_BUSY, COLOR_MAGNET_DIRTY
 )
-
 
 
 def draw_room(surface, rect, label_text, font, bg_color=MEDICAL_WHITE):
@@ -88,10 +88,13 @@ def draw_floor_plan(surface, font_room=None, font_zone=None, occupied_rooms=None
         surface: pygame.Surface to draw on
         font_room: pygame.Font for room labels (size 14)
         font_zone: pygame.Font for zone labels (larger)
-        occupied_rooms: Set of room keys that are currently occupied
+        occupied_rooms: Dict of room_key -> state (or set of keys)
     """
     if occupied_rooms is None:
-        occupied_rooms = set()
+        occupied_rooms = {}
+    elif isinstance(occupied_rooms, set):
+        # Convert legacy set to dict with default 'occupied' state
+        occupied_rooms = {key: 'occupied' for key in occupied_rooms}
         
     # Fill background with corridor grey
     surface.fill(CORRIDOR_GREY)
@@ -132,8 +135,16 @@ def draw_floor_plan(surface, font_room=None, font_zone=None, occupied_rooms=None
         label = ROOM_LABELS[room_key]
         
         # Determine background color
-        is_occupied = room_key in occupied_rooms
-        bg_color = GREEN_OCCUPIED if is_occupied else MEDICAL_WHITE
+        state = occupied_rooms.get(room_key, 'clean') # default to clean/empty
+        
+        if state == 'occupied':
+            bg_color = GREEN_OCCUPIED
+        elif state == 'busy':
+            bg_color = COLOR_MAGNET_BUSY # Scanning Green
+        elif state == 'dirty':
+            bg_color = COLOR_MAGNET_DIRTY # Tan/Brown
+        else: # clean/empty
+            bg_color = MEDICAL_WHITE
         
         draw_room(surface, rect, label, font, bg_color)
 

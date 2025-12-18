@@ -9,7 +9,8 @@ import math
 from src.config import (
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING,
     ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, BLUE_ADMIN,
-    BLACK, AGENT_SPEED, GREY_DARK
+    BLACK, AGENT_SPEED, GREY_DARK,
+    PURPLE_REGISTERED
 )
 
 class Agent(pygame.sprite.Sprite):
@@ -33,6 +34,7 @@ class Agent(pygame.sprite.Sprite):
         self.target_x = float(x)
         self.target_y = float(y)
         self.color = color
+        # Ensure speed is taken from config if not provided
         self.speed = speed if speed is not None else AGENT_SPEED['patient']
     
     def move_to(self, target_x, target_y):
@@ -44,6 +46,8 @@ class Agent(pygame.sprite.Sprite):
         """
         Update agent position - moves smoothly toward target.
         Called every frame by pygame sprite group.
+        
+        Physics: (target - current) * speed (normalized)
         """
         dx = self.target_x - self.x
         dy = self.target_y - self.y
@@ -51,6 +55,7 @@ class Agent(pygame.sprite.Sprite):
         
         if distance > self.speed:
             # Move toward target at constant speed
+            # Calculate position increments based on: (target - current).normalized() * speed
             self.x += (dx / distance) * self.speed
             self.y += (dy / distance) * self.speed
         else:
@@ -81,6 +86,7 @@ class Patient(Agent):
             p_id: Unique patient identifier
             x, y: Starting position
         """
+        # Pass speed from config explicitly
         super().__init__(x, y, GREY_ARRIVING, speed=AGENT_SPEED['patient'])
         self.p_id = p_id
         self.state = 'arriving'
@@ -97,6 +103,7 @@ class Patient(Agent):
         # Update color based on state
         state_colors = {
             'arriving': GREY_ARRIVING,
+            'registered': PURPLE_REGISTERED,
             'changing': BLUE_CHANGING,
             'prepped': YELLOW_PREPPED,
             'scanning': GREEN_SCANNING,
@@ -141,6 +148,7 @@ class Staff(Agent):
         }
         color = role_colors.get(role, CYAN_BACKUP)
         
+        # Pass speed from config explicitly
         super().__init__(x, y, color, speed=AGENT_SPEED['staff'])
         self.role = role
         self.busy = False  # Track if staff is currently assisting a patient

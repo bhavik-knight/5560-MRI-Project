@@ -27,6 +27,15 @@ Inspired by Formula 1 pit stops - parallel processing:
 3. **Magnet focuses on scanning** only
 4. **Result**: Higher throughput, better efficiency
 
+```mermaid
+graph LR
+    A[Prep] --> B[Waiting Room Buffer]
+    B --> C[Magnet (Scan Only)]
+    
+    style B fill:#f9f,stroke:#333,stroke-width:2px,color:black
+    style C fill:#9f9,stroke:#333,stroke-width:2px,color:black
+```
+
 ### Digital Twin Implementation
 Real-time agent-based simulation combining:
 - **SimPy**: Discrete-event simulation engine
@@ -60,6 +69,40 @@ src/
     └── engine.py       # Main loop (bridges SimPy, PyGame, and 3T/1.5T resources)
 ```
 
+```mermaid
+classDiagram
+    class Engine {
+        +run()
+        +handle_events()
+        +update()
+        +draw()
+    }
+    class Workflow {
+        +patient_journey()
+        +monitor_magnet()
+    }
+    class Sprites {
+        +Patient
+        +Staff
+        +update()
+    }
+    class Layout {
+        +draw_map()
+        +get_room_coords()
+    }
+    class Tracker {
+        +log_movement()
+        +log_state()
+        +export()
+    }
+
+    Engine --> Workflow : runs
+    Engine --> Sprites : updates
+    Engine --> Layout : renders
+    Workflow --> Tracker : reports
+    Workflow --> Sprites : controls
+```
+
 ### Key Design Patterns
 - **Separation of Concerns**: Each module has single responsibility
 - **Observer Pattern**: Stats tracking doesn't clutter simulation
@@ -71,157 +114,93 @@ src/
 ### Patient Journey (7 Steps)
 
 ```python
-1. ARRIVAL & REGISTRATION (Zone 1 Gatekeeper)
+### Patient Journey (Modified "Pit Crew" Workflow)
+
+```python
+1. ARRIVAL & GATEKEEPER (Zone 1)
    - Patient arrives from RIGHT entrance (Row A Door)
    - Spawns at (1150, 675) as Grey circle
-   - Walks to Admin TA Desk at (850, 675)
-   - **Queueing**: If Admin is busy, patients form a line to the right of the desk (30px spacing).
+   - **Queueing**: Walks to Admin TA Desk. If TA is away (escorting), patient WAITS physically at the desk.
    - **Registration**:
      * Resource: Admin TA (Royal Blue #305CDE)
      * Interaction: Patient turns **Maroon** (Registered)
      * Duration: Screening time (~3.2 min)
-   - **Waiting**: Patient walks to LEFT side of Zone 1 (Grid Area) to wait for Porter
-   - State: 'registered' (Maroon)
+   - **Transport Decision**:
+     * If Porter Busy: Admin TA escorts patient to Change Room (Priority Service).
+     * If Porter Free: Admin TA releases patient; patient waits in Zone 1 Grid for Porter.
 
-2. TRANSPORT (Porter)
-   - Orange triangle picks up **Registered (Maroon)** patient from Zone 1 Left Grid
-   - Both move to change room (random: 1, 2, or 3)
-   - Porter returns to Zone 1
+2. TRANSPORT (Porter / TA)
+   - Escort picks up Registered patient.
+   - Moves to change room (random: 1, 2, or 3).
+   - Staff returns to home base (Admin TA walks back to desk).
 
 3. CHANGING
-   - Patient turns blue
-   - Duration: triangular(2, 3.5, 5) minutes
-   - State: 'changing'
+   - Patient turns blue.
+   - Duration: triangular(2, 3.5, 5) minutes.
 
 4. PREP (Backup Tech Localization)
-   - Patient moves autonomously from Change Room to Waiting Room buffer
-   - Backup Tech (localized to Zone 2) meets patient in Waiting Room
-   - Escort to prep room for Screening: triangular(2.08, 3.20, 5.15) min
-   - IV Setup (33% probability):
-     * Normal: triangular(1.53, 2.56, 4.08) minutes
-     * Difficult (1%): triangular(7, 7.8, 9) minutes
-   - Backup Tech returns patient to Waiting Room and returns to Prep Room
-   - State: 'prepped'
+   - Patient moves autonomously from Change Room to Waiting Room buffer.
+   - Backup Tech (Zone 2) meets patient in Waiting Room.
+   - **IV Logic**: 33% of patients need IVs (Probability Check).
+   - Escort to prep room for Screening/IV.
+   - Return patient to Waiting Room (State: 'prepped', Color: Yellow).
 
 5. WAITING FOR MAGNET (Autonomous Signage)
-   - Patient waits in yellow box center (325, 350)
-   - **Washroom Break**: 20% probability of random break (2-5 min) during wait.
-   - Trigger: Magnet resource becomes free
-   - Patient moves UNACCOMPANIED to Magnet Room (simulating digital signage)
-   - Scan Tech remains in Control Room (Zone 3)
+   - Patient waits in yellow box center (325, 350).
+   - **Washroom Break**: 20% probability of random break (2-5 min).
+   - Trigger: Magnet resource becomes free.
+   - Patient moves UNACCOMPANIED to Magnet Room (simulating digital signage).
 
 6. SCANNING (Dual-Bay Phased Workflow)
-   - Selection: First Available (Dynamic Pool)
-   - Task 1: Setup (occupied, not scanning) - triangular(1.52, 3.96, 7.48) min
-   - Task 2: Scan (Value-Added) - triangular(18.1, 22, 26.5) min
-   - Task 3: Exit (occupied, not scanning) - triangular(0.35, 2.56, 4.52) min
-   - Task 4: Bed Flip (Porter Trigger) - triangular(0.58, 1, 1.33) min
-     * **Parallel Workflow**: Triggered immediately upon patient exit; runs concurrently with Patient Change.
-   - State: 'scanning'
-   - Metric: Captures "Hidden Time" vs "Value-Added" time
+   - **Scanning Phase**:
+     * Room turns **Light Green** (Busy/Occupied).
+     * Patient turns **Green**.
+     * Duration: Scan Setup + Scan Time (~25 mins).
+   - **Completion**:
+     * Scan ends. Patient turns **Grey** (Exited).
+     * Room turns **Tan/Brown** (Dirty State).
+     * "Patients Served" counter increments immediately.
 
-7. EXIT (Post-Scan)
-   - Step 1: Return to Change Room (Street Clothes) - triangular(2, 3.5, 5) min
-   - State: 'changing' (Blue)
-   - Step 2: Leave Building
-   - State: 'exited' (Patient turns dark grey)
-   - Patient moves VISIBLY from Change Room to (1180, 675)
-   - Removed from simulation ONLY after reaching exit target
-   - Logged as completed via `stats.log_completion(p_id, magnet_id)`
+7. EXIT & TURNOVER
+   - Patient moves to Change Room -> Exit.
+   - **Bed Flip (SMED Logic)**:
+     * **Fast Flip**: If same exam type as previous -> Tech assisted cleanliness (Quick).
+     * **Slow Flip**: If different exam type -> Porter required for deep clean + coils.
+   - **Visuals**: Magnet remains **Dirty (Tan)** until Porter finishes cleaning.
+   - **Reset**: Magnet turns **White (Clean)** and becomes available.
 ```
 
-### Staff Roles
+## 5. Visual Design Updates
 
-**Porter (1 staff):**
-- Shape: Orange triangle
-- Role: Transport (Priority 1) + **Magnet Bed Flip (Priority 0)**
-- Home position: (500, 675)
-- Strategy: **Queued Early** - Porter is requested as soon as scan ends, allowing movement during patient exit.
+### New State Colors
+- **Magnet - BUSY**: Light Green (230, 255, 230) - Active Scanning.
+- **Magnet - DIRTY**: Tan/Brown (210, 180, 140) - Waiting for cleaning/turnover.
+- **Magnet - CLEAN**: White (255, 255, 255) - Idle/Ready.
 
-**Backup Tech (2 staff):**
-- Shape: Cyan square
-- Role: Preps patients (screening + IV)
-- Staging: Localized to IV Prep Rooms (Zone 2)
-- Strategy: **Load Balancing (LRU)** - Assignment rotates between techs to ensure even workload distribution.
+### Sidebar Indicators
+- **Status Panel**:
+  - `WARM UP`: First 60 minutes.
+  - `NORMAL SHIFT`: Standard operation.
+  - `COOL DOWN`: Last 30 minutes (No new arrivals).
+  - `OVERTIME`: Run-to-Clear phase (simulation continues until empty).
+- **Live Counters**:
+  - `Patients`: Completed scans count (Primary KPI).
+  - `In System`: Current active agents.
 
-**Scan Tech (2 staff):**
-- Shape: Purple square
-- Role: Specialized console operation (Zone 3)
-- Staging: Stays at staging positions (800, 175) and (800, 445)
+## 6. Simulation Engine Logic
 
-**Admin TA (1 staff):**
-- Shape: Royal Blue square (#305CDE)
-- Role: Gatekeeper / Registration
-- Home position: (850, 675) - Right side of Zone 1 (framing text)
-- Logic: Registers arriving patients, turning them Maroon before they can proceed.
+### 3-Phase Execution Model
+To ensure accurate throughput measurement without "cutoff" bias:
+1.  **Warm-Up & Normal Shift**: Runs for `DURATION` minutes.
+2.  **Cool-Down**: Arrivals stop `COOLDOWN_DURATION` (30 mins) before end.
+3.  **Run-to-Clear Overtime**: If patients remain after `DURATION`, the clock continues ("Overtime") until the system is fully empty.
 
-## 5. Visual Design
+### Auto-Termination
+The simulation window automatically closes ONLY when:
+1.  Shift time has expired.
+2.  AND `patients_in_system == 0`.
 
-### Medical White Aesthetic
-
-**Layout (80/20 Split):**
-- Canvas: 1600×800 pixels
-- Simulation area: 0-1200px (floor plan)
-- Sidebar: 1200-1600px (stats + legend)
-
-### Patient Grid Positioning
-- **Zone 1 (Arrivals)**: Anchored to the left border with vertical-first grid filling.
-- **Waiting Room (Buffer)**: 
-  - **Changed Patients**: Staged on the left border of the room.
-  - **Prepped Patients**: Staged on the right border of the room.
-- **Overlap Prevention**: PositionManager ensures each patient has a unique 25px grid slot.
-
-**Color Scheme:**
-- Background: Corridor grey (230, 230, 230)
-- Background: Corridor grey (230, 230, 230)
-- All rooms: Medical white (turns **Green** when seized/occupied)
-- **Note**: Waiting Room and Corridors do NOT change color.
-- Borders: Black (0, 0, 0), 2px width
-- Borders: Black (0, 0, 0), 2px width
-- Text: Black, Arial 14pt (crisp, professional)
-
-**Room Layout:**
-- **Zone 1** (bottom): Public corridor
-- **Zone 2** (left/center): The Hub
-  - 3 Change rooms (teal in legend, white in display)
-  - 2 Washrooms
-  - 2 IV Prep rooms
-  - Waiting Room buffer (yellow box)
-  - Holding area
-- **Zone 3** (vertical strip): Control rooms
-- **Zone 4** (right): 3T and 1.5T MRI magnets
-
-**Sidebar Contents:**
-- Simulation statistics (time, patients, throughput)
-- Patient state legend (circles with colors)
-- Staff role legend (shapes with colors)
-
-## 6. Animation System
-
-### Timing Mechanics
-
-**Frame Rate:** 60 FPS
-
-**Time Scaling:**
-- `SIM_SPEED = 0.5` means 1 sim minute = 0.5 real seconds
-- 1 real second = 2 sim minutes = 120 sim seconds
-
-**Per-Frame Advancement:**
-```python
-delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
-# = (1/60) * (60/0.25) / 60
-# = 0.0666 sim minutes per frame
-# = 4 sim seconds per frame
-```
-
-**Movement System:**
-- Agents have `(x, y)` current position and `(target_x, target_y)`
-- Each frame: move toward target at constant speed
-- Patient speed: 5 pixels/frame
-- Staff speed: 6 pixels/frame
-- Movement checks: every 0.01 sim minutes (0.6 seconds)
-
-**Result:** Smooth visible movement while simulation runs ~120x real-time
+This guarantees that every patient who entered the system is fully processed and counted.
 
 ## 7. Data Collection
 
@@ -231,253 +210,12 @@ delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
 1. **Patient Movements** (`*_movements.csv`)
    - Columns: `patient_id`, `zone`, `timestamp`, `event_type`
    - Every zone transition recorded
-
 2. **State Changes** (`*_states.csv`)
    - Columns: `patient_id`, `old_state`, `new_state`, `timestamp`
-   - Tracks: arriving → changing → prepped → scanning → exited
-
 3. **Waiting Room** (`*_waiting_room.csv`)
    - Columns: `patient_id`, `timestamp`, `action` (enter/exit)
-   - Proves buffer usage
-
 4. **Summary** (`*_summary.csv`)
    - Single row with all KPIs, including separate 3T and 1.5T scan counts.
-   - Used for scenario comparison and capacity analysis.
-
-### Key Metrics
-
-**Throughput:**
-- Number of patients who completed scan
-- Primary performance indicator
-
-**Magnet Utilization:**
-- **Busy %**: Time actually scanning (value-added)
-- **Occupied %**: Total time in use (prep + scan in serial)
-- **Idle %**: True idle time
-- **Paradox**: Serial shows high occupied but low busy
-
-**Buffer Performance:**
-- Average wait time in waiting room
-- Maximum wait time
-- Queue length over time
-
-**System State:**
-- Patients in system at any time
-- Total arrivals
-- Completion rate
-
-## 8. Empirical Data Sources
-
-### Process Times (Triangular Distributions)
-
-From GE iCenter analytics and workflow studies:
-
-| Process | Min | Mode | Max | Units |
-|---------|-----|------|-----|-------|
-| Screening | 2.08 | 3.20 | 5.15 | minutes |
-| Changing | 1.53 | 3.17 | 5.78 | minutes |
-| IV Setup | 1.53 | 2.56 | 4.08 | minutes |
-| IV Difficult | 7 | 7.8 | 9 | minutes |
-| Scan Setup | 1.52 | 3.96 | 7.48 | minutes |
-| Scan Duration| 18.1 | 22 | 26.5 | minutes |
-| Scan Exit | 0.35 | 2.56 | 4.52 | minutes |
-| Bed Flip | 0.58 | 1 | 1.33 | minutes |
-
-### Probabilities
-
-- **Needs IV**: 33% (Source 33)
-- **Difficult IV**: 1% (Source 33)
-
-### Arrival Pattern
-
-- **Inter-arrival**: 30 minutes baseline
-- **Noise**: triangular(-5, 0, 5) minutes
-- **Result**: Patients arrive every 25-35 minutes
-
-## 9. Time-Based Simulation Model & Warm-Up Period
-
-### Shift Duration Model (Process Management Best Practice)
-
-**Philosophy:** Model actual operating conditions, not arbitrary patient counts.
-
-**Implementation:**
-```python
-DEFAULT_DURATION = 720      # 12 hours (standard MRI shift)
-WARM_UP_DURATION = 60       # 1 hour (remove empty-system bias)
-```
-
-### Why Time-Based Instead of Patient-Count?
-
-**Old Approach (Count-Based):**
-```python
-# Run until 10 patients complete
-while patients_completed < 10:
-    ...
-```
-
-**Problems:**
-- Arbitrary stopping point
-- Doesn't reflect real operations
-- Variable simulation duration
-- Inconsistent comparisons
-
-**New Approach (Time-Based):**
-```python
-# Run for 12-hour shift
-while env.now < 720:
-    # Patients arrive until shift ends
-    ...
-```
-
-**Benefits:**
-- ✅ Realistic (models actual shift)
-- ✅ Consistent duration across runs
-- ✅ Allows fair scenario comparison
-- ✅ Matches Process Management methodology (Load Balancing, Buffers, Parallel Tasks)
-
-### The Warm-Up Period Problem
-
-**The "Empty System" Bias:**
-
-At 7:00 AM (simulation start):
-- No patients in system
-- All staff idle
-- Magnet idle
-- **Result**: First hour shows artificially low utilization
-
-**Impact on Statistics:**
-```
-Without Warm-Up:
-- Hour 1: 0% utilization (empty)
-- Hour 2-12: 85% utilization (steady state)
-- Average: 77% (biased low)
-
-With Warm-Up:
-- Hour 1: Excluded from stats
-- Hour 2-12: 85% utilization
-- Average: 85% (accurate)
-```
-
-### Warm-Up Implementation
-
-**In `src/config.py`:**
-```python
-WARM_UP_DURATION = 60  # 1 hour
-```
-
-**In `src/analysis/tracker.py`:**
-```python
-def log_movement(self, patient_id, zone, timestamp):
-    # Skip logging during warm-up
-    if timestamp < self.warm_up_duration:
-        return
-    
-    # Adjust timestamp (subtract warm-up)
-    self.patient_log.append({
-        'timestamp': timestamp - self.warm_up_duration,
-        ...
-    })
-```
-
-**What Happens:**
-1. **0-60 minutes**: Warm-up phase
-   - Patients arrive and flow through system
-   - System reaches steady state
-   - Stats NOT recorded
-
-2. **60-720 minutes**: Data collection phase
-   - All stats recorded
-   - Timestamps adjusted (subtract 60)
-   - Represents typical operating conditions
-
-3. **After 720 minutes**: Simulation ends
-   - Last patients complete their journey
-   - Final statistics calculated
-
-### Patient Generation Logic
-
-**Time-Based Generator:**
-```python
-def patient_generator(env, ..., duration):
-    p_id = 0
-    while env.now < duration:  # Run until shift ends
-        p_id += 1
-        # Create patient
-        env.process(patient_journey(...))
-        # Wait for next arrival
-        yield env.timeout(inter_arrival + noise)
-```
-
-**Key Points:**
-- Patients arrive continuously until shift ends
-- No artificial patient limit
-- Last patients may still be in system when shift ends
-- Simulation continues until all patients clear
-
-### Simulation Timeline Example
-
-```
-Time (min)  | Event
-------------|--------------------------------------------------
-0           | Simulation starts, Patient 1 arrives
-30          | Patient 2 arrives
-60          | Warm-up ends, stats collection begins
-90          | Patient 4 arrives (first logged patient)
-...
-690         | Patient 24 arrives (last arrival)
-720         | Shift ends, no more arrivals
-750         | Patient 24 completes scan, simulation ends
-```
-
-### Statistics Adjustment
-
-**Timestamp Normalization:**
-- All logged timestamps are relative to end of warm-up
-- Example: Event at sim time 90 → logged as time 30
-- Makes data analysis cleaner (starts from 0)
-
-**Metrics Calculation:**
-```python
-def calculate_utilization(self, total_sim_time):
-    # total_sim_time includes warm-up
-    # But magnet_busy_time only counts post-warm-up
-    busy_pct = (self.magnet_busy_time / (total_sim_time - WARM_UP)) * 100
-```
-
-### Validation of Warm-Up Period
-
-**How to verify warm-up is working:**
-
-1. **Check CSV timestamps:**
-   ```python
-   movements = pd.read_csv('results/mri_digital_twin_movements.csv')
-   print(movements['timestamp'].min())  # Should be 0 or close to 0
-   ```
-
-2. **Compare with/without warm-up:**
-   - Run with WARM_UP_DURATION = 0
-   - Run with WARM_UP_DURATION = 60
-   - Compare average utilization (should be higher with warm-up)
-
-3. **Visual inspection:**
-   - Watch first hour - patients should be flowing
-   - Check sidebar stats - should show activity during warm-up
-   - Stats collection starts after warm-up
-
-### Recommended Warm-Up Duration
-
-**Rule of Thumb:** 
-- Warm-up should be ≥ longest process time
-- Longest process: Scan (22 min) + Prep (8 min) + Change (3.5 min) ≈ 34 min
-- **60 minutes** provides comfortable margin
-
-**Verification:**
-```python
-# Check system state at end of warm-up
-if env.now == WARM_UP_DURATION:
-    print(f"Patients in system: {stats.patients_in_system}")
-    # Should be > 0 (system is primed)
-```
 
 ## 10. Running Experiments
 
@@ -485,34 +223,22 @@ if env.now == WARM_UP_DURATION:
 
 ```bash
 # Basic run (default: 120 minutes = 2 hour test)
-uv run python main.py
+uv run main.py
 
-# Custom duration
-uv run python main.py --duration MINUTES --output DIR
-
-# Examples
-uv run python main.py --duration 120    # 2 hour test (default)
-uv run python main.py --duration 720    # Full 12 hour shift
+# Full 12 Hour Shift (Standard Experiment)
+uv run main.py --duration 720
 ```
 
 ### Typical Scenarios
 
 **Quick Test (Default):**
 - Duration: 120 minutes (2 hours)
-- Expected patients: ~7-8 patients arriving
-- Purpose: Verify functionality and basic throughput
-
-**Half Shift:**
-- Duration: 360 minutes (6 hours)
-- Expected patients: ~12
-- Purpose: Medium-length validation
+- Expected patients: ~7-8
 
 **Full Shift (Standard):**
 - Duration: 720 minutes (12 hours)
-- Expected patients: ~24
-- Purpose: Realistic operational analysis
-
-**Note:** Patient count is determined by arrival rate (~30 min intervals), not specified directly.
+- Expected patients: ~22-26
+- **Note**: Simulation will run slightly longer than 720m to clear the queue.
 
 ### Output Files
 
@@ -1011,4 +737,3 @@ The simulation is ready for:
 ---
 
 This walkthrough provides comprehensive technical documentation for writing an academic report on the MRI Digital Twin simulation project.
-

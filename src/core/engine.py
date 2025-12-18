@@ -5,9 +5,11 @@ Orchestrates the integration of SimPy, PyGame, and Statistics modules.
 """
 
 import simpy
+import sys
+import pygame
 from src.config import (
     STAFF_COUNT, AGENT_POSITIONS, SIM_SPEED, FPS, 
-    DEFAULT_DURATION, WARM_UP_DURATION,
+    DEFAULT_DURATION, WARM_UP_DURATION, COOLDOWN_DURATION,
     MAGNET_3T_LOC, MAGNET_15T_LOC
 )
 from src.visuals.renderer import RenderEngine
@@ -71,23 +73,40 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
         'scan_techs': simpy.Resource(env, capacity=STAFF_COUNT['scan_tech']),
         'admin_ta': simpy.Resource(env, capacity=STAFF_COUNT['admin']),
         'magnet_pool': simpy.Store(env, capacity=2),
+        'washroom_1': simpy.Resource(env, capacity=1),
+        'washroom_2': simpy.Resource(env, capacity=1),
     }
 
-    # Populate magnet pool
-    resources['magnet_pool'].put({
+    # Populate magnet pool AND keep references for visual tracking
+    magnet_configs = []
+    
+    # Magnet 1: 3T
+    m3t = simpy.Resource(env, capacity=1)
+    m3t.last_exam_type = None 
+    m3t_config = {
         'id': '3T',
-        'resource': simpy.Resource(env, capacity=1),
+        'resource': m3t,
         'loc': MAGNET_3T_LOC,
         'name': 'magnet_3t',
-        'staging': AGENT_POSITIONS['scan_staging_3t']
-    })
-    resources['magnet_pool'].put({
+        'staging': AGENT_POSITIONS['scan_staging_3t'],
+        'visual_state': 'clean'
+    }
+    resources['magnet_pool'].put(m3t_config)
+    magnet_configs.append(m3t_config)
+    
+    # Magnet 2: 1.5T
+    m15t = simpy.Resource(env, capacity=1)
+    m15t.last_exam_type = None
+    m15t_config = {
         'id': '1.5T',
-        'resource': simpy.Resource(env, capacity=1),
+        'resource': m15t,
         'loc': MAGNET_15T_LOC,
         'name': 'magnet_15t',
-        'staging': AGENT_POSITIONS['scan_staging_15t']
-    })
+        'staging': AGENT_POSITIONS['scan_staging_15t'],
+        'visual_state': 'clean'
+    }
+    resources['magnet_pool'].put(m15t_config)
+    magnet_configs.append(m15t_config)
 
     
     # 5. Create Staff Sprites
@@ -123,36 +142,79 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
     
     print("Starting simulation loop...")
     print("Close the window to end early.\n")
-    
+
+    # PHASE 1 & 2: Normal Shift (inc. Warm-up and Cooldown)
     while running and env.now < duration:
+        # Prepare Room States
+        room_visual_states = {}
+        for cfg in magnet_configs:
+            room_visual_states[cfg['name']] = cfg['visual_state']
+            
+        # Determine Status Label
+        if env.now < WARM_UP_DURATION:
+            status = "WARM UP"
+        elif env.now > (duration - COOLDOWN_DURATION):
+            status = "COOL DOWN (No New Patients)"
+        else:
+            status = "NORMAL SHIFT"
+            
         # Prepare stats for display
         current_stats = {
             'Sim Time': int(env.now),
             'Patients': stats.patients_completed,
             'In System': stats.patients_in_system,
+            'Status': status
         }
         
         # Render frame (returns False if window closed)
-        running = renderer.render_frame(current_stats)
+        running = renderer.render_frame(current_stats, room_visual_states)
         
         # Advance simulation time
-        # Goal: Run simulation faster than real-time for quick results
-        # SIM_SPEED = 0.5 means 1 sim minute takes 0.5 real seconds
-        # So 1 real second = 2 sim minutes = 120 sim seconds
-        # At 60 FPS: 1 frame = 1/60 sec = 2/60 sim minutes = 0.0333 sim minutes
         delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60  # sim minutes per frame
         
         try:
             env.run(until=env.now + delta_sim_time)
         except simpy.core.EmptySchedule:
-            # No more events scheduled
-            print("\nNo more events scheduled. Ending simulation.")
             break
+
+    # PHASE 3: Run-to-Clear Overtime
+    # Continue until all patients exit the system
+    if running and stats.patients_in_system > 0:
+        print(f"\nShift ended at {env.now:.1f}m. Entering Overtime to clear {stats.patients_in_system} patients.")
+        
+        while running and stats.patients_in_system > 0:
+            # Update Room States
+            room_visual_states = {}
+            for cfg in magnet_configs:
+                room_visual_states[cfg['name']] = cfg['visual_state']
+                
+            current_stats = {
+                'Sim Time': int(env.now),
+                'Patients': stats.patients_completed,
+                'In System': stats.patients_in_system,
+                'Status': 'OVERTIME (Clearing)'
+            }
+            
+            running = renderer.render_frame(current_stats, room_visual_states)
+            delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
+            
+            try:
+                env.run(until=env.now + delta_sim_time)
+            except simpy.core.EmptySchedule:
+                break
+                
+        print(f"All patients cleared. Stopping simulation at {env.now:.1f}m.")
+        running = False # Stop the engine loop explicitly
+    
     
     # ========== CLEANUP AND REPORTING ==========
     
     actual_duration = env.now
     renderer.cleanup()
+    pygame.quit() # Extra safety
+    if running is False:
+        # If we exited loop naturally, we can assume task done.
+        pass
     
     print("\n" + "=" * 60)
     print("Simulation Complete")

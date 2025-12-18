@@ -89,11 +89,15 @@ class SimStats:
             timestamp: Simulation time in minutes
         """
         # Always track system population (even during warm-up)
+        # Always track system population (even during warm-up)
         if new_state == 'arriving':
             self.patients_arrived += 1
             self.patients_in_system += 1
-        elif old_state == 'scanning' and new_state == 'exited':
+        elif new_state == 'exited':
+            # Decrement when patient explicitly exits the system
             self.patients_in_system -= 1
+            if self.patients_in_system < 0:
+                self.patients_in_system = 0 # Safety floor
 
         
         # Skip logging state changes during warm-up period

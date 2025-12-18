@@ -23,6 +23,19 @@ Traditional MRI departments show high equipment "occupied time" (92%) but hide c
 
 **Solution:** The "Pit Crew" model moves prep outside, using a **waiting room buffer** to stage prepped patients, allowing the magnet to focus exclusively on scanning.
 
+```mermaid
+graph LR
+    A[Arrival] --> B[Registration]
+    B --> C[Change Room]
+    C --> D[Waiting Room Buffer]
+    D <--> E[Prep/IV]
+    D --> F[Magnet (Scan)]
+    F --> G[Exit]
+    
+    style D fill:#f9f,stroke:#333,stroke-width:2px,color:black
+    style F fill:#9f9,stroke:#333,stroke-width:2px,color:black
+```
+
 ## Architecture
 
 ```
@@ -63,17 +76,20 @@ mri-project/
 ## Key Features
 
 ### 1. Time-Based Simulation (Process Management Best Practice)
-- **Shift Duration**: 720 minutes (12 hours)
-- **Warm-Up Period**: 60 minutes (excluded from statistics to remove empty-system bias)
-- **Data Collection**: 660 minutes of steady-state operation
+- **3-Phase Execution Model**:
+  1. **Warm-Up**: 60 minutes (excluded from stats)
+  2. **Normal Shift**: Runs until `duration - 30` minutes.
+  3. **Cool-Down**: Arrivals stop, remaining patients process.
+  4. **Run-to-Clear**: Overtime continues until system is completely empty.
 
 ### 2. Real-Time Visualization
 - **Medical White Aesthetic**: High-contrast white rooms on grey background
-- **80/20 Layout**: 1200px simulation area + 400px sidebar
-- **Smooth Animation**: 60 FPS with agent movement at 5-6 pixels/frame
-- **Live Statistics**: Real-time throughput (Total, 3T, and 1.5T), utilization, and queue metrics
-- **Load Balancing Router**: Intelligent patient routing to the magnet with the shortest queue
-
+- **Visual State Tracking**:
+  - **Light Green**: Magnet Scanning (Busy)
+  - **Tan/Brown**: Magnet Dirty (Needs Cleaning)
+  - **White**: Magnet Clean (Idle)
+- **Live Statistics**: Status indicators (Warm Up -> Normal -> Overtime)
+- **Gatekeeper Logic**: Visible queuing at Admin desk if staff is away.
 
 ### 3. Comprehensive Data Collection
 - Patient movement logs (zone transitions)
@@ -88,6 +104,7 @@ All durations based on real MRI department data:
 - Changing: triangular(2, 3.5, 5) minutes
 - IV Setup: triangular(1, 2.5, 4) minutes
 - Scanning: triangular(18, 22, 26) minutes
+- Bed Turnover: SMED logic (Fast/Slow flips)
 
 ## Reproduction Instructions
 
@@ -113,10 +130,9 @@ uv sync
 uv run python main.py
 ```
 
-**Custom duration:**
+**Standard 12-Hour Shift (Recommended):**
 ```bash
-uv run python main.py --duration 120    # 2 hour test (default)
-uv run python main.py --duration 720    # 12 hour shift
+uv run python main.py --duration 720
 ```
 
 **With video recording:**
@@ -127,20 +143,14 @@ uv run python main.py --record          # Generates simulation_video.mp4
 ### What to Expect
 
 **Simulation Duration:**
-- Total runtime: 180 minutes (60 warm-up + 120 data collection) by default
-- Real-time duration: ~45 seconds (with SIM_SPEED = 0.25)
-- Video length: ~45 seconds (if recording)
+- Total runtime: `DURATION` + Overtime (until empty)
+- Real-time duration: ~45 seconds (for 2hr test) to ~3 mins (for 12hr shift)
 
 **Visual Output:**
 - PyGame window (1600×800) with animated agents
-- Patients (circles) change color by state:
-  - Grey → Arriving
-  - Maroon → Registered
-  - Teal → Changing
-  - Yellow → Prepped (waiting room)
-  - Green → Scanning
-- Staff (triangles/squares) escort patients
-- Rooms turn **Light Green** when seized (occupied & stationary)
+- Patients (circles) change color by state (Grey -> Maroon -> Blue -> Yellow -> Green)
+- **Gatekeeper**: Patients wait at desk for Admin TA.
+- **Dirty Magnets**: Rooms turn brown after patient exit until Porter cleans them.
 
 **Data Output (in `results/` folder):**
 - `*_movements.csv` - All patient zone transitions
