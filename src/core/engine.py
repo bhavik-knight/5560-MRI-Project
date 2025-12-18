@@ -63,7 +63,7 @@ def run_simulation(duration=None, output_dir='results', record=False):
     stats = SimStats()
     # 4. Create SimPy Resources
     resources = {
-        'porter': simpy.Resource(env, capacity=STAFF_COUNT['porter']),
+        'porter': simpy.PriorityResource(env, capacity=STAFF_COUNT['porter']),
         'backup_techs': simpy.Resource(env, capacity=STAFF_COUNT['backup_tech']),
         'scan_techs': simpy.Resource(env, capacity=STAFF_COUNT['scan_tech']),
         'magnet_pool': simpy.Store(env, capacity=2),

@@ -121,8 +121,9 @@ src/
 
 **Porter (1 staff):**
 - Shape: Orange triangle
-- Role: Transport to Change Room + **Magnet Bed Flip**
+- Role: Transport (Priority 1) + **Magnet Bed Flip (Priority 0)**
 - Home position: (500, 675)
+- Strategy: **Queued Early** - Porter is requested as soon as scan ends, allowing movement during patient exit.
 
 **Backup Tech (2 staff):**
 - Shape: Cyan square

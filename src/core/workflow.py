@@ -76,7 +76,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     yield env.timeout(1)  # Brief arrival pause
     
     # ========== 2. TRANSPORT TO CHANGE ROOM (Porter) ==========
-    with resources['porter'].request() as req:
+    with resources['porter'].request(priority=1) as req: # Lower priority than flips
         yield req
         
         # Porter moves to patient
@@ -216,6 +216,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     stats.log_magnet_end(env.now)
     
     # Step 3: Phased Exit (Patient getting off table, room blocked)
+    # Request Porter IMMEDIATELY so they can start moving/queuing while patient exits
+    porter_req = resources['porter'].request(priority=0)
+    
     stats.log_magnet_start(env.now, is_scanning=False)
     yield env.timeout(get_time('scan_exit'))
     stats.log_magnet_end(env.now)
@@ -228,8 +231,8 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     stats.log_completion(p_id, magnet_id)
 
     # Step 4: Phased Bed Flip (PORTER Fix - Porter must arrive to flip)
-    with resources['porter'].request() as p_req:
-        yield p_req
+    yield porter_req
+    try:
         stats.log_magnet_start(env.now, is_scanning=False)
         
         porter = staff_dict['porter']
@@ -246,6 +249,8 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         
         porter.busy = False
         porter.return_home()
+    finally:
+        resources['porter'].release(porter_req)
 
     scan_tech.busy = False
     
