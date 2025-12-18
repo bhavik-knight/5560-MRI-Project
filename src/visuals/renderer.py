@@ -163,7 +163,7 @@ class RenderEngine:
                     if room_key in ['building', 'zone1', 'control', 'waiting_room']: continue
                     
                     room_rect = pygame.Rect(*coords)
-                    if room_rect.collidepoint(sprite.x, sprite.y):
+                    if room_rect.collidepoint(sprite.x, sprite.y) and sprite.is_at_target():
                         occupied_rooms.add(room_key)
         
         # 1. Draw static floor plan (fills background with corridor grey)

@@ -11,7 +11,7 @@ from src.config import (
     SIDEBAR_X, WINDOW_WIDTH, WINDOW_HEIGHT,
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING, GREY_DARK,
     ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y, BLUE_ADMIN,
-    PURPLE_REGISTERED, GREY_OCCUPIED
+    PURPLE_REGISTERED, GREY_OCCUPIED, GREEN_OCCUPIED
 )
 
 
@@ -133,7 +133,7 @@ def draw_floor_plan(surface, font_room=None, font_zone=None, occupied_rooms=None
         
         # Determine background color
         is_occupied = room_key in occupied_rooms
-        bg_color = GREY_OCCUPIED if is_occupied else MEDICAL_WHITE
+        bg_color = GREEN_OCCUPIED if is_occupied else MEDICAL_WHITE
         
         draw_room(surface, rect, label, font, bg_color)
 

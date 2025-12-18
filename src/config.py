@@ -47,6 +47,8 @@ BLUE_ADMIN = (48, 92, 222)           # Admin TA (Royal Blue #305CDE)
 # Room/Zone Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+GREEN_OCCUPIED = (230, 255, 230)     # Light green for occupied rooms
+GREY_OCCUPIED = (225, 225, 235)      # Kept for compatibility or alternative
 GREY_LIGHT = (220, 220, 220)
 GREY_DARK = (150, 150, 150)
 GREY_HOLDING = (180, 180, 180)
