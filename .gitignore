@@ -216,8 +216,12 @@ __marimo__/
 .vscode/
 .antigravity/
 .idea/
+<<<<<<< HEAD
  
 
 # ignore video files
 results/*.mkv
 
+=======
+ 
+>>>>>>> b3e78773549382982193b6498a220c2059534d65
