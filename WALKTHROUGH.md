@@ -560,7 +560,12 @@ All saved to `results/` directory:
 - SimPy controls logic (when to move, state changes)
 - Agents store visual state (position, color)
 - PyGame renders current state each frame
-- No race conditions (single-threaded)
+### Key Implementation Patterns
+
+- **Digital Signage Metaphor**: Patients monitor magnet status independently. When the simulation grants a magnet resource, the `patient_journey` triggers autonomous movement from the Waiting Room to the Magnet Room, bypassing the need for a technician escort.
+- **Strict Porter sequence**: Implementing a high-fidelity turnover. The Magnet resource is held throughout: `Scan Complete` → `Patient Exit` → `Porter Request` → `Porter Arrival` → `Bed Flip`. The resource is only released once the Porter completes the reset.
+- **Priority-Based Tasks**: Using `simpy.PriorityResource`, the Porter (Priority 0) clears magnets before handling new arrivals (Priority 1), preventing department bottlenecks.
+- **Staff Localization**: Agents (Backup Techs/Scan Techs) use `return_home()` to stay in their specialized functional zones, significantly reducing non-value-added travel time.
 
 ## 12. Validation and Verification
 
@@ -580,10 +585,12 @@ Watch for:
 - ✓ Patients spawn in Zone 1 (bottom)
 - ✓ Porter (triangle) escorts to change rooms
 - ✓ Patients turn blue while changing
-- ✓ Backup tech (cyan square) escorts to prep
-- ✓ Patients turn yellow in waiting room
-- ✓ Scan tech (purple square) escorts to magnet
+- ✓ Patients move independently to Waiting Room
+- ✓ Backup tech (cyan square) meets patient in Waiting Room and escorts to prep
+- ✓ Patients turn yellow in Waiting Room (unaccompanied)
+- ✓ Patients move independently to magnet room (Digital Signage logic)
 - ✓ Patients turn green while scanning
+- ✓ Porter arrives for Bed Flip after patient exit
 - ✓ Patients exit to the right
 
 ### Data Verification
