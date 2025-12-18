@@ -77,13 +77,13 @@ src/
    - Walks to Admin TA Desk at (850, 675)
    - **Registration**:
      * Resource: Admin TA (Royal Blue #305CDE)
-     * Interaction: Patient turns **Purple** (Registered)
+     * Interaction: Patient turns **Maroon** (Registered)
      * Duration: Screening time (~3.2 min)
    - **Waiting**: Patient walks to LEFT side of Zone 1 (Grid Area) to wait for Porter
-   - State: 'registered' (Purple)
+   - State: 'registered' (Maroon)
 
 2. TRANSPORT (Porter)
-   - Orange triangle picks up **Registered (Purple)** patient from Zone 1 Left Grid
+   - Orange triangle picks up **Registered (Maroon)** patient from Zone 1 Left Grid
    - Both move to change room (random: 1, 2, or 3)
    - Porter returns to Zone 1
 
@@ -152,7 +152,7 @@ src/
 - Shape: Royal Blue square (#305CDE)
 - Role: Gatekeeper / Registration
 - Home position: (850, 675) - Right side of Zone 1 (framing text)
-- Logic: Registers arriving patients, turning them Purple before they can proceed.
+- Logic: Registers arriving patients, turning them Maroon before they can proceed.
 
 ## 5. Visual Design
 
@@ -610,6 +610,7 @@ uv run python main.py --duration 5 --patients 2
 
 Watch for:
 - ✓ Patients spawn in Zone 1 (bottom)
+- ✓ Patients go to Admin TA and turn Maroon (Registered)
 - ✓ Porter (triangle) escorts to change rooms
 - ✓ Patients turn blue while changing
 - ✓ Patients move independently to Waiting Room

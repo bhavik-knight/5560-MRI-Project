@@ -135,6 +135,7 @@ uv run python main.py --record          # Generates simulation_video.mp4
 - PyGame window (1600×800) with animated agents
 - Patients (circles) change color by state:
   - Grey → Arriving
+  - Maroon → Registered
   - Teal → Changing
   - Yellow → Prepped (waiting room)
   - Green → Scanning
@@ -192,6 +193,7 @@ delta_sim_time = (1.0 / FPS) * (60 / SIM_SPEED) / 60
 ### Visual Verification
 Watch for these behaviors:
 - ✓ Patients spawn in Zone 1 (bottom)
+- ✓ Patients go to Admin TA and turn Maroon (Registered)
 - ✓ Orange triangle (porter) escorts to change rooms
 - ✓ Patients turn teal while changing
 - ✓ Cyan square (backup tech) escorts to prep
