@@ -191,8 +191,8 @@ class RenderEngine:
         # 6. Capture frame for video recording (if enabled)
         self.frame_count += 1
         if self.record_video and self.video_writer is not None:
-             # Optimization: Only record every Nth frame based on RECORD_INTERVAL
-             if self.frame_count % RECORD_INTERVAL == 0:
+            # Optimization: Only record every Nth frame based on RECORD_INTERVAL
+            if self.frame_count % RECORD_INTERVAL == 0:
                 try:
                     # Capture screen as numpy array
                     view = pygame.surfarray.array3d(self.screen)
