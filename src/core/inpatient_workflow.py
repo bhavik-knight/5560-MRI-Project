@@ -128,6 +128,9 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
             patient.move_to(*exit_loc)
             porter.move_to(*exit_loc)
             
+            # Visual: Room becomes clean/white as they leave
+            magnet_config['visual_state'] = 'clean'
+            
             while not patient.is_at_target():
                 yield env.timeout(0.01)
                 
