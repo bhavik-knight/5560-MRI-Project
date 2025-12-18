@@ -9,7 +9,7 @@ import math
 from src.config import (
     GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING,
     ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN,
-    BLACK, AGENT_SPEED
+    BLACK, AGENT_SPEED, GREY_DARK
 )
 
 class Agent(pygame.sprite.Sprite):
@@ -100,6 +100,7 @@ class Patient(Agent):
             'changing': BLUE_CHANGING,
             'prepped': YELLOW_PREPPED,
             'scanning': GREEN_SCANNING,
+            'exited': GREY_DARK,
         }
         self.color = state_colors.get(state, GREY_ARRIVING)
     

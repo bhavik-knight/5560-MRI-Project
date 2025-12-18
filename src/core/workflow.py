@@ -224,9 +224,14 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     stats.log_magnet_end(env.now)
     
     # PATIENT EXITS (Releases room, but room is still busy for flip)
-    patient.move_to(*AGENT_POSITIONS['exit'])
-    renderer.remove_sprite(patient)
+    patient.set_state('exited')
     stats.log_state_change(p_id, 'scanning', 'exited', env.now)
+    
+    patient.move_to(*AGENT_POSITIONS['exit'])
+    while not patient.is_at_target():
+        yield env.timeout(0.01)
+        
+    renderer.remove_sprite(patient)
     stats.log_movement(p_id, 'exit', env.now)
     stats.log_completion(p_id, magnet_id)
 

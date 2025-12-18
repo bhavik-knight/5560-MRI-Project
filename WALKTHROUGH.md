@@ -112,8 +112,9 @@ src/
    - Metric: Captures "Hidden Time" vs "Value-Added" time
 
 7. EXIT
-   - Patient moves to (1180, 675)
-   - Removed from visualization
+   - State: 'exited' (Patient turns dark grey)
+   - Patient moves VISIBLY from Magnet Room to (1180, 675)
+   - Removed from simulation ONLY after reaching exit target
    - Logged as completed via `stats.log_completion(p_id, magnet_id)`
 ```
 
