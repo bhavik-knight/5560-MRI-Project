@@ -518,10 +518,15 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
          # Ready for scan again
 
     # ========== Step 8: Autonomous Scan Entry ==========
+    # 8a. Request priority access to the magnet pool (Priority 1)
+    access_req = resources['magnet_access'].request(priority=config.PRIORITY_OUTPATIENT)
+    yield access_req
+    
+    # 8b. Get first available magnet
     magnet_config = yield resources['magnet_pool'].get()
     magnet_res = magnet_config['resource'] # The actual magnet resource
     
-    # Seize the magnet (with standard outpatient priority)
+    # Seize the specific magnet resource
     magnet_req = magnet_res.request(priority=config.PRIORITY_OUTPATIENT)
     yield magnet_req
     
@@ -624,6 +629,7 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     scan_tech.return_home()
     
     magnet_res.release(magnet_req)
+    resources['magnet_access'].release(access_req)
     yield resources['magnet_pool'].put(magnet_config)
 
 def patient_generator(env, staff_dict, resources, stats, renderer, duration):

@@ -40,10 +40,15 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
         yield env.timeout(prep_time)
     
     # Step 4: Wait for magnet (with HIGH PRIORITY)
+    # 4a. Request priority access to the magnet pool (Priority 0)
+    access_req = resources['magnet_access'].request(priority=config.PRIORITY_INPATIENT)
+    yield access_req
+    
+    # 4b. Actually get a specific magnet from the available pool
     magnet_config = yield resources['magnet_pool'].get()
     magnet_res = magnet_config['resource']
     
-    # Inpatients get highest priority (0)
+    # Seize the specific magnet resource
     magnet_req = magnet_res.request(priority=config.PRIORITY_INPATIENT)
     yield magnet_req
     
@@ -95,6 +100,7 @@ def inpatient_workflow(env, patient, staff_dict, resources, stats, renderer, p_i
     scan_tech.busy = False
     scan_tech.return_home()
     magnet_res.release(magnet_req)
+    resources['magnet_access'].release(access_req)
     yield resources['magnet_pool'].put(magnet_config)
     
     # Exit directly
