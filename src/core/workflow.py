@@ -11,8 +11,83 @@ import src.config as config
 from src.config import (
     AGENT_POSITIONS, PROCESS_TIMES,
     MAGNET_3T_LOC, MAGNET_15T_LOC,
-    PROB_IV_NEEDED, PROB_DIFFICULT_IV
+    PROB_IV_NEEDED, PROB_DIFFICULT_IV,
+    ROOM_COORDINATES, PROB_WASHROOM_USAGE
 )
+
+class PositionManager:
+    """Manages available slots in waiting areas to prevent overlapping."""
+    def __init__(self):
+        # Dictionary to track occupied slots in each area/sub-area
+        # Key: Area name, Value: List of (id, x, y)
+        self.occupancy = {
+            'zone1': {},
+            'waiting_room_left': {},
+            'waiting_room_right': {}
+        }
+        
+    def get_grid_pos(self, area, p_id):
+        """Calculate next available grid position for an area."""
+        # Determine base room key
+        if area.startswith('waiting_room'):
+            room_key = 'waiting_room'
+        else:
+            room_key = area.split('_')[0]
+            
+        # Grid parameters
+        start_x, start_y, width, height = ROOM_COORDINATES[room_key]
+        
+        # Override specific area boundaries based on user request
+        if area == 'zone1':
+            # Public room - left border
+            base_x = start_x + 20
+            base_y = start_y + 20
+            max_y = start_y + height - 20
+            spacing = 25
+        elif area == 'waiting_room_left':
+            # Waiting room - changed patients - left border
+            base_x = start_x + 20
+            base_y = start_y + 20
+            max_y = start_y + height - 20
+            spacing = 25
+        elif area == 'waiting_room_right':
+            # Waiting room - prepped patients - right border
+            base_x = start_x + width - 20
+            base_y = start_y + 20
+            max_y = start_y + height - 20
+            spacing = 25
+            
+        # Find first empty slot index
+        occupied_indices = sorted(self.occupancy[area].keys())
+        slot_idx = 0
+        while slot_idx in occupied_indices:
+            slot_idx += 1
+            
+        # Calculate x, y based on vertical-first grid
+        column_capacity = max(1, (max_y - base_y) // spacing)
+        col = slot_idx // column_capacity
+        row = slot_idx % column_capacity
+        
+        if area == 'waiting_room_right':
+            # Fill right-to-left
+            x = base_x - (col * spacing)
+        else:
+            # Fill left-to-right
+            x = base_x + (col * spacing)
+            
+        y = base_y + (row * spacing)
+        
+        # Save occupancy
+        self.occupancy[area][slot_idx] = p_id
+        return (x, y), slot_idx
+
+    def release_pos(self, area, slot_idx):
+        """Release a slot."""
+        if slot_idx in self.occupancy[area]:
+            self.occupancy[area].pop(slot_idx)
+
+# Global position manager instance
+pos_manager = PositionManager()
 
 def get_time(task):
     """Refined triangular sampling from config."""
@@ -44,6 +119,38 @@ def poisson_sample(mean):
     """
     return random.expovariate(1.0 / mean)
 
+def patient_exit_process(env, patient, renderer, stats, p_id, magnet_id):
+    """
+    Separate process for patient exit journey (Change back -> Exit).
+    Allows magnet bed flip to proceed in parallel.
+    """
+    # 7. Post-Scan Change (Back to Street Clothes)
+    change_rooms = ['change_1_center', 'change_2_center', 'change_3_center']
+    change_target = AGENT_POSITIONS[random.choice(change_rooms)]
+    
+    patient.set_state('changing') # Turn Blue again
+    stats.log_state_change(p_id, 'scanning', 'changing', env.now)
+    patient.move_to(*change_target)
+    
+    # Wait for movement to change room
+    while not patient.is_at_target():
+        yield env.timeout(0.01)
+        
+    stats.log_movement(p_id, 'change_room_exit', env.now)
+    yield env.timeout(get_time('change_back'))
+    
+    # Now Exit Building
+    patient.set_state('exited')
+    stats.log_state_change(p_id, 'changing', 'exited', env.now)
+    
+    patient.move_to(*AGENT_POSITIONS['exit'])
+    while not patient.is_at_target():
+        yield env.timeout(0.01)
+        
+    renderer.remove_sprite(patient)
+    stats.log_movement(p_id, 'exit', env.now)
+    stats.log_completion(p_id, magnet_id)
+
 def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     """
     SimPy process defining a single patient's journey through the MRI suite.
@@ -69,7 +176,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     
     # ========== 1. ARRIVAL (Zone 1) ==========
     patient.set_state('arriving')
-    patient.move_to(*AGENT_POSITIONS['zone1_center'])
+    # Use grid position for Zone 1
+    arrival_pos, arrival_slot = pos_manager.get_grid_pos('zone1', p_id)
+    patient.move_to(*arrival_pos)
     stats.log_state_change(p_id, None, 'arriving', env.now)
     stats.log_movement(p_id, 'zone1', env.now)
     
@@ -83,6 +192,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         porter = staff_dict['porter']
         porter.busy = True
         porter.move_to(patient.x, patient.y)
+        
+        # Release Zone 1 position once porter arrives
+        pos_manager.release_pos('zone1', arrival_slot)
         
         # Wait for porter to arrive
         while not porter.is_at_target():
@@ -114,7 +226,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     
     # ========== 4. PREP (Backup Tech Localization) ==========
     # Patient moves themselves from Change Room to Waiting Room first
-    patient.move_to(*AGENT_POSITIONS['waiting_room_center'])
+    # Position: Left border of Waiting Room
+    wr_left_pos, wr_left_slot = pos_manager.get_grid_pos('waiting_room_left', p_id)
+    patient.move_to(*wr_left_pos)
     while not patient.is_at_target():
         yield env.timeout(0.01)
     
@@ -126,14 +240,21 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         yield req
         stats.log_waiting_room(p_id, env.now, 'exit')
         
-        # Find available backup tech
-        tech = next((t for t in staff_dict['backup'] if not t.busy), staff_dict['backup'][0])
+        # Find available backup tech (Load Balancing: Least Recently Used)
+        free_techs = [t for t in staff_dict['backup'] if not t.busy]
+        # Sort by last_used_time (default 0 if not set)
+        tech = sorted(free_techs, key=lambda t: getattr(t, 'last_used_time', 0))[0]
+        
         tech.busy = True
+        tech.last_used_time = env.now
         
         # Tech meets patient in waiting room
         tech.move_to(patient.x, patient.y)
         while not tech.is_at_target():
             yield env.timeout(0.01)
+        
+        # Release waiting room left slot
+        pos_manager.release_pos('waiting_room_left', wr_left_slot)
         
         # Move together to tech's respective prep room
         prep_target = (tech.home_x, tech.home_y)
@@ -161,8 +282,10 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         stats.log_state_change(p_id, 'changing', 'prepped', env.now)
         
         # RETURN to Waiting Room (Pit Crew Buffer)
-        patient.move_to(*AGENT_POSITIONS['waiting_room_center'])
-        tech.move_to(*AGENT_POSITIONS['waiting_room_center'])
+        # Position: Right border of Waiting Room
+        wr_right_pos, wr_right_slot = pos_manager.get_grid_pos('waiting_room_right', p_id)
+        patient.move_to(*wr_right_pos)
+        tech.move_to(*wr_right_pos)
         while not patient.is_at_target():
             yield env.timeout(0.01)
             
@@ -172,6 +295,40 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         # Tech returns home (localized to Zone 2)
         tech.busy = False
         tech.return_home()
+        
+        # Chance for WASHROOM break (Random occurrence while waiting)
+        if random.random() < PROB_WASHROOM_USAGE:
+            # Move to random washroom (1 or 2)
+            washrooms = ['washroom_1', 'washroom_2']
+            washroom_target = ROOM_COORDINATES[random.choice(washrooms)] # Using room rect for general location or center logic?
+            # Actually, AGENT_POSITIONS has keys like 'prep_1_center', but no 'washroom_1_center'.
+            # Layout.py draws rooms. ROOM_COORDINATES gives RECT. 
+            # Let's approximate center from RECT since AGENT_POSITIONS doesn't list washrooms.
+            # Wait, config had AGENT_POSITIONS for prep_1_center.
+            # I should use rect center for washroom.
+            w_choice = random.choice(washrooms)
+            wx, wy, ww, wh = ROOM_COORDINATES[w_choice]
+            washroom_pos = (wx + ww//2, wy + wh//2)
+            
+            # Release waiting room slot temporarily? 
+            # Realistically, they keep their 'spot' or 'chart' in queue.
+            # But visually, they leave the slot. 
+            # Let's RELEASE the slot and RE-ACQUIRE when coming back to avoid ghosting.
+            pos_manager.release_pos('waiting_room_right', wr_right_slot)
+            
+            patient.move_to(*washroom_pos)
+            while not patient.is_at_target():
+                yield env.timeout(0.01)
+                
+            stats.log_movement(p_id, 'washroom', env.now)
+            yield env.timeout(get_time('washroom'))
+            
+            # Return to Waiting Room (Re-acquire slot)
+            wr_right_pos, wr_right_slot = pos_manager.get_grid_pos('waiting_room_right', p_id)
+            patient.move_to(*wr_right_pos)
+            while not patient.is_at_target():
+                yield env.timeout(0.01)
+            stats.log_movement(p_id, 'waiting_room', env.now)
     
     # ========== 5. WAITING FOR MAGNET (Autonomous Signage) ==========
     # Patient is already in waiting room, wait for magnet availability
@@ -186,6 +343,9 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     staging_pos = magnet_config['staging']
         
     stats.log_waiting_room(p_id, env.now, 'exit')
+    
+    # Release waiting room right position
+    pos_manager.release_pos('waiting_room_right', wr_right_slot)
     
     # 6a. Patient moves AUTONOMOUSLY to magnet room (reading the digital sign)
     patient.move_to(*magnet_loc)
@@ -224,16 +384,10 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     stats.log_magnet_end(env.now)
     
     # PATIENT EXITS (Releases room, but room is still busy for flip)
-    patient.set_state('exited')
-    stats.log_state_change(p_id, 'scanning', 'exited', env.now)
     
-    patient.move_to(*AGENT_POSITIONS['exit'])
-    while not patient.is_at_target():
-        yield env.timeout(0.01)
-        
-    renderer.remove_sprite(patient)
-    stats.log_movement(p_id, 'exit', env.now)
-    stats.log_completion(p_id, magnet_id)
+    # PATIENT EXITS (Releases room, but room is still busy for flip)
+    # Fork patient journey (Exit & Change) so Magnet/Porter can cycle immediately
+    env.process(patient_exit_process(env, patient, renderer, stats, p_id, magnet_id))
 
     # Step 4: Phased Bed Flip (PORTER Fix - Porter must arrive to flip)
     yield porter_req

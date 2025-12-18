@@ -1,0 +1,1062 @@
+Step # Tasks
+4
+
+Patient fills out safety screening form
+
+4
+4
+4
+4
+4
+
+Patient fills out safety screening form
+Patient fills out safety screening form
+Patient fills out safety screening form
+Patient fills out safety screening form
+Patient fills out safety screening form
+
+5
+5
+5
+5
+5
+5
+5
+5
+5
+5
+5
+
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+Patient escorted to zone 2 waiting with
+directions to change
+
+Date
+
+Duration (sec)
+3/6/2025
+3/13/2025
+3/13/2025
+3/24/2025
+3/24/2025
+3/24/2025
+
+140.00
+132.00
+309.00
+218.00
+227.00
+125.00
+
+3/6/2025
+
+20.98
+
+3/6/2025
+
+64.00
+
+3/6/2025
+
+121.00
+
+3/6/2025
+
+49.87
+
+3/13/2025
+
+51.40
+
+3/13/2025
+
+95.00
+
+3/13/2025
+
+78.00
+
+3/24/2025
+
+28.37
+
+3/24/2025
+
+62.00
+
+3/24/2025
+
+68.00
+
+3/24/2025
+
+47.61
+
+Step #
+
+Task
+
+4
+
+Patient fills out safety screening form
+
+5
+
+N
+
+Mean
+
+Min
+
+Max
+
+6
+
+191.83
+
+125
+
+309
+
+Patient escorted to zone 2 waiting with
+directions to change
+
+11
+
+62.38
+
+21
+
+121
+
+Patient changes
+
+10
+
+190.10
+
+92
+
+347
+
+7
+7
+7
+7
+7
+7
+7
+7
+7
+7
+
+Patient changes
+Patient changes
+Patient changes
+Patient changes
+Patient changes
+Patient changes
+Patient changes
+Patient changes
+Patient changes
+Patient changes
+
+3/6/2025
+3/6/2025
+3/6/2025
+3/6/2025
+3/13/2025
+3/13/2025
+3/24/2025
+3/24/2025
+3/24/2025
+3/24/2025
+
+344.00
+182.00
+92.00
+219.00
+347.00
+126.00
+114.00
+172.00
+139.00
+166.00
+
+7
+
+8
+8
+8
+8
+8
+8
+8
+
+Patient washroom
+Patient washroom
+Patient washroom
+Patient washroom
+Patient washroom
+Patient washroom
+Patient washroom
+
+3/6/2025
+3/6/2025
+3/13/2025
+3/13/2025
+3/13/2025
+3/24/2025
+3/24/2025
+
+80.00
+49.02
+78.00
+228.00
+314.00
+131.00
+72.00
+
+8
+
+Patient washroom
+
+7
+
+136.00
+
+49.02
+
+314
+
+9
+9
+9
+9
+
+Patient stores personal belongings
+Patient stores personal belongings
+Patient stores personal belongings
+Patient stores personal belongings
+
+3/6/2025
+3/6/2025
+3/6/2025
+3/6/2025
+
+26.95
+31.06
+24.43
+29.12
+
+9
+
+Patient stores personal belongings
+
+12
+
+28.38
+
+8
+
+56
+
+9
+9
+9
+9
+9
+9
+9
+9
+10
+10
+10
+10
+10
+10
+
+11
+11
+11
+11
+11
+11
+11
+11
+11
+11
+11
+11
+11
+12
+12
+12
+12
+12
+12
+
+Patient stores personal belongings
+Patient stores personal belongings
+Patient stores personal belongings
+Patient stores personal belongings
+Patient stores personal belongings
+Patient stores personal belongings
+Patient stores personal belongings
+Patient stores personal belongings
+Patient changed and form checked and
+moved to prep room
+Patient changed and form checked and
+moved to prep room
+Patient changed and form checked and
+moved to prep room
+Patient changed and form checked and
+moved to prep room
+Patient changed and form checked and
+moved to prep room
+Patient changed and form checked and
+moved to prep room
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient interview (safety, process to
+expect)
+Patient IV setup
+Patient IV setup
+Patient IV setup
+Patient IV setup
+Patient IV setup
+Patient IV setup
+
+3/6/2025
+3/6/2025
+3/13/2025
+3/13/2025
+3/24/2025
+3/24/2025
+3/24/2025
+3/24/2025
+
+11.94
+51.32
+22.55
+7.77
+21.92
+13.48
+56.31
+43.71
+
+3/6/2025
+
+7.82
+
+3/6/2025
+
+21.59
+
+3/6/2025
+
+20.10
+
+3/24/2025
+
+31.53
+
+3/24/2025
+
+332.00
+
+3/24/2025
+
+58.27
+
+3/6/2025
+
+31.87
+
+3/6/2025
+
+203.00
+
+3/6/2025
+
+180.00
+
+3/6/2025
+
+166.00
+
+3/6/2025
+
+195.00
+
+3/6/2025
+
+130.00
+
+3/13/2025
+
+341.00
+
+3/13/2025
+
+348.00
+
+3/24/2025
+
+56.80
+
+3/24/2025
+
+17.82
+
+3/24/2025
+
+17.09
+
+3/24/2025
+
+182.00
+
+3/24/2025
+
+54.76
+
+3/6/2025
+3/6/2025
+3/6/2025
+3/6/2025
+3/13/2025
+3/24/2025
+
+143.00
+168.00
+129.00
+168.00
+92.00
+245.00
+
+Patient changed and form checked
+and moved to prep room
+
+6
+
+78.55
+
+8
+
+332
+
+11
+
+Patient interview (safety, process to
+expect)
+
+13
+
+147.95
+
+17
+
+348
+
+12
+
+Patient IV setup
+
+8
+
+153.50
+
+92
+
+245
+
+10
+
+12
+12
+
+Patient IV setup
+Patient IV setup
+
+3/24/2025
+3/24/2025
+
+161.00
+122.00
+
+12a
+
+Patient injected in prep room
+
+3/24/2025
+
+99.00
+
+12a
+
+Patient injected in prep room
+
+1
+
+99.00
+
+99
+
+99
+
+12b
+
+Difficult IV
+
+3/13/2025
+
+468.00
+
+12b
+
+Difficult IV
+
+1
+
+468.00
+
+468
+
+468
+
+13
+
+Patient brought to scan room and set up
+
+3/6/2025
+
+176.00
+
+13
+
+Patient brought to scan room and set
+up
+
+12
+
+237.75
+
+91
+
+449
+
+13
+
+Patient brought to scan room and set up
+
+3/6/2025
+
+288.00
+
+13
+
+Patient brought to scan room and set up
+
+3/6/2025
+
+249.00
+
+13
+
+Patient brought to scan room and set up
+
+3/6/2025
+
+216.00
+
+13
+
+Patient brought to scan room and set up
+
+3/6/2025
+
+379.00
+
+13
+
+Patient brought to scan room and set up
+
+3/13/2025
+
+449.00
+
+13
+
+Patient brought to scan room and set up
+
+3/13/2025
+
+315.00
+
+13
+
+Patient brought to scan room and set up
+
+3/24/2025
+
+147.00
+
+13
+
+Patient brought to scan room and set up
+
+3/24/2025
+
+208.00
+
+13
+
+Patient brought to scan room and set up
+
+3/24/2025
+
+121.00
+
+13
+
+Patient brought to scan room and set up
+
+3/24/2025
+
+91.00
+
+13
+
+Patient brought to scan room and set up
+
+3/24/2025
+
+214.00
+
+Total time in Zone 2 pre-scan
+Total time in Zone 2 pre-scan
+Total time in Zone 2 pre-scan
+Total time in Zone 2 pre-scan
+Total time in Zone 2 pre-scan
+Total time in Zone 2 pre-scan
+Total time in Zone 2 pre-scan
+
+3/6/2025
+3/6/2025
+3/13/2025
+3/13/2025
+3/24/2025
+3/24/2025
+3/24/2025
+
+721.00
+484.00
+1512.00
+1797.00
+643.00
+692.00
+1208.00
+
+Total time in Zone 2 pre-scan
+
+7
+
+1008.14
+
+484
+
+1797
+
+13a
+
+Patient IV setup in scan room
+
+3/6/2025
+
+522.00
+
+13a
+
+Patient IV setup in scan room
+
+1
+
+522.00
+
+522
+
+522
+
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+
+Exit patient from magnet
+Exit patient from magnet
+Exit patient from magnet
+Exit patient from magnet
+Exit patient from magnet
+Exit patient from magnet
+Exit patient from magnet
+Exit patient from magnet
+Exit patient from magnet
+Exit patient from magnet
+
+3/6/2025
+3/6/2025
+3/6/2025
+3/6/2025
+3/13/2025
+3/24/2025
+3/24/2025
+3/24/2025
+3/24/2025
+3/24/2025
+
+112.00
+256.00
+146.00
+191.00
+145.00
+246.00
+271.00
+72.00
+78.00
+20.90
+
+15
+
+Exit patient from magnet
+
+10
+
+153.79
+
+20.90
+
+271.00
+
+17
+17
+
+Perform bed flip/setup for next pt.
+Perform bed flip/setup for next pt.
+
+3/6/2025
+3/6/2025
+
+80.00
+35.00
+
+17
+
+Perform bed flip/setup for next pt.
+
+8
+
+71.84
+
+32
+
+168
+
+17
+17
+17
+17
+17
+17
+18
+18
+18
+18
+
+Perform bed flip/setup for next pt.
+Perform bed flip/setup for next pt.
+Perform bed flip/setup for next pt.
+Perform bed flip/setup for next pt.
+Perform bed flip/setup for next pt.
+Perform bed flip/setup for next pt.
+Scan paperwork to PACS, ensure data
+pushes
+Scan paperwork to PACS, ensure data
+pushes
+Scan paperwork to PACS, ensure data
+pushes
+Scan paperwork to PACS, ensure data
+pushes
+
+3/6/2025
+3/13/2025
+3/24/2025
+3/24/2025
+3/24/2025
+3/24/2025
+
+51.77
+73.00
+46.81
+168.00
+32.10
+88.00
+
+3/13/2025
+
+57.36
+
+3/13/2025
+
+80.00
+
+3/24/2025
+
+27.10
+
+3/24/2025
+
+69.00
+
+18
+
+Scan paperwork to PACS, ensure data
+pushes
+
+4
+
+58.37
+
+27
+
+80
+
+19
+19
+19
+19
+19
+19
+19
+
+Patient in change room
+Patient in change room
+Patient in change room
+Patient in change room
+Patient in change room
+Patient in change room
+Patient in change room
+
+3/6/2025
+3/6/2025
+3/13/2025
+3/13/2025
+3/24/2025
+3/24/2025
+3/24/2025
+
+205.00
+127.00
+204.00
+105.00
+281.00
+128.00
+105.00
+
+19
+
+Patient in change room
+
+7
+
+165.00
+
+105
+
+281
+
+20
+20
+20
+20
+20
+
+Patient in washroom
+Patient in washroom
+Patient in washroom
+Patient in washroom
+Patient in washroom
+
+3/13/2025
+3/13/2025
+3/24/2025
+3/24/2025
+3/24/2025
+
+228.00
+332.00
+141.00
+201.00
+134.00
+
+20
+
+Patient in washroom
+
+5
+
+207.20
+
+134
+
+332
+
+21
+21
+21
+21
+21
+21
+
+Patient at lockers
+Patient at lockers
+Patient at lockers
+Patient at lockers
+Patient at lockers
+Patient at lockers
+
+3/6/2025
+3/6/2025
+3/6/2025
+3/13/2025
+3/24/2025
+3/24/2025
+
+15.78
+21.97
+174.00
+55.26
+49.33
+14.25
+
+21
+
+Patient at lockers
+
+6
+
+55.10
+
+14
+
+174
+
+22
+22
+22
+22
+22
+
+Patient exits facility
+Patient exits facility
+Patient exits facility
+Patient exits facility
+Patient exits facility
+
+3/6/2025
+3/24/2025
+3/24/2025
+3/24/2025
+3/24/2025
+
+38.62
+28.03
+15.94
+16.85
+29.53
+
+22
+
+Patient exits facility
+
+5
+
+25.79
+
+15.94
+
+38.62
+
+Total time in Zone 2 post-scan
+Total time in Zone 2 post-scan
+Total time in Zone 2 post-scan
+Total time in Zone 2 post-scan
+
+3/6/2025
+3/6/2025
+3/13/2025
+3/24/2025
+
+505.00
+367.00
+786.00
+499.00
+
+Total time in Zone 2 post-scan
+
+4
+
+539.25
+
+367.00
+
+786.00
+
+

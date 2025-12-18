@@ -98,6 +98,7 @@ src/
 
 5. WAITING FOR MAGNET (Autonomous Signage)
    - Patient waits in yellow box center (325, 350)
+   - **Washroom Break**: 20% probability of random break (2-5 min) during wait.
    - Trigger: Magnet resource becomes free
    - Patient moves UNACCOMPANIED to Magnet Room (simulating digital signage)
    - Scan Tech remains in Control Room (Zone 3)
@@ -108,12 +109,16 @@ src/
    - Task 2: Scan (Value-Added) - triangular(18.1, 22, 26.5) min
    - Task 3: Exit (occupied, not scanning) - triangular(0.35, 2.56, 4.52) min
    - Task 4: Bed Flip (Porter Trigger) - triangular(0.58, 1, 1.33) min
+     * **Parallel Workflow**: Triggered immediately upon patient exit; runs concurrently with Patient Change.
    - State: 'scanning'
    - Metric: Captures "Hidden Time" vs "Value-Added" time
 
-7. EXIT
+7. EXIT (Post-Scan)
+   - Step 1: Return to Change Room (Street Clothes) - triangular(2, 3.5, 5) min
+   - State: 'changing' (Blue)
+   - Step 2: Leave Building
    - State: 'exited' (Patient turns dark grey)
-   - Patient moves VISIBLY from Magnet Room to (1180, 675)
+   - Patient moves VISIBLY from Change Room to (1180, 675)
    - Removed from simulation ONLY after reaching exit target
    - Logged as completed via `stats.log_completion(p_id, magnet_id)`
 ```
@@ -130,6 +135,7 @@ src/
 - Shape: Cyan square
 - Role: Preps patients (screening + IV)
 - Staging: Localized to IV Prep Rooms (Zone 2)
+- Strategy: **Load Balancing (LRU)** - Assignment rotates between techs to ensure even workload distribution.
 
 **Scan Tech (2 staff):**
 - Shape: Purple square
@@ -144,6 +150,13 @@ src/
 - Canvas: 1600×800 pixels
 - Simulation area: 0-1200px (floor plan)
 - Sidebar: 1200-1600px (stats + legend)
+
+### Patient Grid Positioning
+- **Zone 1 (Arrivals)**: Anchored to the left border with vertical-first grid filling.
+- **Waiting Room (Buffer)**: 
+  - **Changed Patients**: Staged on the left border of the room.
+  - **Prepped Patients**: Staged on the right border of the room.
+- **Overlap Prevention**: PositionManager ensures each patient has a unique 25px grid slot.
 
 **Color Scheme:**
 - Background: Corridor grey (230, 230, 230)
@@ -567,6 +580,7 @@ All saved to `results/` directory:
 - **Strict Porter sequence**: Implementing a high-fidelity turnover. The Magnet resource is held throughout: `Scan Complete` → `Patient Exit` → `Porter Request` → `Porter Arrival` → `Bed Flip`. The resource is only released once the Porter completes the reset.
 - **Priority-Based Tasks**: Using `simpy.PriorityResource`, the Porter (Priority 0) clears magnets before handling new arrivals (Priority 1), preventing department bottlenecks.
 - **Staff Localization**: Agents (Backup Techs/Scan Techs) use `return_home()` to stay in their specialized functional zones, significantly reducing non-value-added travel time.
+- **Dynamic Grid Management**: A `PositionManager` tracks slot occupancy in waiting zones. It handles vertical-first filling and prevents "Z-fighting" (overlapping sprites) by assigning deterministic grid coordinates based on arrival sequence.
 
 ## 12. Validation and Verification
 

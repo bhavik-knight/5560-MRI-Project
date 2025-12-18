@@ -9,7 +9,7 @@ from src.config import (
     ROOM_COORDINATES, ROOM_LABELS,
     MEDICAL_WHITE, CORRIDOR_GREY, WALL_BLACK, LABEL_BLACK, SEPARATOR_BLACK,
     SIDEBAR_X, WINDOW_WIDTH, WINDOW_HEIGHT,
-    GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING,
+    GREY_ARRIVING, BLUE_CHANGING, YELLOW_PREPPED, GREEN_SCANNING, GREY_DARK,
     ORANGE_PORTER, CYAN_BACKUP, PURPLE_SCAN, ZONE1_TOP_Y
 )
 
@@ -181,6 +181,7 @@ def draw_sidebar(surface, stats_dict, font):
         (BLUE_CHANGING, "Changing"),
         (YELLOW_PREPPED, "Prepped (Waiting)"),
         (GREEN_SCANNING, "Scanning"),
+        (GREY_DARK, "Exited (Leaving)"),
     ]
     
     for color, label in patient_states:

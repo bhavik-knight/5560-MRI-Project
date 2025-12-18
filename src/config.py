@@ -156,6 +156,7 @@ AGENT_SPEED = {
 # PROBABILITIES (Source 33)
 PROB_IV_NEEDED = 0.33
 PROB_DIFFICULT_IV = 0.01
+PROB_WASHROOM_USAGE = 0.2
 
 # All times in MINUTES
 # Format: (min, mode, max) for triangular distribution
@@ -176,10 +177,15 @@ PROCESS_TIMES = {
     'scan_exit': (0.35, 2.56, 4.52),
     
     # Bed Flip Time (Parallel workflow goal)
+    # Bed Flip Time (Parallel workflow goal)
     'bed_flip': (0.58, 1.0, 1.33),
     
+    # New Patient Needs
+    'washroom': (2.0, 3.5, 5.0),
+    'change_back': (2.0, 3.5, 5.0),
+    
     # Arrival Schedule (Poisson Process)
-    'mean_inter_arrival': 15,
+    'mean_inter_arrival': 30,
 }
 
 
