@@ -4,6 +4,7 @@ import pandas as pd
 import multiprocessing
 import time
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as path_effects
 import seaborn as sns
 import contextlib
 import sys
@@ -102,10 +103,35 @@ def run_experiment():
     sns.set_context("talk")
     sns.set_style("whitegrid")
     
-    sns.boxplot(x='Scenario', y='Throughput', data=df, palette="viridis")
+    # Define order for consistency
+    order = ['Baseline (Mixed)', 'Neuro Block (Brain)', 'MSK Block (Spine)']
+    
+    ax = sns.boxplot(x='Scenario', y='Throughput', data=df, order=order, palette="viridis")
     plt.title("Throughput Comparison: Random vs Batching Strategies", pad=20)
     plt.ylabel("Patients Processed (12h Shift)")
     
+    # Add Mean Labels
+    means = df.groupby('Scenario')['Throughput'].mean()
+    baseline_mean = means['Baseline (Mixed)']
+    
+    for i, label in enumerate(order):
+        val = means[label]
+        
+        # Calculate Delta
+        delta_str = ""
+        if label != 'Baseline (Mixed)':
+            pct_diff = ((val - baseline_mean) / baseline_mean) * 100
+            delta_str = f"\n(+{pct_diff:.1f}%)"
+            
+        # Place text at the mean value (centered)
+        # We place it slightly above the mean or median. 
+        # Boxplot shows median, means might be different.
+        # Let's put it on the box.
+        ax.text(i, val, f"{val:.1f}{delta_str}", 
+                ha='center', va='center', 
+                fontweight='bold', color='white', 
+                path_effects=[path_effects.withStroke(linewidth=3, foreground="black")])
+
     outfile = "results/plots/modality_comparison.png"
     os.makedirs('results/plots', exist_ok=True)
     plt.savefig(outfile)

@@ -191,13 +191,45 @@ def run_experiment():
     print(f"Efficiency:  +{slots_gained:.1f} virtual slots created per 10 patients")
     
     # Plot
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(10, 7))
     sns.set_context("talk")
     sns.set_style("whitegrid")
     
-    sns.barplot(x='Scenario', y='Makespan', data=df, palette=['#e74c3c', '#2ecc71'])
-    plt.title("Impact of Sequence Dependent Setup\n(Batching Similar Protocols)", pad=20)
-    plt.ylabel("Total Time to Process 10 Patients (Min)")
+    # Update labels for clarity in plot data? Or just use what is in DF.
+    # The DF has 'Batched (Low Entropy)'. Let's map it or use as is but annotate.
+    # Actually, let's just use the labels defined in task_configs above, but maybe rename them there?
+    # No, risky to change logic mid-flight if I don't re-run simulation? 
+    # Re-running simulation is fine, it's fast.
+    # I will stick to existing DF labels but customize plot.
+    
+    ax = sns.barplot(x='Scenario', y='Makespan', data=df, errorbar='sd', palette=['#e74c3c', '#2ecc71'])
+    
+    plt.title("Impact of Sequence Dependent Setup\n(Batching Similar Protocols: Prostate Exams)", pad=20, fontsize=16, fontweight='bold')
+    plt.ylabel("Total Time to Process 10 Patients (Min)", labelpad=15)
+    plt.xlabel("Scheduling Strategy", labelpad=15)
+    plt.ylim(0, 350) # Give headroom for text
+    
+    # Add Bar Labels
+    for container in ax.containers:
+        ax.bar_label(container, fmt='%.1f min', padding=3, fontweight='bold')
+        
+    # Add Efficiency Arrow/Text
+    # Coordinates: midpoint between bars, somewhat high
+    mid_x = 0.5
+    start_y = avg_mixed
+    end_y = avg_batch
+    
+    # Draw arrow from Mixed down to Batched level
+    # Actually, simpler to just put text box describing savings.
+    
+    text_str = (f"Savings: {savings:.1f} min\n"
+                f"(~{slots_gained:.1f} Extra Slots)\n"
+                f"via Setup Optimization")
+                
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    ax.text(0.5, 300, text_str, fontsize=12, verticalalignment='top', horizontalalignment='center', bbox=props)
+    
+    plt.tight_layout()
     
     outfile = "results/plots/batching_efficiency.png"
     os.makedirs('results/plots', exist_ok=True)
