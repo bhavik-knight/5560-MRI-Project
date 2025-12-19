@@ -162,7 +162,7 @@ SIM_SPEED = 0.25  # 1 simulation minute = 0.25 real seconds (~3 min video for 12
 RECORD_INTERVAL = 2  # 1 = Record all, 2 = Record every 2nd frame (2x speed)
 
 # Clinical Parameters
-EXAM_TYPES = ['Brain', 'Spine', 'Knee', 'Abdomen', 'Cardiac'] # Source 140
+# EXAM_TYPES = ['Brain', 'Spine', 'Knee', 'Abdomen', 'Cardiac'] # Source 140
 
 # Staffing
 STAFF_COUNT = {
@@ -206,44 +206,65 @@ AGENT_SPEED = {
 }
 
 # PROBABILITIES (Source 33)
-PROB_IV_NEEDED = 0.33
-PROB_DIFFICULT_IV = 0.01
-PROB_WASHROOM_USAGE = 0.2 # Source 17
-PROB_INPATIENT = 0.25  # Increased to 25% for Stress Test [User Request]
-PROB_NO_SHOW = 0.05    # 5% Absent rate [Source 36]
-PROB_LATE = 0.20       # 20% Lateness rate [Source 36]
+PROB_IV_NEEDED = 0.33      # Derived from Row 12 "Patient IV setup" (33%)
+PROB_DIFFICULT_IV = 0.15   # Derived from Row 12b "Difficult IV" (15%)
+PROB_WASHROOM_USAGE = 0.2  # Source 17
+PROB_INPATIENT = 0.25      # Increased to 25% for Stress Test [User Request]
+PROB_NO_SHOW = 0.05        # 5% Absent rate [Source 36]
+PROB_LATE = 0.20           # 20% Lateness rate [Source 36]
 
 # Dynamic Capacity Constants [Source 172]
 MAX_SCAN_TIME = 70      # Max time for complex case
 AVG_CYCLE_TIME = 45     # Avg throughput time per patient
 
+# Scan Durations & Workload Mix (Source: class2-ppt.pdf)
+# "Protocol Duration – HI Siemens Site"
+SCAN_PROTOCOLS = {
+    'Prostate': {'mean': 22.0, 'std': 5.0},
+    'Cardiac': {'mean': 68.9},
+    'Body': {'mean': 50.5},
+    # Default fallbacks if needed
+    'Brain': {'mean': 25.0},
+    'Spine': {'mean': 35.0},
+    'Knee': {'mean': 20.0},
+}
+# Keep EXAM_TYPES for random selection, but prefer SCAN_PROTOCOLS statistics
+EXAM_TYPES = list(SCAN_PROTOCOLS.keys())
+
 # All times in MINUTES
 # Format: (min, mode, max) for triangular distribution
-# UPDATED Source: Sheet 3 Distributions
+# UPDATED Source: 4 Tech Model- MRI Department Efficiency 2025-rev 1.sheet4.pdf
 PROCESS_TIMES = {
-    # Screening & Consent
-    'registration': (2.1, 3.2, 5.1), # Source 14
-    'screening': (2.08, 3.20, 5.15), # Kept for backup/legacy
+    # Screening & Consent ("Pit Crew" Actions)
+    # Task 4: Patient fills out safety screening form
+    'registration': (2.08, 3.18, 5.15), 
+    'screening': (2.08, 3.18, 5.15), # Mapped to registration
     
     # Change/Gown
-    'change': (1.53, 3.17, 5.78), # Kept for legacy
-    'changing': (1.5, 3.1, 5.7), # Source 16
+    # Task 7: Patient changes
+    'change': (1.53, 3.17, 5.78),
+    'changing': (1.53, 3.17, 5.78),
     
     # IV Setup (if needed)
-    'iv_prep': (1.5, 2.5, 4.0), # Source 22
-    'iv_setup': (1.53, 2.56, 4.08), # Legacy
-    'iv_difficult': (7.0, 7.8, 9.0),
+    'iv_prep': (1.5, 2.5, 4.0),
+    'iv_setup': (1.5, 2.5, 4.0),
+    'iv_difficult': (7.0, 7.8, 9.0), # Mean 7m 48s approx
     
-    # Scanning Phase (Empirical breakdown)
+    # Scanning Phase
+    # Protocol Durations are now in SCAN_PROTOCOLS; these are overheads
     'scan_setup': (1.52, 3.96, 7.48),
-    'scan_duration': (18.1, 22.0, 26.5),
+    'scan_duration': (18.1, 22.0, 26.5), # Fallback/Legacy
     'scan_exit': (0.35, 2.56, 4.52),
     
+    # Staff Task Itemization
+    'handover': 2.0, # Fixed 2.0 min handover for Techs
+    
     # Operation/Turnover Times
-    'bed_flip_fast': (0.5, 0.8, 1.0), # Tech Assisted
-    'bed_flip_slow': (1.5, 2.5, 4.0), # Porter Solo
-    'bed_flip': (0.58, 1.0, 1.33), # Legacy
-    'settings_change': (1.0, 2.0, 3.0), # Tech in control room
+    # Task 17: Perform bed flip
+    'bed_flip': (0.53, 1.18, 2.80),
+    'bed_flip_fast': (0.53, 1.18, 2.80),
+    'bed_flip_slow': (1.5, 2.5, 4.0),
+    'settings_change': (1.0, 2.0, 3.0),
     
     # New Patient Needs
     'washroom': (0.8, 2.3, 5.2), # Source 17
@@ -254,14 +275,12 @@ PROCESS_TIMES = {
     'bed_transfer': (3, 5, 8),     # Moving from Room 311 to Magnet
     
     # Arrival Schedule (Poisson Process) 
-    # Arrival Schedule (Poisson Process)
-    'mean_inter_arrival': 30,
+    'mean_inter_arrival': 30, # To be optimized via "Singles Line" strategy
     
     # Compliance Penalties
     'no_show_wait': 15,          # Magnet sits idle for 15 min
     'late_delay': (10, 15, 30),  # Late patients arrive 10-30 mins behind
 }
-
 
 # ============================================================================
 # ROOM LABELS (For Visualization)

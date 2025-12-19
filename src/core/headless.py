@@ -84,8 +84,21 @@ class HeadlessPatient(HeadlessEntity):
         self.is_late = False
         self.late_duration = 0
         self.has_iv = False
-        self.is_difficult = False
-        self.patient_type = 'outpatient'
+        self.is_difficult = False  # Restored for tracker compatibility
+        
+        # Monte Carlo Attributes
+        self.is_inpatient = (random.random() < config.PROB_INPATIENT)
+        self.patient_type = 'inpatient' if self.is_inpatient else 'outpatient'
+        
+        self.needs_iv = (random.random() < config.PROB_IV_NEEDED)
+        # Use config.PROB_DIFFICULT_IV
+        self.is_difficult_iv = (random.random() < config.PROB_DIFFICULT_IV) if self.needs_iv else False
+        
+        # Protocol Selection
+        # Randomly select a protocol
+        proto_name = random.choice(list(config.SCAN_PROTOCOLS.keys()))
+        self.scan_protocol = proto_name
+        self.scan_params = config.SCAN_PROTOCOLS[proto_name]
         
     def start_timer(self, timer_name, now):
         """Start tracking duration for a specific phase."""
@@ -306,6 +319,8 @@ class HeadlessSimulation:
             'magnet_3t_occupied': stats.occupied_minutes.get('magnet_3t', 0),
             'magnet_15t_occupied': stats.occupied_minutes.get('magnet_15t', 0),
             'magnet_3t_idle': stats.idle_minutes.get('magnet_3t', 0),
-            'magnet_15t_idle': stats.idle_minutes.get('magnet_15t', 0)
+            'magnet_15t_idle': stats.idle_minutes.get('magnet_15t', 0),
+            'magnet_metrics': stats.magnet_metrics,
+            'scan_counts': stats.scan_counts
         }
         return results

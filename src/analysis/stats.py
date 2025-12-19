@@ -40,6 +40,16 @@ class MetricAggregator(SimStats):
             'scan': 0.0
         }
         
+        # Breakdown of Magnet Time (Value-Add vs Overhead)
+        self.magnet_metrics = {
+            'scan_value_added': 0.0, # Pure Green Time
+            'scan_overhead': 0.0,    # Setup + Exit + Handover (Brown Time)
+            'scan_gap': 0.0          # Unused gaps (Idle)
+        }
+        
+        # Protocol Counters
+        self.scan_counts = {} # "protocol_name" -> count
+        
         # System Counts
         self.counts = {
             'outpatient': 0,
@@ -76,10 +86,16 @@ class MetricAggregator(SimStats):
             'prep_time': timers.get('prep', metrics.get('prep', 0)),
             'wait_time': timers.get('wait', metrics.get('wait', 0)),
             'scan_time': timers.get('scan', metrics.get('scan_room', 0)),
-            'holding_time': timers.get('hold', metrics.get('holding_room', 0))
+            'holding_time': timers.get('hold', metrics.get('holding_room', 0)),
+            'protocol': getattr(patient, 'scan_protocol', 'Unknown'),
+            'scan_duration': getattr(patient, 'scan_duration', 0.0), # Pure scan
+            'overhead_duration': getattr(patient, 'overhead_duration', 0.0) # Local overhead
         }
         self.patient_data[patient.p_id] = p_data
-        self.patient_data[patient.p_id] = p_data
+        
+        # Update Protocol Counts
+        proto = p_data['protocol']
+        self.scan_counts[proto] = self.scan_counts.get(proto, 0) + 1
         
         # Update counts
         if patient.patient_type == 'inpatient':
@@ -95,6 +111,12 @@ class MetricAggregator(SimStats):
         # We handle no-show separately in counts if needed, but SimStats does it well.
         if metric_type == 'noshow':
             self.counts['no_show'] += 1
+            
+        # Granular tracking for Utilization Paradox
+        if metric_type == 'scan':
+            self.magnet_metrics['scan_value_added'] += duration
+        elif metric_type in ['setup', 'exit', 'flip', 'handover']:
+             self.magnet_metrics['scan_overhead'] += duration
 
     def capture_resource_usage(self, resource_map):
         """Called periodically to snapshot utilization."""

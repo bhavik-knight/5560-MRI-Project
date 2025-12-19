@@ -12,7 +12,10 @@ Example:
 """
 
 import argparse
-from src.core.engine import run_simulation
+import os
+
+# Suppress PyGame import message for clean batch output
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
 def main():
     """Main entry point with command-line argument parsing."""
@@ -85,6 +88,8 @@ Examples:
         
     else:
         # --- VISUAL MODE ---
+        from src.core.engine import run_simulation
+        
         # Determine video format
         video_format = 'mkv' if args.mkv else 'mp4'
         

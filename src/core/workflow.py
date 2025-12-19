@@ -542,10 +542,22 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         
         # IV Logic
         patient.start_timer('prep', env.now)
-        if random.random() < PROB_IV_NEEDED:
+        
+        # Use patient attributes if available (Monte Carlo), else fallback to probabilities
+        needs_iv = getattr(patient, 'needs_iv', random.random() < PROB_IV_NEEDED)
+        
+        if needs_iv:
             patient.has_iv = True
-            iv_time = get_time('iv_difficult') if random.random() < PROB_DIFFICULT_IV else get_time('iv_prep')
-            if random.random() < PROB_DIFFICULT_IV: patient.is_difficult = True
+            
+            # Determine difficulty
+            is_difficult = getattr(patient, 'is_difficult_iv', random.random() < PROB_DIFFICULT_IV)
+            if is_difficult: 
+                patient.is_difficult = True
+                iv_time = get_time('iv_difficult')
+                # Log bottleneck if stats supports it, or just relies on dur.
+            else:
+                iv_time = get_time('iv_prep')
+                
             yield env.timeout(iv_time)
             
         yield env.timeout(get_time('screening')) # Clinical interview
@@ -657,6 +669,13 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
         scan_tech = scan_tech_3t if magnet_config['id'] == '3T' else scan_tech_15t
     
     scan_tech.busy = True
+    
+    # === Handover Logic ("Hot Seat") ===
+    # Backup Tech and Scan Tech discussion
+    handover_time = PROCESS_TIMES.get('handover', 2.0)
+    yield env.timeout(handover_time)
+    stats.log_magnet_metric(magnet_config['id'], 'handover', handover_time) # Defined Overhead
+    
     patient.set_state('scanning')
     stats.log_state_change(p_id, 'prepped', 'scanning', env.now)
     stats.log_movement(p_id, magnet_config['name'], env.now)
@@ -674,9 +693,24 @@ def patient_journey(env, patient, staff_dict, resources, stats, renderer):
     
     # SCAN (Green)
     stats.log_magnet_start(env.now, is_scanning=True)
-    scan_time = get_time('scan_duration')
+    
+    # Protocol-Driven Duration
+    scan_params = getattr(patient, 'scan_params', None)
+    if scan_params:
+        # Monte Carlo: Gaussian sampling from protocol
+        mean = scan_params.get('mean', 25.0)
+        std = scan_params.get('std', 0.0) # Default 0 stability
+        scan_time = max(5.0, random.gauss(mean, std)) # Clamp min time
+    else:
+        # Legacy fallback
+        scan_time = get_time('scan_duration')
+        
     yield env.timeout(scan_time)
     stats.log_magnet_metric(magnet_config['id'], 'scan', scan_time)
+    
+    # Store for analysis
+    patient.scan_duration = scan_time
+    
     stats.log_magnet_end(env.now)
     
     # Exit Phase - Request Porter EARLY

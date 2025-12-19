@@ -153,4 +153,47 @@ def process_results(results_list):
     else:
         print("No patient data available.")
         
+    # 4. Utilization Paradox & Bowen Metric
+    print("\n[ Efficiency Analysis ]")
+    
+    # Aggregated Magnet Metrics
+    total_scan_val = sum([r['magnet_metrics']['scan_value_added'] for r in df.to_dict('records')])
+    total_scan_ovh = sum([r['magnet_metrics']['scan_overhead'] for r in df.to_dict('records')])
+    
+    # Paradox: Occupied vs Productive
+    # Denominator: Total Magnet Capacity Minutes Available
+    # (Sims * Duration * 2 magnets)
+    total_mag_capacity = len(df) * duration * 2
+    
+    util_occupied = ((total_scan_val + total_scan_ovh) / total_mag_capacity) * 100
+    util_productive = (total_scan_val / total_mag_capacity) * 100
+    
+    print(f"Utilization (Occupied):   {util_occupied:.1f}% (Green + Brown)")
+    print(f"Utilization (Productive): {util_productive:.1f}% (Green Only)")
+    print(f"Operational Overhead:     {(util_occupied - util_productive):.1f}%")
+
+    # The Bowen Metric: Process Efficiency
+    if (total_scan_val + total_scan_ovh) > 0:
+        bowen_eff = (total_scan_val / (total_scan_val + total_scan_ovh)) * 100
+        print(f"Bowen Efficiency:         {bowen_eff:.1f}% (Value-Added Ratio)")
+    else:
+        print("Bowen Efficiency:         N/A")
+        
+    # 5. Protocol Breakdown
+    print("\n[ Protocol Mix ]")
+    # Aggregate counts
+    total_counts = {}
+    for counts in df['scan_counts']:
+        for proto, count in counts.items():
+            total_counts[proto] = total_counts.get(proto, 0) + count
+            
+    # Normalize per sim run
+    sim_count = len(df)
+    sorted_protos = sorted(total_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    for proto, total in sorted_protos:
+        avg_per_run = total / sim_count
+        prob_pct = (total / sum(total_counts.values())) * 100
+        print(f"{proto.ljust(15)}: {avg_per_run:.1f} avg/run ({prob_pct:.1f}%)")
+
     print("="*60)
