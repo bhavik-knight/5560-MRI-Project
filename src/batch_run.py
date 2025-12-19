@@ -17,18 +17,22 @@ def _worker_task(seed_and_settings):
     sim = HeadlessSimulation(settings, seed)
     return sim.run()
 
-def execute_batch(sims=1000, epochs=1):
+def execute_batch(sims=1000, epochs=1, singles_line_mode=False, demand_multiplier=1.0, force_type=None):
     """
     Run Monte Carlo simulation batch.
     
     Args:
         sims: Number of simulations per epoch.
         epochs: Number of epochs to run.
+        singles_line_mode: Enable singles line logic.
+        demand_multiplier: Scale patient arrival rate (1.0 = 100%).
+        force_type: Force specific protocol (for block scheduling experiments).
     """
     config.HEADLESS = True
     total_sims = sims * epochs
     print(f"\nStarting Batch Execution: {total_sims} total simulations ({epochs} epochs x {sims} runs)")
     print(f"Workers: {multiprocessing.cpu_count()}")
+    print(f"Mode: {'Singles Line' if singles_line_mode else 'Baseline'} | Demand: {demand_multiplier*100:.0f}% | Forced Type: {force_type if force_type else 'None'}")
     
     all_results = []
     start_time = time.time()
@@ -40,7 +44,10 @@ def execute_batch(sims=1000, epochs=1):
         
         # Prepare seeds
         base_seed = int(time.time()) + (epoch * sims)
-        tasks = [(base_seed + i, {'duration': config.DEFAULT_DURATION}) for i in range(sims)]
+        tasks = [(base_seed + i, {'duration': config.DEFAULT_DURATION, 
+                                  'singles_line_mode': singles_line_mode,
+                                  'demand_multiplier': demand_multiplier,
+                                  'force_type': force_type}) for i in range(sims)]
         
         # Parallel Execution
         with multiprocessing.Pool() as pool:
@@ -197,3 +204,50 @@ def process_results(results_list):
         print(f"{proto.ljust(15)}: {avg_per_run:.1f} avg/run ({prob_pct:.1f}%)")
 
     print("="*60)
+    
+    # --- SAVE CSV DATA FOR DASHBOARD ---
+    import os
+    os.makedirs('results', exist_ok=True)
+    
+    # 1. Patient Performance (Detailed)
+    patient_records = []
+    for run_id, res in enumerate(results_list):
+        p_data_map = res['patient_data']
+        for p_id, p_metrics in p_data_map.items():
+            rec = p_metrics.copy()
+            rec['RunID'] = run_id
+            rec['PatientID'] = p_id
+            patient_records.append(rec)
+            
+    if patient_records:
+        pd.DataFrame(patient_records).to_csv('results/patient_performance.csv', index=False)
+        print(f"Saved results/patient_performance.csv ({len(patient_records)} records)")
+
+    # 2. Magnet Events (Gantt)
+    event_records = []
+    for run_id, res in enumerate(results_list):
+        if 'magnet_events' in res:
+            for evt in res['magnet_events']:
+                rec = evt.copy()
+                rec['RunID'] = run_id
+                event_records.append(rec)
+                
+    if event_records:
+        pd.DataFrame(event_records).to_csv('results/magnet_events.csv', index=False)
+        print(f"Saved results/magnet_events.csv ({len(event_records)} records)")
+        
+    # 3. Magnet Summary (Utilization Paradox)
+    mag_summary = []
+    for run_id, res in enumerate(results_list):
+        if 'magnet_metrics' in res:
+             metrics = res['magnet_metrics']
+             mag_summary.append({
+                 'RunID': run_id,
+                 'Scan_Value_Added': metrics['scan_value_added'],
+                 'Scan_Overhead': metrics['scan_overhead'],
+                 'Scan_Gap': metrics['scan_gap']
+             })
+    
+    if mag_summary:
+        pd.DataFrame(mag_summary).to_csv('results/magnet_performance.csv', index=False)
+        print(f"Saved results/magnet_performance.csv ({len(mag_summary)} records)")

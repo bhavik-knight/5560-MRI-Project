@@ -1,0 +1,7 @@
+Scenario,Demand,Strategy,Utilization (%),Productive Minutes
+Baseline (100% Demand),100%,Standard,57.87637122348524,833.4197456181876
+Singles Line (100% Demand),100%,Singles Line,57.74624075676407,831.5458668974026
+Baseline (120% Demand),120%,Standard,71.19702219446168,1025.2371196002482
+Singles Line (120% Demand),120%,Singles Line,71.79704760674626,1033.8774855371462
+Baseline (150% Demand),150%,Standard,85.9307799599917,1237.4032314238805
+Singles Line (150% Demand),150%,Singles Line,86.51456277982983,1245.8097040295495

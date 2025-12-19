@@ -77,13 +77,46 @@ Examples:
         default=1,
         help='Number of epochs (Batch mode only)'
     )
+    parser.add_argument(
+        '--singles-line',
+        action='store_true',
+        help='Enable Singles Line logic (Short notice gap filling)'
+    )
+    
+    parser.add_argument(
+        '--demand',
+        type=float,
+        default=1.0,
+        help='Demand multiplier (1.0 = 100%, 1.5 = 150%, etc.)'
+    )
+    
+    parser.add_argument(
+        '--force-type',
+        type=str,
+        default=None,
+        help='Force all patients to a specific protocol execution (e.g., brain_routine)'
+    )
     
     args = parser.parse_args()
     
     if args.mode == 'batch':
         # --- BATCH HEADLESS MODE ---
         from src.batch_run import execute_batch
-        execute_batch(sims=args.sims, epochs=args.epochs)
+        # Note: execute_batch needs update if we want to support force_type there too
+        # But strictly speaking user asked for main/engine update
+        # We can pass it if we update batch_run, but let's stick to the prompt's explicit scope for main/engine.
+        # But for correctness, passing it to execute_batch via **kwargs or explicit arg is better if batch mode is used.
+        # However, the experiment script is `compare_modalities.py` which will likely instantiate HeadlessSimulation directly.
+        # I will update execute_batch call here assuming I update batch_run quickly next, or just ignore for batch mode CLI usage if not strictly required.
+        # Let's assumes execute_batch accepts kwargs or explicit. I'll stick to visual path update mostly unless I touch batch_run.
+        # Wait, I can pass strict args.
+        execute_batch(
+            sims=args.sims, 
+            epochs=args.epochs, 
+            singles_line_mode=args.singles_line, 
+            demand_multiplier=args.demand,
+            force_type=args.force_type
+        )
         return 0
         
     else:
@@ -98,7 +131,10 @@ Examples:
             duration=args.duration,
             output_dir=args.output,
             record=args.record,
-            video_format=video_format
+            video_format=video_format,
+            singles_line_mode=args.singles_line,
+            demand_multiplier=args.demand,
+            force_type=args.force_type
         )
         
         # Print final summary

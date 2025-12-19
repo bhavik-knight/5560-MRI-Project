@@ -10,10 +10,11 @@ import src.config as config
 
 class StaffManager:
     """Manages staff break schedules and dynamic coverage logic."""
-    def __init__(self, env, staff_dict, resources):
+    def __init__(self, env, staff_dict, resources, with_breaks=True):
         self.env = env
         self.staff_dict = staff_dict
         self.resources = resources
+        self.with_breaks = with_breaks
         
         # Coverage Flags [Source: Human Factors Layer]
         self.porter_covering_admin = False
@@ -28,6 +29,9 @@ class StaffManager:
         
     def manage_breaks(self):
         """Orchestrates staggered breaks for all staff based on config."""
+        if not self.with_breaks:
+            return # Disable break logic if simulating 'Perfect' shift
+            
         schedule = config.BREAK_CONFIG['schedule'] # [30, 15, 30, 15]
         
         # Collect all individuals

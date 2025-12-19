@@ -60,6 +60,9 @@ class MetricAggregator(SimStats):
         
         # Raw Patient Data (Dictionary for DataFrame conversion)
         self.patient_data = {} # pid -> dict
+        
+        # Event Log for Gantt
+        self.magnet_events = []
 
     def log_patient_finished(self, patient, now):
         """Override to capture detailed metrics."""
@@ -106,8 +109,8 @@ class MetricAggregator(SimStats):
         if getattr(patient, 'is_late', False):
             self.counts['late_arrival'] += 1
 
-    def log_magnet_metric(self, m_id, metric_type, duration):
-        super().log_magnet_metric(m_id, metric_type, duration)
+    def log_magnet_metric(self, m_id, metric_type, duration, now=None):
+        super().log_magnet_metric(m_id, metric_type, duration, now)
         # We handle no-show separately in counts if needed, but SimStats does it well.
         if metric_type == 'noshow':
             self.counts['no_show'] += 1
@@ -117,6 +120,18 @@ class MetricAggregator(SimStats):
             self.magnet_metrics['scan_value_added'] += duration
         elif metric_type in ['setup', 'exit', 'flip', 'handover']:
              self.magnet_metrics['scan_overhead'] += duration
+             
+        # Event Logging for Gantt
+        if now is not None:
+            # Reconstruct start time
+            start_time = now - duration
+            if start_time >= self.warm_up_duration:
+                self.magnet_events.append({
+                    'Magnet': m_id,
+                    'Start': start_time - self.warm_up_duration,
+                    'Duration': duration,
+                    'Type': metric_type
+                })
 
     def capture_resource_usage(self, resource_map):
         """Called periodically to snapshot utilization."""

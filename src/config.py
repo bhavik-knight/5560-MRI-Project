@@ -206,10 +206,19 @@ AGENT_SPEED = {
 }
 
 # PROBABILITIES (Source 33)
-PROB_IV_NEEDED = 0.33      # Derived from Row 12 "Patient IV setup" (33%)
-PROB_DIFFICULT_IV = 0.15   # Derived from Row 12b "Difficult IV" (15%)
+# Source 9: "Top 5 cases require contrast = 86%" (Upper bound)
+# Source 33: "Patient IV setup" (Task 12) = 33% (Lower bound)
+# We set to 60% to model a realistic mix of high/low acuity.
+PROB_NEEDS_IV = 0.60 
+
+# Source 33: "Difficult IV" (Task 12b)
+# This is a conditional probability (given patient needs IV).
+PROB_DIFFICULT_IV = 0.15 
+
+# Source 60: "Inpatient/High-Acuity Workflow"
+PROB_INPATIENT = 0.15
+
 PROB_WASHROOM_USAGE = 0.2  # Source 17
-PROB_INPATIENT = 0.25      # Increased to 25% for Stress Test [User Request]
 PROB_NO_SHOW = 0.05        # 5% Absent rate [Source 36]
 PROB_LATE = 0.20           # 20% Lateness rate [Source 36]
 
@@ -217,19 +226,21 @@ PROB_LATE = 0.20           # 20% Lateness rate [Source 36]
 MAX_SCAN_TIME = 70      # Max time for complex case
 AVG_CYCLE_TIME = 45     # Avg throughput time per patient
 
-# Scan Durations & Workload Mix (Source: class2-ppt.pdf)
-# "Protocol Duration – HI Siemens Site"
+# === PROTOCOL DEFINITIONS [Source 155] ===
+# Format: 'key': (Min_Min, Mode_Min, Max_Min)
+# Derived from "Protocol Duration – HI Siemens Site" spreadsheet
 SCAN_PROTOCOLS = {
-    'Prostate': {'mean': 22.0, 'std': 5.0},
-    'Cardiac': {'mean': 68.9},
-    'Body': {'mean': 50.5},
-    # Default fallbacks if needed
-    'Brain': {'mean': 25.0},
-    'Spine': {'mean': 35.0},
-    'Knee': {'mean': 20.0},
+    'brain_routine': (15, 23, 28),      # Source 116 (High volume baseline)
+    'prostate':      (18, 22.0, 28),    # Source 155 (Mean 22.0, Std 5.0)
+    'spine':         (20, 25, 35),      # Common variation of routine
+    'abdomen_body':  (35, 50.5, 65),    # Source 155 (Abdomen Liver Mean 50.5)
+    'cardiac':       (50, 68.9, 85)     # Source 155 (Cardiac Infiltrative Mean 68.9)
 }
-# Keep EXAM_TYPES for random selection, but prefer SCAN_PROTOCOLS statistics
-EXAM_TYPES = list(SCAN_PROTOCOLS.keys())
+
+# Weighted probabilities for the mix (Estimated based on Source 116 volume)
+SCAN_TYPES = list(SCAN_PROTOCOLS.keys())
+SCAN_WEIGHTS = [0.35, 0.20, 0.20, 0.15, 0.10] # 10% Cardiac/Complex
+EXAM_TYPES = SCAN_TYPES # Alias for legacy compatibility
 
 # All times in MINUTES
 # Format: (min, mode, max) for triangular distribution
@@ -260,10 +271,11 @@ PROCESS_TIMES = {
     'handover': 2.0, # Fixed 2.0 min handover for Techs
     
     # Operation/Turnover Times
-    # Task 17: Perform bed flip
-    'bed_flip': (0.53, 1.18, 2.80),
-    'bed_flip_fast': (0.53, 1.18, 2.80),
-    'bed_flip_slow': (1.5, 2.5, 4.0),
+    # Operation/Turnover Times
+    # Sequence Dependent Setup [Source 27]
+    'bed_flip': (0.53, 1.18, 2.80), # Legacy Fallback
+    'bed_flip_fast': (0.53, 1.18, 2.80), # Sanitization Only
+    'bed_flip_slow': (3.53, 6.18, 7.80), # Sanitization + Coil Swap (~5m penalty)
     'settings_change': (1.0, 2.0, 3.0),
     
     # New Patient Needs

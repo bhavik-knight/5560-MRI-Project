@@ -13,4 +13,6 @@ dependencies = [
     "pygame>=2.6.1",
     "opencv-python>=4.11.0.86",
     "numpy>=2.3.5",
+    "matplotlib>=3.10.8",
+    "seaborn>=0.13.2",
 ]

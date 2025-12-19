@@ -8,7 +8,7 @@ Replicates engine.py exactly but without PyGame/Sprite overhead.
 import simpy
 import random
 import src.config as config
-from src.core.workflow import patient_generator
+from src.core.workflows.patient import run_generator as patient_generator
 from src.core.staff_controller import StaffManager
 from src.analysis.stats import MetricAggregator
 
@@ -90,7 +90,7 @@ class HeadlessPatient(HeadlessEntity):
         self.is_inpatient = (random.random() < config.PROB_INPATIENT)
         self.patient_type = 'inpatient' if self.is_inpatient else 'outpatient'
         
-        self.needs_iv = (random.random() < config.PROB_IV_NEEDED)
+        self.needs_iv = (random.random() < config.PROB_NEEDS_IV)
         # Use config.PROB_DIFFICULT_IV
         self.is_difficult_iv = (random.random() < config.PROB_DIFFICULT_IV) if self.needs_iv else False
         
@@ -134,7 +134,7 @@ class ResourceMonitor:
         self.occupied_minutes['prep_rooms'] = 0.0
         
         # Import global pos_manager for accurate waiting room tracking
-        from src.core.workflow import pos_manager
+        from src.core.workflows.base import pos_manager
         self.pos_manager = pos_manager
         
     def run(self):
@@ -209,9 +209,12 @@ class HeadlessSimulation:
         m15t_res = simpy.PriorityResource(env, capacity=1)
         m15t_res.last_exam_type = None
         
+        # Singles Line Settings
+        singles_line_mode = self.settings.get('singles_line_mode', False)
+        
         resources = {
             'porter': simpy.PriorityResource(env, capacity=config.STAFF_COUNT['porter']),
-            'backup_techs': simpy.Resource(env, capacity=config.STAFF_COUNT['backup_tech']),
+            'backup_techs': simpy.PriorityResource(env, capacity=config.STAFF_COUNT['backup_tech']),
             'scan_techs': simpy.Resource(env, capacity=config.STAFF_COUNT['scan_tech']),
             'admin_ta': simpy.Resource(env, capacity=config.STAFF_COUNT['admin']),
             'magnet_access': simpy.PriorityResource(env, capacity=2),
@@ -227,7 +230,11 @@ class HeadlessSimulation:
             'prep_2': simpy.Resource(env, capacity=1),
             # Add magnet resources for raw access if needed
             'magnet_3t_res': m3t_res, 
-            'magnet_15t_res': m15t_res
+            'magnet_15t_res': m15t_res,
+            
+            # Logic Flags
+            'gap_mode_active': False,
+            'singles_line_mode': singles_line_mode
         }
         
         # Helpers (same as engine.py)
@@ -252,6 +259,29 @@ class HeadlessSimulation:
         resources['get_free_change_room_with_index'] = get_free_change_room_with_index
         resources['get_free_washroom_with_index'] = get_free_washroom_with_index
         
+        # Gap Monitor Logic
+        def monitor_gaps(env, resources):
+            """Monitor magnet availability and toggle Gap Mode."""
+            idle_start_time = 0
+            is_idle = False
+            
+            while True:
+                available_magnets = len(resources['magnet_pool'].items)
+                
+                if available_magnets > 0:
+                    if not is_idle:
+                        is_idle = True
+                        idle_start_time = env.now
+                        
+                    current_idle = env.now - idle_start_time
+                    if current_idle > 5.0 and not resources['gap_mode_active']:
+                        resources['gap_mode_active'] = True
+                else:
+                    is_idle = False
+                    resources['gap_mode_active'] = False
+                    
+                yield env.timeout(1.0)
+
         # Populate Magnet Pool
         # 3T
         m3t_config = {
@@ -286,16 +316,25 @@ class HeadlessSimulation:
             staff_dict['scan'].append(HeadlessStaff('scan', *loc))
             
         # 5. Staff Manager
-        staff_mgr = StaffManager(env, staff_dict, resources)
+        with_breaks = self.settings.get('with_breaks', True)
+        staff_mgr = StaffManager(env, staff_dict, resources, with_breaks=with_breaks)
         staff_mgr.manage_breaks()
         
         # 6. Monitor
         monitor = ResourceMonitor(env, resources, stats)
         env.process(monitor.run())
         
+        if singles_line_mode:
+            env.process(monitor_gaps(env, resources))
+        
         # 7. Generator
         duration = self.settings.get('duration', config.DEFAULT_DURATION)
-        env.process(patient_generator(env, staff_dict, resources, stats, renderer, duration, patient_class=HeadlessPatient))
+        demand_mult = self.settings.get('demand_multiplier', 1.0)
+        force_type = self.settings.get('force_type', None)
+        env.process(patient_generator(env, staff_dict, resources, stats, renderer, duration, 
+                                      patient_class=HeadlessPatient, 
+                                      demand_multiplier=demand_mult,
+                                      force_type=force_type))
         
         # 8. Run
         env.run(until=duration)
@@ -316,6 +355,7 @@ class HeadlessSimulation:
             'occupied_minutes': stats.occupied_minutes,
             'counts': stats.counts,
             'patient_data': stats.patient_data,
+            'magnet_events': stats.magnet_events,
             'magnet_3t_occupied': stats.occupied_minutes.get('magnet_3t', 0),
             'magnet_15t_occupied': stats.occupied_minutes.get('magnet_15t', 0),
             'magnet_3t_idle': stats.idle_minutes.get('magnet_3t', 0),

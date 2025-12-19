@@ -168,7 +168,7 @@ class SimStats:
         self.finished_patients.append(metrics)
         self.patients_completed += 1
 
-    def log_magnet_metric(self, m_id, category, duration):
+    def log_magnet_metric(self, m_id, category, duration, now=None):
         """Record magnet-specific performance (Value Added vs Non-Value Added)."""
         if m_id in self.magnets:
             magnet = self.magnets[m_id]
