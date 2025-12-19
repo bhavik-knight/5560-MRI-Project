@@ -43,7 +43,7 @@ class MetricAggregator(SimStats):
         # Breakdown of Magnet Time (Value-Add vs Overhead)
         self.magnet_metrics = {
             'scan_value_added': 0.0, # Pure Green Time
-            'scan_overhead': 0.0,    # Setup + Exit + Handover (Brown Time)
+            'scan_overhead': 0.0,    # Setup + Exit + Handover (Yellow Time)
             'scan_gap': 0.0          # Unused gaps (Idle)
         }
         

@@ -1,0 +1,601 @@
+Demand Level,Strategy,Utilization (%)
+100%,Standard,28.08
+100%,Standard,33.78
+100%,Standard,38.16
+100%,Standard,35.19
+100%,Standard,42.59
+100%,Standard,35.69
+100%,Standard,26.51
+100%,Standard,30.16
+100%,Standard,34.05
+100%,Standard,31.31
+100%,Standard,42.34
+100%,Standard,34.64
+100%,Standard,31.31
+100%,Standard,33.96
+100%,Standard,38.69
+100%,Standard,35.55
+100%,Standard,35.42
+100%,Standard,24.88
+100%,Standard,32.01
+100%,Standard,35.07
+100%,Standard,22.66
+100%,Standard,41.16
+100%,Standard,40.81
+100%,Standard,35.85
+100%,Standard,26.74
+100%,Standard,33.22
+100%,Standard,39.47
+100%,Standard,40.3
+100%,Standard,36.33
+100%,Standard,39.1
+100%,Standard,29.82
+100%,Standard,25.72
+100%,Standard,24.67
+100%,Standard,41.59
+100%,Standard,39.56
+100%,Standard,33.96
+100%,Standard,31.84
+100%,Standard,20.43
+100%,Standard,26.47
+100%,Standard,28.58
+100%,Standard,25.02
+100%,Standard,33.33
+100%,Standard,40.94
+100%,Standard,34.8
+100%,Standard,44.52
+100%,Standard,34.88
+100%,Standard,42.29
+100%,Standard,44.54
+100%,Standard,47.48
+100%,Standard,24.06
+100%,Standard,35.0
+100%,Standard,30.0
+100%,Standard,46.16
+100%,Standard,29.9
+100%,Standard,30.38
+100%,Standard,35.79
+100%,Standard,37.31
+100%,Standard,32.44
+100%,Standard,31.56
+100%,Standard,33.94
+100%,Standard,40.94
+100%,Standard,37.63
+100%,Standard,32.34
+100%,Standard,41.27
+100%,Standard,36.7
+100%,Standard,44.44
+100%,Standard,33.23
+100%,Standard,39.94
+100%,Standard,37.82
+100%,Standard,28.92
+100%,Standard,34.1
+100%,Standard,24.42
+100%,Standard,34.06
+100%,Standard,29.59
+100%,Standard,33.98
+100%,Standard,31.79
+100%,Standard,37.49
+100%,Standard,21.78
+100%,Standard,31.42
+100%,Standard,56.65
+100%,Standard,31.09
+100%,Standard,29.39
+100%,Standard,22.74
+100%,Standard,26.49
+100%,Standard,36.31
+100%,Standard,44.03
+100%,Standard,36.05
+100%,Standard,35.47
+100%,Standard,42.65
+100%,Standard,35.24
+100%,Standard,29.77
+100%,Standard,31.77
+100%,Standard,31.08
+100%,Standard,32.46
+100%,Standard,27.65
+100%,Standard,22.69
+100%,Standard,37.0
+100%,Standard,34.4
+100%,Standard,31.69
+100%,Standard,27.78
+100%,Singles Line,28.28
+100%,Singles Line,34.7
+100%,Singles Line,36.05
+100%,Singles Line,27.25
+100%,Singles Line,21.39
+100%,Singles Line,36.37
+100%,Singles Line,29.32
+100%,Singles Line,26.42
+100%,Singles Line,34.89
+100%,Singles Line,41.81
+100%,Singles Line,35.73
+100%,Singles Line,29.26
+100%,Singles Line,24.69
+100%,Singles Line,45.66
+100%,Singles Line,41.44
+100%,Singles Line,37.45
+100%,Singles Line,40.42
+100%,Singles Line,31.43
+100%,Singles Line,35.65
+100%,Singles Line,22.57
+100%,Singles Line,33.06
+100%,Singles Line,39.39
+100%,Singles Line,26.88
+100%,Singles Line,24.85
+100%,Singles Line,28.54
+100%,Singles Line,29.33
+100%,Singles Line,45.48
+100%,Singles Line,39.63
+100%,Singles Line,35.76
+100%,Singles Line,38.73
+100%,Singles Line,28.5
+100%,Singles Line,28.88
+100%,Singles Line,38.56
+100%,Singles Line,37.74
+100%,Singles Line,33.66
+100%,Singles Line,42.01
+100%,Singles Line,36.59
+100%,Singles Line,36.79
+100%,Singles Line,35.76
+100%,Singles Line,28.71
+100%,Singles Line,24.92
+100%,Singles Line,32.86
+100%,Singles Line,27.61
+100%,Singles Line,34.54
+100%,Singles Line,28.12
+100%,Singles Line,41.13
+100%,Singles Line,32.7
+100%,Singles Line,38.22
+100%,Singles Line,44.02
+100%,Singles Line,31.21
+100%,Singles Line,28.54
+100%,Singles Line,31.76
+100%,Singles Line,27.48
+100%,Singles Line,30.17
+100%,Singles Line,28.38
+100%,Singles Line,35.77
+100%,Singles Line,32.01
+100%,Singles Line,27.9
+100%,Singles Line,33.65
+100%,Singles Line,37.24
+100%,Singles Line,29.66
+100%,Singles Line,43.02
+100%,Singles Line,35.83
+100%,Singles Line,31.45
+100%,Singles Line,34.83
+100%,Singles Line,36.41
+100%,Singles Line,31.1
+100%,Singles Line,34.62
+100%,Singles Line,36.42
+100%,Singles Line,41.7
+100%,Singles Line,42.46
+100%,Singles Line,28.0
+100%,Singles Line,36.75
+100%,Singles Line,50.89
+100%,Singles Line,41.63
+100%,Singles Line,31.69
+100%,Singles Line,37.25
+100%,Singles Line,29.89
+100%,Singles Line,36.6
+100%,Singles Line,40.29
+100%,Singles Line,32.03
+100%,Singles Line,38.32
+100%,Singles Line,36.03
+100%,Singles Line,32.81
+100%,Singles Line,34.85
+100%,Singles Line,34.38
+100%,Singles Line,25.4
+100%,Singles Line,36.72
+100%,Singles Line,37.95
+100%,Singles Line,51.82
+100%,Singles Line,26.13
+100%,Singles Line,29.33
+100%,Singles Line,49.51
+100%,Singles Line,34.69
+100%,Singles Line,38.93
+100%,Singles Line,34.42
+100%,Singles Line,35.88
+100%,Singles Line,46.24
+100%,Singles Line,29.29
+100%,Singles Line,49.5
+120%,Standard,30.39
+120%,Standard,33.98
+120%,Standard,40.7
+120%,Standard,36.23
+120%,Standard,36.23
+120%,Standard,38.33
+120%,Standard,28.86
+120%,Standard,36.52
+120%,Standard,36.19
+120%,Standard,37.72
+120%,Standard,34.18
+120%,Standard,46.35
+120%,Standard,35.7
+120%,Standard,34.91
+120%,Standard,45.03
+120%,Standard,31.33
+120%,Standard,43.03
+120%,Standard,37.89
+120%,Standard,50.55
+120%,Standard,39.51
+120%,Standard,36.89
+120%,Standard,33.06
+120%,Standard,36.62
+120%,Standard,26.18
+120%,Standard,28.79
+120%,Standard,36.99
+120%,Standard,47.39
+120%,Standard,33.08
+120%,Standard,32.6
+120%,Standard,35.02
+120%,Standard,37.98
+120%,Standard,50.61
+120%,Standard,44.05
+120%,Standard,38.71
+120%,Standard,35.55
+120%,Standard,41.39
+120%,Standard,36.76
+120%,Standard,38.27
+120%,Standard,31.52
+120%,Standard,40.67
+120%,Standard,34.28
+120%,Standard,35.21
+120%,Standard,40.79
+120%,Standard,23.72
+120%,Standard,42.06
+120%,Standard,45.03
+120%,Standard,38.05
+120%,Standard,52.31
+120%,Standard,41.82
+120%,Standard,44.44
+120%,Standard,42.65
+120%,Standard,33.67
+120%,Standard,31.77
+120%,Standard,38.62
+120%,Standard,28.93
+120%,Standard,38.63
+120%,Standard,24.27
+120%,Standard,31.67
+120%,Standard,42.5
+120%,Standard,31.02
+120%,Standard,36.61
+120%,Standard,35.66
+120%,Standard,42.96
+120%,Standard,42.84
+120%,Standard,32.81
+120%,Standard,46.02
+120%,Standard,41.01
+120%,Standard,41.85
+120%,Standard,33.64
+120%,Standard,44.89
+120%,Standard,35.21
+120%,Standard,34.43
+120%,Standard,45.2
+120%,Standard,37.8
+120%,Standard,47.2
+120%,Standard,44.98
+120%,Standard,39.16
+120%,Standard,42.58
+120%,Standard,32.99
+120%,Standard,48.24
+120%,Standard,44.65
+120%,Standard,38.94
+120%,Standard,34.64
+120%,Standard,57.09
+120%,Standard,58.67
+120%,Standard,38.13
+120%,Standard,43.97
+120%,Standard,41.15
+120%,Standard,33.08
+120%,Standard,38.86
+120%,Standard,33.93
+120%,Standard,43.8
+120%,Standard,37.1
+120%,Standard,36.44
+120%,Standard,43.51
+120%,Standard,40.78
+120%,Standard,33.35
+120%,Standard,43.62
+120%,Standard,37.31
+120%,Standard,35.69
+120%,Singles Line,37.88
+120%,Singles Line,21.67
+120%,Singles Line,33.35
+120%,Singles Line,32.57
+120%,Singles Line,32.88
+120%,Singles Line,38.02
+120%,Singles Line,35.79
+120%,Singles Line,27.97
+120%,Singles Line,43.7
+120%,Singles Line,27.72
+120%,Singles Line,34.78
+120%,Singles Line,39.32
+120%,Singles Line,36.9
+120%,Singles Line,46.29
+120%,Singles Line,41.59
+120%,Singles Line,35.27
+120%,Singles Line,36.86
+120%,Singles Line,34.24
+120%,Singles Line,46.3
+120%,Singles Line,30.09
+120%,Singles Line,34.76
+120%,Singles Line,52.66
+120%,Singles Line,29.15
+120%,Singles Line,33.92
+120%,Singles Line,40.64
+120%,Singles Line,36.2
+120%,Singles Line,46.81
+120%,Singles Line,31.05
+120%,Singles Line,34.07
+120%,Singles Line,42.86
+120%,Singles Line,41.33
+120%,Singles Line,39.02
+120%,Singles Line,50.84
+120%,Singles Line,28.78
+120%,Singles Line,30.88
+120%,Singles Line,37.66
+120%,Singles Line,37.26
+120%,Singles Line,40.82
+120%,Singles Line,37.78
+120%,Singles Line,42.4
+120%,Singles Line,32.73
+120%,Singles Line,40.79
+120%,Singles Line,37.03
+120%,Singles Line,41.93
+120%,Singles Line,49.58
+120%,Singles Line,35.31
+120%,Singles Line,34.09
+120%,Singles Line,45.18
+120%,Singles Line,35.56
+120%,Singles Line,35.33
+120%,Singles Line,34.17
+120%,Singles Line,39.09
+120%,Singles Line,33.6
+120%,Singles Line,34.99
+120%,Singles Line,27.63
+120%,Singles Line,35.12
+120%,Singles Line,26.62
+120%,Singles Line,34.69
+120%,Singles Line,37.06
+120%,Singles Line,36.28
+120%,Singles Line,33.72
+120%,Singles Line,37.59
+120%,Singles Line,39.25
+120%,Singles Line,38.94
+120%,Singles Line,45.35
+120%,Singles Line,46.06
+120%,Singles Line,41.86
+120%,Singles Line,40.88
+120%,Singles Line,36.13
+120%,Singles Line,41.97
+120%,Singles Line,45.25
+120%,Singles Line,30.24
+120%,Singles Line,44.05
+120%,Singles Line,38.71
+120%,Singles Line,38.82
+120%,Singles Line,40.63
+120%,Singles Line,31.18
+120%,Singles Line,42.67
+120%,Singles Line,40.58
+120%,Singles Line,37.76
+120%,Singles Line,42.52
+120%,Singles Line,34.21
+120%,Singles Line,34.98
+120%,Singles Line,37.6
+120%,Singles Line,37.5
+120%,Singles Line,44.07
+120%,Singles Line,39.93
+120%,Singles Line,42.91
+120%,Singles Line,46.48
+120%,Singles Line,37.68
+120%,Singles Line,28.11
+120%,Singles Line,43.86
+120%,Singles Line,33.53
+120%,Singles Line,37.8
+120%,Singles Line,38.12
+120%,Singles Line,41.29
+120%,Singles Line,39.83
+120%,Singles Line,33.83
+120%,Singles Line,43.37
+120%,Singles Line,37.78
+150%,Standard,49.79
+150%,Standard,32.08
+150%,Standard,41.01
+150%,Standard,40.94
+150%,Standard,47.26
+150%,Standard,48.36
+150%,Standard,40.42
+150%,Standard,40.06
+150%,Standard,50.95
+150%,Standard,55.55
+150%,Standard,39.49
+150%,Standard,38.0
+150%,Standard,37.52
+150%,Standard,38.97
+150%,Standard,47.35
+150%,Standard,51.38
+150%,Standard,34.95
+150%,Standard,50.81
+150%,Standard,45.91
+150%,Standard,47.18
+150%,Standard,31.68
+150%,Standard,44.25
+150%,Standard,42.39
+150%,Standard,50.55
+150%,Standard,40.59
+150%,Standard,49.52
+150%,Standard,38.83
+150%,Standard,54.32
+150%,Standard,47.18
+150%,Standard,56.73
+150%,Standard,40.33
+150%,Standard,43.89
+150%,Standard,52.36
+150%,Standard,49.71
+150%,Standard,42.25
+150%,Standard,31.55
+150%,Standard,41.12
+150%,Standard,42.19
+150%,Standard,40.93
+150%,Standard,44.06
+150%,Standard,39.4
+150%,Standard,49.7
+150%,Standard,39.75
+150%,Standard,38.26
+150%,Standard,56.67
+150%,Standard,36.51
+150%,Standard,44.06
+150%,Standard,51.1
+150%,Standard,48.26
+150%,Standard,53.45
+150%,Standard,41.77
+150%,Standard,59.77
+150%,Standard,47.48
+150%,Standard,44.15
+150%,Standard,49.79
+150%,Standard,42.17
+150%,Standard,51.66
+150%,Standard,39.32
+150%,Standard,51.07
+150%,Standard,50.37
+150%,Standard,47.89
+150%,Standard,49.16
+150%,Standard,34.32
+150%,Standard,40.69
+150%,Standard,42.69
+150%,Standard,52.89
+150%,Standard,42.44
+150%,Standard,26.7
+150%,Standard,41.84
+150%,Standard,47.74
+150%,Standard,50.08
+150%,Standard,42.21
+150%,Standard,44.82
+150%,Standard,43.61
+150%,Standard,36.54
+150%,Standard,40.15
+150%,Standard,45.55
+150%,Standard,35.55
+150%,Standard,41.22
+150%,Standard,49.04
+150%,Standard,34.37
+150%,Standard,48.83
+150%,Standard,52.61
+150%,Standard,45.34
+150%,Standard,57.89
+150%,Standard,41.95
+150%,Standard,34.13
+150%,Standard,42.54
+150%,Standard,38.82
+150%,Standard,45.06
+150%,Standard,42.16
+150%,Standard,39.58
+150%,Standard,38.68
+150%,Standard,39.11
+150%,Standard,48.8
+150%,Standard,53.83
+150%,Standard,44.32
+150%,Standard,38.06
+150%,Standard,32.28
+150%,Standard,45.26
+150%,Singles Line,40.23
+150%,Singles Line,40.96
+150%,Singles Line,40.23
+150%,Singles Line,47.18
+150%,Singles Line,38.61
+150%,Singles Line,47.54
+150%,Singles Line,37.54
+150%,Singles Line,30.57
+150%,Singles Line,47.43
+150%,Singles Line,42.93
+150%,Singles Line,34.79
+150%,Singles Line,49.93
+150%,Singles Line,34.33
+150%,Singles Line,46.89
+150%,Singles Line,49.25
+150%,Singles Line,52.76
+150%,Singles Line,50.13
+150%,Singles Line,40.06
+150%,Singles Line,38.39
+150%,Singles Line,47.38
+150%,Singles Line,51.98
+150%,Singles Line,33.95
+150%,Singles Line,39.98
+150%,Singles Line,32.09
+150%,Singles Line,34.7
+150%,Singles Line,38.76
+150%,Singles Line,43.24
+150%,Singles Line,38.61
+150%,Singles Line,39.78
+150%,Singles Line,46.5
+150%,Singles Line,44.57
+150%,Singles Line,51.59
+150%,Singles Line,47.19
+150%,Singles Line,48.65
+150%,Singles Line,41.31
+150%,Singles Line,43.29
+150%,Singles Line,45.01
+150%,Singles Line,55.07
+150%,Singles Line,49.25
+150%,Singles Line,55.25
+150%,Singles Line,41.04
+150%,Singles Line,47.7
+150%,Singles Line,42.1
+150%,Singles Line,53.56
+150%,Singles Line,44.01
+150%,Singles Line,45.79
+150%,Singles Line,37.91
+150%,Singles Line,34.8
+150%,Singles Line,37.87
+150%,Singles Line,51.94
+150%,Singles Line,51.35
+150%,Singles Line,42.93
+150%,Singles Line,36.17
+150%,Singles Line,34.81
+150%,Singles Line,53.42
+150%,Singles Line,47.81
+150%,Singles Line,45.46
+150%,Singles Line,45.82
+150%,Singles Line,36.96
+150%,Singles Line,49.66
+150%,Singles Line,44.35
+150%,Singles Line,47.06
+150%,Singles Line,50.25
+150%,Singles Line,41.05
+150%,Singles Line,37.53
+150%,Singles Line,47.79
+150%,Singles Line,45.08
+150%,Singles Line,35.37
+150%,Singles Line,51.84
+150%,Singles Line,44.12
+150%,Singles Line,46.34
+150%,Singles Line,36.54
+150%,Singles Line,41.03
+150%,Singles Line,43.87
+150%,Singles Line,42.53
+150%,Singles Line,52.09
+150%,Singles Line,44.29
+150%,Singles Line,45.03
+150%,Singles Line,46.75
+150%,Singles Line,33.4
+150%,Singles Line,38.67
+150%,Singles Line,26.08
+150%,Singles Line,47.13
+150%,Singles Line,56.34
+150%,Singles Line,48.93
+150%,Singles Line,43.31
+150%,Singles Line,45.53
+150%,Singles Line,37.83
+150%,Singles Line,44.88
+150%,Singles Line,35.01
+150%,Singles Line,42.5
+150%,Singles Line,40.31
+150%,Singles Line,48.64
+150%,Singles Line,52.17
+150%,Singles Line,47.93
+150%,Singles Line,46.9
+150%,Singles Line,38.51
+150%,Singles Line,44.27
+150%,Singles Line,45.97
+150%,Singles Line,47.07

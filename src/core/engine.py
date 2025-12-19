@@ -28,7 +28,102 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
     if duration is None:
         duration = DEFAULT_DURATION
     
-    # ... (skipping lines for brevity) ...
+    # Create SimPy environment
+    env = simpy.Environment()
+    
+    # Initialize Renderer
+    if config.HEADLESS:
+        renderer = type('MockRenderer', (), {'add_sprite': lambda *a: None, 'remove_sprite': lambda *a: None, 'cleanup': lambda *a: None, 'render_frame': lambda *a: True})()
+    else:
+        renderer = RenderEngine(title="MRI Digital Twin Simulation", record_video=record, video_format=video_format)
+
+    # Initialize Stats Tracker
+    stats = SimStats()
+
+    # Define Resources
+    # We use PriorityResource for critical shared assets to enable "pit crew" logic
+    resources = {
+        'porter': simpy.PriorityResource(env, capacity=STAFF_COUNT['porter']),
+        'backup_techs': simpy.PriorityResource(env, capacity=STAFF_COUNT['backup_tech']),
+        'scan_techs': simpy.Resource(env, capacity=STAFF_COUNT['scan_tech']),
+        'admin_ta': simpy.Resource(env, capacity=STAFF_COUNT['admin']),
+        'magnet_access': simpy.PriorityResource(env, capacity=2), # Controls access to magnet data
+        'magnet_pool': simpy.Store(env, capacity=2), # Holds magnet objects
+        
+        # Room Resources (for seizing)
+        'change_1': simpy.Resource(env, capacity=1),
+        'change_2': simpy.Resource(env, capacity=1),
+        'change_3': simpy.Resource(env, capacity=1),
+        
+        'prep_1': simpy.Resource(env, capacity=1),
+        'prep_2': simpy.Resource(env, capacity=1),
+        
+        # New: Specific magnet resources for detailed tracking
+        'magnet_3t_res': simpy.PriorityResource(env, capacity=1), 
+        'magnet_15t_res': simpy.PriorityResource(env, capacity=1),
+        
+        # Mock waiting room buffers (just dictionaries for position tracking)
+        'waiting_room_left': {},
+        'waiting_room_right': {},
+        
+        # Global Flags
+        'gap_mode_active': False
+    }
+
+    # Initialize Resource States
+    # We track the last exam type to calculate sequence-dependent setup times (coil swaps)
+    resources['magnet_3t_res'].last_exam_type = None
+    resources['magnet_15t_res'].last_exam_type = None
+
+    # Helper function for resource finding (simple round-robin or random can start here, 
+    # but we will likely handle logic in patient workflow)
+    resources['get_free_change_room'] = lambda: ('change_1') 
+
+    # Populate Magnet Pool
+    # We create magnet objects that carry their state and resource
+    magnet_configs = [
+        {'id': '3T', 'resource': resources['magnet_3t_res'], 'loc': MAGNET_3T_LOC, 'name': 'magnet_3t', 'visual_state': 'clean'},
+        {'id': '1.5T', 'resource': resources['magnet_15t_res'], 'loc': MAGNET_15T_LOC, 'name': 'magnet_15t', 'visual_state': 'clean'}
+    ]
+    
+    # Initialize magnet resources wrapper
+    # We actually need to put these into the pool store
+    for m in magnet_configs:
+        resources['magnet_pool'].put(m)
+
+    # Initialize Staff Agents
+    # Note: Staff sprite does not need env/renderer/speed passed to init
+    pos_porter = AGENT_POSITIONS['porter_home']
+    pos_admin = AGENT_POSITIONS['admin_home']
+    pos_backup = AGENT_POSITIONS['backup_staging'] # Corrected key
+    
+    # Split scan techs between magnets
+    pos_scan_3t = AGENT_POSITIONS['scan_staging_3t']
+    pos_scan_15t = AGENT_POSITIONS['scan_staging_15t']
+    
+    staff_dict = {
+        'porter': Staff('porter', pos_porter[0], pos_porter[1]),
+        'admin': Staff('admin', pos_admin[0], pos_admin[1]),
+        'backup': [
+            Staff('backup', pos_backup[0], pos_backup[1]),
+            Staff('backup', pos_backup[0], pos_backup[1])
+        ],
+        'scan': [
+            Staff('scan', pos_scan_3t[0], pos_scan_3t[1]),
+            Staff('scan', pos_scan_15t[0], pos_scan_15t[1])
+        ]
+    }
+    
+    # Register staff sprites with renderer
+    if renderer:
+        renderer.add_sprite(staff_dict['porter'])
+        renderer.add_sprite(staff_dict['admin'])
+        for s in staff_dict['backup']: renderer.add_sprite(s)
+        for s in staff_dict['scan']: renderer.add_sprite(s)
+    
+    # Start Staff Manager (Breaks, etc - though currently mainly visual)
+    staff_mgr = StaffManager(env, staff_dict, resources)
+    # staff_mgr.start() # If we add logic later
 
     # Start patient generator (runs until duration)
     env.process(patient_generator(env, staff_dict, resources, stats, renderer, duration, demand_multiplier=demand_multiplier, force_type=force_type, no_show_prob=no_show_prob))

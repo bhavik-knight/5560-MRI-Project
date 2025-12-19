@@ -10,7 +10,7 @@ import random
 import src.config as config
 from src.core.workflows.patient import run_generator as patient_generator
 from src.core.staff_controller import StaffManager
-from src.analysis.stats import MetricAggregator
+from src.analysis.tracker import SimStats
 
 class HeadlessEntity:
     """Mock base class for Staff/Patients without PyGame Sprite overhead."""
@@ -147,39 +147,39 @@ class ResourceMonitor:
             # Waiting Room: Read from PositionManager (Global source of truth for location)
             wr_count = len(self.pos_manager.occupancy.get('waiting_room_left', {})) + \
                        len(self.pos_manager.occupancy.get('waiting_room_right', {}))
-            self.stats.occupied_minutes['waiting_room'] += wr_count
+            self.stats.occupied_minutes['waiting_room'] = self.stats.occupied_minutes.get('waiting_room', 0) + wr_count
             
             # Change Rooms
             cr_count = 0
             for k in ['change_1', 'change_2', 'change_3']:
                 if k in self.resources: cr_count += self.resources[k].count
-            self.stats.occupied_minutes['change_rooms'] += cr_count
+            self.stats.occupied_minutes['change_rooms'] = self.stats.occupied_minutes.get('change_rooms', 0) + cr_count
             
             # Washrooms
             wr_count = 0
             for k in ['washroom_1', 'washroom_2']:
                 if k in self.resources: wr_count += self.resources[k].count
-            self.stats.occupied_minutes['washrooms'] += wr_count
+            self.stats.occupied_minutes['washrooms'] = self.stats.occupied_minutes.get('washrooms', 0) + wr_count
             
             # Prep: Use Backup Tech count as proxy since workflow doesn't seize prep rooms
             # This generally represents patients being prepped or escorted
             if 'backup_techs' in self.resources:
-                 self.stats.occupied_minutes['prep_rooms'] += self.resources['backup_techs'].count
+                 self.stats.occupied_minutes['prep_rooms'] = self.stats.occupied_minutes.get('prep_rooms', 0) + self.resources['backup_techs'].count
             
             # Holding / Room 311
             if 'room_311' in self.resources:
-                self.stats.occupied_minutes['room_311'] += self.resources['room_311'].count
+                self.stats.occupied_minutes['room_311'] = self.stats.occupied_minutes.get('room_311', 0) + self.resources['room_311'].count
                 
             # Magnets Utilization
             if 'magnet_3t_res' in self.resources:
                 cnt = self.resources['magnet_3t_res'].count
-                self.stats.occupied_minutes['magnet_3t'] += cnt
-                if cnt == 0: self.stats.idle_minutes['magnet_3t'] += 1.0
+                self.stats.occupied_minutes['magnet_3t'] = self.stats.occupied_minutes.get('magnet_3t', 0) + cnt
+                if cnt == 0: self.stats.idle_minutes['magnet_3t'] = self.stats.idle_minutes.get('magnet_3t', 0) + 1.0
 
             if 'magnet_15t_res' in self.resources:
                 cnt = self.resources['magnet_15t_res'].count
-                self.stats.occupied_minutes['magnet_15t'] += cnt
-                if cnt == 0: self.stats.idle_minutes['magnet_15t'] += 1.0
+                self.stats.occupied_minutes['magnet_15t'] = self.stats.occupied_minutes.get('magnet_15t', 0) + cnt
+                if cnt == 0: self.stats.idle_minutes['magnet_15t'] = self.stats.idle_minutes.get('magnet_15t', 0) + 1.0
 
 class HeadlessSimulation:
     def __init__(self, settings, seed):
@@ -200,7 +200,7 @@ class HeadlessSimulation:
         })()
         
         # 2. Stats
-        stats = MetricAggregator()
+        stats = SimStats()
         
         # 3. Resources (Mirroring engine.py)
         # We need to capture m3t and m15t explicitly for monitoring
@@ -352,17 +352,16 @@ class HeadlessSimulation:
             'duration': env.now,
             'patients_completed': stats.patients_completed,
             'patients_in_system': stats.patients_in_system,
-            'late_arrivals': stats.counts['late_arrival'],
-            'no_shows': stats.counts['no_show'],
+            'late_arrivals': stats.counts.get('late_arrival', 0),
+            'no_shows': stats.counts.get('no_show', 0),
             'occupied_minutes': stats.occupied_minutes,
             'counts': stats.counts,
-            'patient_data': stats.patient_data,
-            'magnet_events': stats.magnet_events,
+            'patient_data': stats.finished_patients,
+            'utilization': stats.calculate_utilization(env.now),
             'magnet_3t_occupied': stats.occupied_minutes.get('magnet_3t', 0),
             'magnet_15t_occupied': stats.occupied_minutes.get('magnet_15t', 0),
             'magnet_3t_idle': stats.idle_minutes.get('magnet_3t', 0),
             'magnet_15t_idle': stats.idle_minutes.get('magnet_15t', 0),
-            'magnet_metrics': stats.magnet_metrics,
-            'scan_counts': stats.scan_counts
+            'scan_counts': {k: m.patients_served for k,m in stats.magnets.items()}
         }
         return results

@@ -1,0 +1,390 @@
+\documentclass[12pt,oneside,letterpaper]{article}
+
+% --- Load provided includes ---
+\input{includes}
+\input{notation}
+
+% --- Project Variables ---
+\newcommand{\reporttitle}{Solving the MRI Utilization Paradox}
+\newcommand{\reportauthorOne}{Bhavik Kantilal Bhagat}
+\newcommand{\cidOne}{A00494758}
+\newcommand{\reportauthorTwo}{Soundarya Venkataraman}
+\newcommand{\cidTwo}{A00491371}
+\newcommand{\reportauthorThree}{Zilong Wang}
+\newcommand{\cidThree}{A00}
+\newcommand{\reporttype}{Final Project Report}
+
+\setlength{\marginparwidth}{2cm}
+\begin{document}
+
+% --- Title Page ---
+\input{0_1_title_page} % Ensure you have this or create a simple title block
+
+% --- TOC --- %
+\markboth{}{}
+\tableofcontents
+\newpage
+
+% --- Main Content ---
+% --- section 1 ---
+\section{Introduction}
+\label{sec:1_introduction}
+
+The QEII Health Sciences Centre faces a critical operational crisis: the prospective wait list for magnetic resonance imaging (MRI) services currently \textbf{exceeds 700 days} (more than two years) for \textbf{semi-urgent (P3) cases}, with \textbf{some neurological wait times reaching 800 days} \cite{tatlock-efficiency}. In a healthcare system where diagnostic imaging serves as the gateway to treatment, such delays result in adverse patient outcomes and systemic inefficiencies.
+
+Dr. Chris Bowen, the lead MRI researcher at the facility, frames this challenge through the "wait list equation":
+\begin{equation}
+    Wait = \frac{Demand}{Supply}
+\end{equation}
+
+With demand remaining relatively inelastic and stable \cite{bowen-presentation}, and capital expenditure for new magnet infrastructure constrained by budgetary and physical limitations, the only viable lever for reducing the wait list is to increase the effective \textit{supply} (throughput) of existing assets.
+
+\subsection{The Utilization Paradox}
+However, efforts to increase throughput are hindered by a phenomenon we define as the \textbf{utilization paradox} \cite{bowen-presentation}. Operational analytics from the GE iCenter logs reveal that the department’s high-field magnets are "occupied" (staffed and active) for approximately 86\% of operational hours, yet the machines are idle (i.e., not actively acquiring images) for 31\%–42\% of that time \cite{nsh-wait-times}.
+
+This discrepancy arises from "yellow time", defined as the non-productive interval required for sequence-dependent setups, including patient transfer, coil swaps, and bed flips. Traditional workflow improvements, such as parallelizing patient preparation (the “pit crew” model), have failed to yield significant throughput gains because they address upstream activities without alleviating the primary bottleneck: the magnet cycle time.
+
+\subsection{Research Objectives}
+The objective of this study is to \textbf{improve the utilization of MRI machines}. To address this utilization paradox without disrupting clinical care, this project utilizes a \textbf{digital twin} simulation. By constructing a Discrete-Event Simulation (DES) of the QEII’s two-bay MRI suite (1.5T and 3T), calibrated against empirical time-motion data, this study aims to:
+
+\begin{enumerate}
+    \item \textbf{Diagnose} the root causes of the utilization gap, distinguishing between stochastic variance (e.g., patient lateness) and deterministic friction (e.g., post-examination tasks, recalibration, cleaning, and bed flipping, etc.).
+    \item \textbf{Falsify} ineffective interventions, specifically the "singles line" gap-filling strategy, by demonstrating upstream registration constraints.
+    \item \textbf{Validate} a "Hybrid Scheduling" strategy that separates high-variance acute care from low-variance routine care, effectively converting setup time into productive scan capacity.
+\end{enumerate}
+
+This report demonstrates that transitioning from a high-entropy “job shop” scheduling model to a low-entropy “factory focus” model for specific modalities can \textbf{generate approximately 500 additional appointment slots per year} without additional capital investment.
+
+
+% --- section 2: Methodology ---
+\section[Methodology]{Methodology: The Digital Twin Architecture}
+\label{sec:2_methodology}
+
+To bridge the gap between theoretical capacity and realized throughput, a \textbf{digital twin} of the QEII MRI department was developed. This Agent-Based Model (ABM), constructed using the Python \texttt{SimPy} discrete-event engine, is designed to simulate the stochastic interactions between patients, staff, and physical resources over 15-hour operational shifts. The code for simulation can be found \href{https://github.com/bhavik-knight/5560-MRI-Project}{here}.
+
+% ==== figure for Business Strategy ==== %
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/current_layout}
+    \caption{The floor plan of layout created in PyGame}
+    \label{fig:floor_plan}
+\end{figure}
+
+\subsection[System Architecture]{System Architecture}
+For the purposes of this study, This simulation model used historical data and validated against the physical system's actual performance metrics. Unlike static spreadsheet models, which calculate capacity based on deterministic averages, this digital twin incorporates stochastic variance (randomness) to replicate the friction of real-world clinical operations. It replicates the MRI department across three dimensions:
+
+\begin{enumerate}
+    \item \textbf{Spatial Replication (Topology):}
+    The simulation environment enforces the physical constraints of the facility floor plan, specifically the four MRI Safety Zones \cite{tatlock-efficiency}. The model logic dictates that patients must physically traverse Zone 1 (Public) and Zone 2 (Preparation) before entering the critical bottleneck at Zone 4 (Magnet), mirroring the "Resource Coupling" observed in the actual facility.
+
+    \item \textbf{Operational Replication (Logic):}
+    The "6-Staff Model" is encoded into the system as autonomous agents. These agents operate under strict hierarchy rules; for example, a scan cannot commence until a Technologist agent and a Magnet resource are simultaneously seized, replicating the "Utilization Paradox" where a machine sits idle despite patients being present.
+
+    \item \textbf{Temporal Replication (Stochasticity):}
+    To capture the uncertainty of healthcare delivery, task durations are not fixed but are drawn from probability distributions calibrated against time-motion studies. This ensures that "grey time" (True Idle) generated by random events—such as a difficult IV start (15\% probability) or a patient needing a washroom (2.5 minute average)—is accurately represented in the final throughput analysis as illustrated in \autoref{fig:icenter_gantt}.
+\end{enumerate}
+
+% ==== figure for Business Strategy ==== %
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/icenter_gantt}
+    \caption{The example 15-hour shift with Grey, Green, and Yellow time}
+    \label{fig:icenter_gantt}
+\end{figure}
+
+\subsection{System Topology and Zoning Logic}
+The physical layout of the 2-bay MRI suite (1.5T and 3T magnets) is replicated within the simulation environment, as defined by the facility floor plans \autoref{fig:floor_plan}. Strict \textbf{Safety Zone} protocols are enforced by the model logic \cite{tatlock-efficiency}:
+
+\begin{itemize}
+    \item \textbf{Zone 1 (Public Corridor):} Modeled with infinite capacity. This zone serves as the entry point where patient agents are generated.
+    \item \textbf{Zone 2 (Preparation):} Comprises 3 Change Rooms, 2 Wash Rooms, 2 Prep Rooms, and Waiting areas. This zone is identified as the primary bottleneck for patient "readiness.". Additionally, it also has Holding/Transfer (Room 311) for "emergency cases".
+    \item \textbf{Zone 3 (Control):} A restricted area accessible only to Technologist agents.
+    \item \textbf{Zone 4 (Magnet Room):} The critical resource. Access is strictly serialized, allowing only one patient to occupy the scanner at any given time.
+\end{itemize}
+
+\subsection[Metrics]{Defining the Metrics}
+Magnet time is categorized into three distinct states for analysis, following the analytical framework established by Dr. Bowen \cite{bowen-presentation}:
+\begin{enumerate}
+    \item \textbf{green time (Value-Added):} Periods during which images are actively acquired by the magnet.
+    \item \textbf{yellow time (Operational Friction):} Periods during which the magnet is occupied but remains idle due to sequence-dependent setup requirements (e.g., transitioning from a Head Coil to a Spine Matrix).
+    \item \textbf{grey time (True Idle):} Periods during which the magnet remains empty due to upstream starvation (i.e., no patient is ready).
+\end{enumerate}
+
+The objective function of this study is defined as the minimization of "yellow time" through schedule optimization, by which the "Bowen Efficiency" ratio is maximized:
+\begin{equation}
+    E_{Bowen} = \frac{\text{green time}}{\text{green time} + \text{yellow time}}
+\end{equation}
+
+% ==== figure for Business Strategy ==== %
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/task_durations}
+    \caption{The average patient time for each task across all zones}
+    \label{fig:task_durations}
+\end{figure}
+
+\subsection{Identification of System Variables}
+To isolate the root causes of the "Utilization Paradox," system variables are classified into static constraints, stochastic inputs, and decision parameters.
+
+\subsubsection{Static (Exogenous) Variables}
+These variables are defined as fixed constraints derived from the provided data sheet and are held constant across all experimental replications.
+\begin{itemize}
+    \item \textbf{Magnet Capacity:} Capacity is fixed at two units (1.5T and 3T), operating on a 15-hour shift cycle (7:00 AM–10:00 PM) \cite{bowen-presentation}.
+    \item \textbf{Staff Count:} The "6-Staff Model" is enforced, consisting of four Technologists, one Admin TA, and one Porter. Dynamic staff hiring during a shift is not permitted \cite{tatlock-efficiency}.
+    \item \textbf{Scan Geometry:} Physical scan time (image acquisition duration) is treated as an inelastic constraint. For example, a Brain scan is assigned a fixed acquisition window ($T \approx 22$ min) that cannot be reduced through increased staff efficiency.
+    \item \textbf{No-Show Wait:} In the event of a patient no-show, the magnet is assumed to remain idle for 15 minutes.
+\end{itemize}
+
+\subsubsection{Stochastic (Random) Variables}
+To represent real-world variability, the following variables are generated using probability distributions calibrated against Tatlock’s time-motion data:
+\begin{itemize}
+    \item \textbf{Patient Arrival Variance:} Patient arrivals are modeled using a Poisson distribution with a mean rate of two arrivals per hour (equivalently, a 30-minute inter-arrival time).
+    \item \textbf{Contrast Reaction Risk:} A 0.1\% probability event is assumed in which extended care is required within the scan room. Affected patients are prioritized and transferred to \textbf{Room 311 (Hold/Transfer)} for scan preparation.
+    \item \textbf{Difficult IV Start:} A 15\% probability is assumed that IV cannulation exceeds the standard 10-minute window, resulting in upstream bottlenecks in Zone 2.
+    \item \textbf{Other Patient Tasks:} All remaining patient tasks are modeled using triangular distributions with minimum, mean, and maximum values specified in the data sheet.
+\end{itemize}
+
+\subsubsection{Decision Parameters (Control Variables)}
+These variables are manipulated during experimental runs to optimize "Bowen Efficiency":
+\begin{itemize}
+    \item \textbf{Scheduling Heuristic:} The patient ordering logic (e.g., Mixed/FIFO versus Blocked/Factory) is selected.
+    \item \textbf{Queue Discipline:} Rules governing entry into Zone 2 are applied (e.g., the "Smart Gatekeeper" logic, by which arrivals are throttled when queue burden exceeds 202.5 minutes).
+    \item \textbf{Resource Interchangeability:} Permission settings are defined to allow specific staff members (e.g., Backup Technologists) to perform cross-functional roles (e.g., acting as Proxy Scan Technologists).
+\end{itemize}
+
+\subsection{Modeling Assumptions}
+Given the inherent complexity of clinical environments, the digital twin is constructed under the following structural assumptions to ensure computational tractability while preserving model validity.
+
+\begin{enumerate}
+    \item \textbf{Non-Preemption of Scans:} Once the "Scan Execution" state (green time) is entered, interruption is not permitted. This assumption reflects MRI acquisition physics, as mid-sequence termination results in total data loss.
+
+    \item \textbf{Definition of "yellow time":} "yellow time" (setup/bed turnover) is assumed to be strictly sequence-dependent:
+    \begin{itemize}
+        \item When $Patient_{n}$ and $Patient_{n+1}$ utilize the same coil (e.g., Brain $\to$ Brain), setup time is fixed at 2 minutes.
+        \item When different coils are used (e.g., Brain $\to$ Prostate), setup time is fixed at 8 minutes \cite{bowen-presentation}.
+    \end{itemize}
+
+    \item \textbf{Infinite Zone 1 Capacity:} The public waiting corridor (Zone 1) is assumed to have infinite seating capacity. In contrast, Zone 2 (Gowned Waiting) is strictly limited to three patients to reflect safety regulations and locker availability \cite{tatlock-efficiency}.
+
+    \item \textbf{Staff Specialization and Fatigue:} Staff performance is assumed to remain at 100\% efficiency during the shift, with no fatigue degradation. However, strict role specialization is enforced (e.g., Porters are not permitted to perform IV starts) \cite{5}.
+
+    \item \textbf{Inelastic Demand:} Consistent with Dr. Bowen’s "Wait List Equation," demand is assumed to be sufficiently high such that magnet idleness occurs only due to immediate scheduling friction (e.g., no-shows), rather than insufficient referrals \cite{bowen-presentation}.
+\end{enumerate}
+
+\subsection[Roles]{Agent Roles and Resource Allocation}
+In contrast to static Excel models, autonomous agents are utilized to represent the 6-staff model. Resources are seized and released based on the following hierarchy. \autoref{tab:staffing} summarizes the staffing resource pool modeled in SimPy:
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{|l|c|l|}
+        \hline
+        \textbf{Agent Role} & \textbf{Count} & \textbf{Primary Responsibilities} \\
+         \hline Scan Tech & 2 & Scanning, MRI safety screening, Patient loading, Coil setup  \\
+         \hline Backup Tech & 2 & IV Starts, Patient interview, Cannulation, Proxy Scan Tech \\
+         \hline Admin TA & 1 & Registration, Patient flow management \\
+         \hline Porter & 1 & Transporting patients, Room cleaning (Bed Flips), Proxy Admin TA \\
+         \hline
+    \end{tabular}
+    \caption{Staffing Resource Pool modeled in SimPy}
+    \label{tab:staffing}
+\end{table}
+
+\subsection[Data]{Data Calibration and Input Distributions}
+The simulation video is available at \url{https://youtu.be/essSWj7E1ek}). The validity of which is established through calibration against empirical Time-Motion study data collected by Tatlock \cite{tatlock-efficiency}. To capture real-world variance, deterministic averages were replaced with probability distributions:
+
+\begin{itemize}
+    \item \textbf{Registration:} Modeled as $T \sim \text{Triangular}(2.5, 3.2, 5.0)$ minutes.
+    \item \textbf{Patient Prep (IV):} Modeled as $T \sim \text{Triangular}(8.0, 10.0, 15.0)$ minutes.
+    \item \textbf{Scan Duration:}
+    \begin{itemize}
+        \item \textit{Routine Scan:} $T \sim \text{Normal}(\mu=22, \sigma=5)$ minutes.
+        \item \textit{Complex Scans:} $T \sim \text{Normal}(\mu=45, \sigma=14)$ minutes.
+    \end{itemize}
+    \item \textbf{Changeover ("yellow time"):}
+    \begin{itemize}
+        \item \textit{Fast Flip (Same Coil):} Set to 2.0 minutes.
+        \item \textit{Slow Flip (Coil Swap):} Set to 8.0 minutes.
+    \end{itemize}
+\end{itemize}
+
+
+
+
+
+% --- section 3: Methodology ---
+\section{Experimental Results and Analysis}
+
+Following the calibration of the digital twin, a series of experimental scenarios were simulated to quantify the impact of scheduling interventions on magnet throughput. The objective function was the conversion of "yellow time" (Operational Friction) into "green time" (Value-Added Scanning).
+
+
+\subsection[Baseline Performance]{Baseline Performance (Status Quo)}
+To establish a control group, the "Original Workflow" (15 hours shift \cite{bowen-presentation}) was simulated over 50 replications using the current mixed-arrival schedule (job shop model).
+
+% ==== two images ==== %
+\begin{figure}[htbp]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+            \centering
+            \includegraphics[width=1\textwidth]{figures/15_hour_50_runs}
+            \caption{The result of original workflow for 50 simulation}
+            \label{fig:15h_50}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/shift_stability_breaks}
+        \captionof{figure}{Impact of breaks on during (Utilization Improvement)}
+        \label{fig:stff_breaks}
+    \end{minipage}
+    \caption{Overall figure caption}
+    \label{fig:baseline_performance}
+\end{figure}
+
+
+
+
+\subsection[Intervention A]{Intervention A: The shared staff responsibility)}
+\textbf{Hypothesis:} By acting as a proxy while a staff member is busy, the free staff members can act as a proxies to help patients move through their process based on the shared staff responsibility.
+
+\textbf{Result}:
+No statistically significant reduction in scan time was observed, even after trying to minimize patient wait time for each steps from zone 1 - 4 by introducing sharing responsibility between the staff as per \autoref{tab:staffing}. Where if a staff is occupied, another staff can act as proxy helping patient move through their process. This include the scenario of real-world when staff takes a break. Introducing staff breaks hardly have effect on average during as per \autoref{fig:stff_breaks}.
+
+
+\subsection[Intervention B]{Intervention B: The Singles Line (Stochastic Gap Filling)}
+\textbf{Hypothesis:} Inspired by Dr. Bowen's "Ski Lift" analogy, it was hypothesized that inserting short-duration exams (e.g., Knees) into schedule gaps caused by no-shows would recapture lost capacity.
+
+\textbf{Result:}
+The intervention yielded a statistically insignificant throughput gain of \textbf{+0.2\%}.
+
+% ==== figure for Business Strategy ==== %
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/single_line}
+    \caption{The result trying to insert short-duration exam}
+    \label{fig:single_line}
+\end{figure}
+
+\textbf{Analysis of Failure:}
+The simulation revealed that "Gap Patients" could not traverse Zone 1 (Registration) and Zone 2 (Preparation) fast enough to utilize the temporary availability of the magnet. By the time a "singles line" patient was prepped, the gap had closed or the scheduled patient had arrived. This confirms that stochastic gap-filling is ineffective without a pre-staged buffer of patients in Zone 2 \autoref{fig:single_line}.
+
+
+\subsection[Intervention C]{Intervention C: System Stress Testing (Volume Surge)}
+To evaluate the resilience of the MRI department against demand spikes (e.g., post-shutdown backlog recovery), a stress test was conducted. The patient arrival rate ($\lambda$) was increased to \textbf{120\%} and \textbf{150\%} of the baseline operational capacity. The objective was to determine if "overbooking" could force higher magnet utilization by ensuring a constant queue, or if it would result in systemic collapse.
+
+\textbf{Experimental Design:}
+The simulation was executed under three load conditions:
+\begin{enumerate}
+    \item \textbf{Baseline (100\%):} Standard arrival distribution
+    \item \textbf{Surge A (120\%):} Moderate overbooking (simulating aggressive "squeeze-in" scheduling).
+    \item \textbf{Surge B (150\%):} Extreme volume (simulating crisis backlog management).
+\end{enumerate}
+
+\textbf{Results:}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/sensitivity_analysis}
+    \caption{System Performance under Stress test}
+    \label{fig:stress_test}
+\end{figure}
+
+\textbf{Analysis of System Behavior:}
+It was expected that the utilization of the MRI machine would improve until a point before system breaks down. As we can see in \autoref{fig:stress_test}, if patient arrival rate is increased, utilization is also increasing, but with the single-line approach (to squeeze extra patient in) was ineffective, as relative utilization of standard vs single-line approach is almost similar.
+
+Overbooking the schedule beyond 105\% of capacity is determined to be detrimental, from multiple simulation experiments. In the \autoref{fig:stress_test}, it can be observed that the utilization is not increasing significantly, validating Dr. Bowen's assertion that efficiency must be found in \textit{protocol management} (Batching), not volume management \cite{bowen-presentation}.
+
+
+
+\subsection[Intervention D]{Intervention D: Sequence-Dependent Batching }
+\textbf{Hypothesis:} Transitioning from a random "job shop" schedule to a blocked "Factory" schedule reduces the frequency of major setup events (Coil Swaps), thereby converting "yellow time" into "green time." In this Deterministic Optimization approach, Prostate Exams scheduled back-to-back for a 12 hours shift to determine the overall impact.
+
+\textbf{Result:}
+\begin{figure}[htbp]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=1\textwidth]{figures/batching_efficiency}
+        \caption{Prostate exam in blocks can save ~2.7 extra slots per 10 patients.}
+        \label{fig:batch_prostate}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/modality_comparison}
+        \captionof{figure}{Impact of batch exams (Throughput Improvement)}
+        \label{fig:msk_neuro}
+    \end{minipage}
+    \caption{Overall figure caption}
+    \label{fig:batching_results}
+\end{figure}
+
+\textbf{Analysis:}
+In block schedule, scan technician does not require coil changes, and other settings of MRI much. This reduces non-value-added time between two exams, that can help convert "yellow time" to "green time".
+
+\begin{itemize}
+    \item \textbf{Prostate Block}:\\
+    The highest during gain per unit are observed by block-scheduling prostate exam. Approx ~2.7 slots are saved per 10 patients, which has the highest setup-time saved.
+    \item \textbf{Neuro Block}:\\
+    About ~2.8 slots are saved per shift for this kind of exams as per \autoref{fig:msk_neuro}, which is a low variance exam.
+    \item \textbf{MSK Block:} \autoref{fig:msk_neuro} indicates ~2 slots / shift for block exam of MSK type.
+\end{itemize}
+
+Thus, block exam of prostate type could help squeeze in about 3 patients with a bit of overtime, where as about 3 patients for neuro type exams per shift, increasing the throughput of MRI machines, hence utilization.
+
+\subsection{Sensitivity Analysis: Patient Compliance}
+To determine the robustness of the schedule, a sensitivity analysis was performed on Patient Compliance No-Shows.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/sensitivity_compliance.png}
+    \caption{Impact of No-Show Rates on Magnet Idle Time}
+    \label{fig:sensitivity}
+\end{figure}
+
+\textbf{Results }
+It is clear from \autoref{fig:sensitivity} that for every \textbf{2\% increase in No-Shows}, the system idle time increases by approx. 19\% However, in the "Batched" scenarios (Intervention D), the impact of a No-Show could be mitigated because the subsequent patient required no bed configuration change, allowing the technologist to "catch up" faster than in the Mixed schedule. Late arrival would delay the subsequent exams for all patients especially in the Mixed schedule, whereas in the block schedule, saved time to change the coil can absorb that impact.
+
+
+\subsection{Summary of Findings}
+The simulation \textbf{falsified the "singles line" strategy} as a primary intervention due to upstream registration bottlenecks. However, it validated \textbf{"Batching" as a highly effective mechanism} for capacity generation, specifically identifying \textit{Neuro} (Volume Driver) and \textit{Prostate} (Efficiency Driver) as the optimal candidates for a Hybrid Schedule.
+
+
+% --- section 4: Recommendation --- %
+\section{Strategic Recommendation: The Hybrid Model}
+A hybrid model is recommended where one Magnet can schedule any type of exam (job shop model), and another magnet can batch-schedule the exams (factory model). By leveraging this hybrid approach, patient needing different kind of MRI exams can be served in a day, along with increased throughput.
+
+\begin{table}[h]
+    \centering
+    \caption{Hybrid Resource Allocation}
+    \label{tab:hybrid_model}
+    \begin{tabular}{@{}lccccc@{}}
+        \toprule
+        \textbf{Block Type} & \textbf{Slots/Shift/Magnet} & \textbf{Days/Week} & \textbf{Weekly Gain} & \textbf{Annual Gain} \\
+        \midrule
+        Prostate & $2.7/(30/10)/2$ &  1 & 4.05 * 1 & 210.6 \\
+        Neuro (Brain) & $3 / 2$ &  2 & 1.5 * 2 & 156.0 \\
+        MSK (Spine/Joint) & $2 / 2$ & 2 & 1.0 * 2 & 104.0 \\
+        \midrule
+        \textbf{Total Impact} & {-} & \textbf{5} & \textbf{9.05} & \textbf{470.6} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+	\textbf{Projected Impact:}
+	Implementation of this schedule is calculated to yield $\approx 471$ extra patient slots per year.
+
+% --- Section 5: Conclusion --- %
+\section{Conclusion}
+Efficiency in MRI is not achieved by working faster, but by scheduling smarter. By aligning the similar exams (enable batching), the department can unlock significant "Hidden Capacity." This approach can serve more than 470 additional patients annually without additional budgetary or infrastructure investment.
+
+
+% --- Appendix ---- %
+\section{Appendix}
+The code related to simulation, visualization and analysis can be found here:\\
+\url{https://github.com/bhavik-knight/5560-MRI-Project}
+
+
+% --- Bibliography ---
+	\section*{Bibliography}
+	\addcontentsline{toc}{section}{Bibliography}
+	\markboth{}{}
+	\printbibliography
+\end{document}

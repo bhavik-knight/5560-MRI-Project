@@ -192,8 +192,12 @@ def run_generator(env, staff_dict, resources, stats, renderer, duration, patient
     Generator using Modular Workflow.
     """
     if patient_class is None:
-        from src.core.headless import HeadlessPatient
-        patient_class = HeadlessPatient
+        if config.HEADLESS:
+            from src.core.headless import HeadlessPatient
+            patient_class = HeadlessPatient
+        else:
+            from src.visuals.sprites import Patient
+            patient_class = Patient
         
     p_id = 0
     workflow = PatientWorkflow(env, resources, stats, renderer, staff_dict)

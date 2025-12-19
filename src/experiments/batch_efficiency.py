@@ -133,7 +133,7 @@ def _worker_task(seed_and_settings):
         return sim.run()
 
 def run_experiment():
-    SIMS = 100
+    SIMS = 1000
     print(f"=== BATCH EFFICIENCY EXPERIMENT (N={SIMS}) ===")
     
     # Define Sequences (N=10 patients)

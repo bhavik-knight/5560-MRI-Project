@@ -9,7 +9,7 @@
 
 ## Project Overview
 
-This digital twin simulates a 12-hour MRI department shift using agent-based modeling to demonstrate the efficiency gains of **parallel processing** ("Pit Crew" model) over traditional **serial workflows**.
+This digital twin simulates a 15-hour MRI department shift using agent-based modeling to demonstrate the efficiency gains of **parallel processing** ("Pit Crew" model) over traditional **serial workflows**.
 
 ### The "Utilization Paradox"
 
@@ -134,12 +134,20 @@ mri-project/
 ### 6. Comprehensive Data Collection (v3.0)
 
 - **Granular Patient Metrics**: Tracks durations for admin, change, prep, staging, and scan.
-- **Magnet Performance**: Separates "Green Time" (Value-Added) from "Brown Time" (Setup/Flip).
+- **Magnet Performance**: Separates "Green Time" (Value-Added) from "Yellow Time" (Setup/Flip).
 - **The Bowen Metric**: Calculates Process Efficiency % [(Scan Time) / (Occupied Time)].
 - **Clinical Stratification**: Tracks performance by patient type (Inpatient vs Outpatient).
 - **CSV Data Exports**:
   - `detailed_patient_performance.csv` (Audit trail of every patient journey).
   - `magnet_performance_summary.csv` (Productivity analysis for both bays).
+### 7. Process Optimization Experiments (v4.0)
+
+Beyond standard workflow simulation, the system now supports experimental interventions:
+
+- **"Singles Line" Logic**: Dynamic gap-filling strategy (similar to ski resorts) pulling simple cases forward to fill idle magnet time.
+- **Staff Fatigue Modeling**: Simulation of staggered staff breaks and coverage handoffs (Porter covering Admin, etc.).
+- **Sequence-Dependent Setup**: Modeling "Fast Flips" (same protocol) vs "Slow Flips" (coil swaps), proving the value of **Exam Batching** (e.g., Prostate Blocks).
+- **Compliance Sensitivity**: Quantifying the throughput loss from patient No-Shows (5-20%) and Lateness.
 
 ### 4. Empirical Process Times
 
@@ -177,10 +185,10 @@ uv sync
 uv run python main.py
 ```
 
-**Standard 12-Hour Shift (Recommended):**
+**Standard 15-Hour Shift (Recommended):**
 
 ```bash
-uv run python main.py --duration 720
+uv run python main.py --duration 900
 ```
 
 **With video recording:**
@@ -194,7 +202,7 @@ uv run python main.py --record          # Generates simulation_video.mp4
 **Simulation Duration:**
 
 - Total runtime: `DURATION` + Overtime (until empty)
-- Real-time duration: ~45 seconds (for 2hr test) to ~3 mins (for 12hr shift)
+- Real-time duration: ~45 seconds (for 2hr test) to ~3 mins (for 15hr shift)
 
 **Visual Output:**
 
@@ -203,7 +211,7 @@ uv run python main.py --record          # Generates simulation_video.mp4
 - **Gatekeeper**: Patients wait at desk for Admin TA.
 - **Dirty Magnets**: Rooms turn brown after patient exit until Porter cleans them.
 
-**Data Output (in `results/` folder):**
+**Data Output (in `results/` folder):
 
 - `*_movements.csv` - All patient zone transitions
 - `*_states.csv` - State change log
@@ -217,7 +225,7 @@ uv run python main.py --record          # Generates simulation_video.mp4
 
 - Number of patients who completed scans during shift
 - Breakdowns for **3T** and **1.5T** magnet throughput
-- Expected: ~22-24 patients per standard 12-hour shift
+- Expected: ~30-33 patients per standard 15-hour shift
 
 ### Magnet Utilization
 
@@ -236,7 +244,7 @@ uv run python main.py --record          # Generates simulation_video.mp4
 ### Simulation Parameters
 
 ```python
-DEFAULT_DURATION = 120      # 2 hours
+DEFAULT_DURATION = 900      # 15 hours
 WARM_UP_DURATION = 60       # 1 hour
 SIM_SPEED = 0.25            # 1 sim minute = 0.25 real seconds
 FPS = 60                    # Smooth animation

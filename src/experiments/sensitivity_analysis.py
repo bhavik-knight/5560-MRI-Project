@@ -24,99 +24,109 @@ def suppress_stdout():
 def _worker_task(seed_and_settings):
     seed, settings = seed_and_settings
     with suppress_stdout():
+        # HeadlessSimulation will use params from settings
+        # We need to make sure HeadlessSimulation respects 'demand_multiplier' and 'singles_line_mode'
         sim = HeadlessSimulation(settings, seed)
         return sim.run()
 
 def run_experiment():
-    SIMS = 50 # Per scenario per Prompt
-    PROBS = [0.0, 0.05, 0.10, 0.15, 0.20] # 0% to 20%
-    print(f"=== SENSITIVITY ANALYSIS: COMPLIANCE (N={SIMS}/scenario) ===")
+    SIMS = 100 # Adjust to 500 later if needed, starting with 100 for speed
+    DEMANDS = [1.0, 1.2, 1.5] # 100%, 120%, 150%
+    STRATEGIES = ['Standard', 'Singles Line']
+    
+    print(f"=== SENSITIVITY ANALYSIS: DEMAND vs STRATEGY (N={SIMS}/scenario) ===")
     
     results = []
     
-    for prob in PROBS:
-        print(f"\nRunning No-Show Rate: {prob:.2f} ({prob*100:.0f}%)")
-        
-        # Prepare tasks
-        base_seed = int(time.time())
-        tasks = []
-        for i in range(SIMS):
-            settings = {
-                'duration': config.DEFAULT_DURATION,
-                'no_show_prob': prob,
-                'demand_multiplier': 1.0 # 100% Demand
-            }
-            tasks.append((base_seed + i, settings))
+    for demand in DEMANDS:
+        for strat in STRATEGIES:
+            print(f"\nRunning Demand: {demand*100:.0f}% | Strategy: {strat}")
             
-        # Execute
-        batch_res = []
-        with multiprocessing.Pool() as pool:
-            for res in pool.imap_unordered(_worker_task, tasks):
-                batch_res.append(res)
+            is_singles = (strat == 'Singles Line')
+            
+            # Prepare tasks
+            base_seed = int(time.time())
+            tasks = []
+            for i in range(SIMS):
+                settings = {
+                    'duration': config.DEFAULT_DURATION,
+                    'demand_multiplier': demand,
+                    'singles_line_mode': is_singles,
+                    'no_show_prob': config.PROB_NO_SHOW # Keep default
+                }
+                tasks.append((base_seed + i + (1000 if is_singles else 0), settings))
                 
-        # Aggregate
-        for r in batch_res:
-            res_entry = {
-                'No_Show_Rate': prob,
-                'Throughput': r['patients_completed'],
-                'Magnet_Idle_Pct': 0.0 # Calculate below
-            }
-            
-            # Calculate Magnet Idle % (Aggregated for both magnets?)
-            # Formula: (IdleTime3T + IdleTime1.5T) / (Duration * 2)
-            # Check keys
-            idle_3t = r.get('magnet_3t_idle', 0.0)
-            idle_15t = r.get('magnet_15t_idle', 0.0)
-            duration = r['duration']
-            
-            idle_pct = ((idle_3t + idle_15t) / (duration * 2)) * 100
-            res_entry['Magnet_Idle_Pct'] = idle_pct
-            
-            results.append(res_entry)
-            
+            # Execute
+            batch_res = []
+            with multiprocessing.Pool() as pool:
+                for res in pool.imap_unordered(_worker_task, tasks):
+                    batch_res.append(res)
+                    
+            # Aggregate
+            for r in batch_res:
+                # Calculate Utilization
+                # We want Productive Utilization? Or Occupied?
+                # The report says "Utilization". Usually this means Occupied (Busy + Overhead).
+                # But let's check what 'magnet_util_pct' in results gives.
+                # r['magnet_util_pct'] likely returns Occupied %.
+                # Let's verify how HeadlessSimulation constructs this.
+                # Tracker calculates busy/occupied/idle.
+                # HeadlessSimulation.run returns a dict.
+                
+                # Re-calculate cleanly here if needed or trust return.
+                # Assuming 'magnet_metrics' in r has total times.
+                
+                # Extract aggregated times
+                # Headless returns 'magnet_metrics' which is a dict of total times per magnet or aggregated?
+                # Let's inspect tracker.py logic or headless return.
+                # Headless.run() returns:
+                # { ..., 'magnet_metrics': stats.magnet_metrics (Wait, tracker has magnets dict), ... }
+                # Actually, metrics might be flattened.
+                
+                # Let's rely on standard 'utilization_occupied' if available or manual calc.
+                # Tracker.calculate_utilization returns { 'magnet_occupied_pct': ... }
+                util_stats = r.get('utilization', {})
+                occ_pct = util_stats.get('magnet_occupied_pct', 0.0)
+                
+                res_entry = {
+                    'Demand Level': f"{int(demand*100)}%",
+                    'Strategy': strat,
+                    'Utilization (%)': occ_pct
+                }
+                results.append(res_entry)
+                
     # Convert to DataFrame
     df = pd.DataFrame(results)
     
     # Save Raw Data
     os.makedirs('results', exist_ok=True)
-    df.to_csv('results/sensitivity_compliance_raw.csv', index=False)
-    print("\nSaved raw data to results/sensitivity_compliance_raw.csv")
+    df.to_csv('results/sensitivity_demand_raw.csv', index=False)
     
-    # Analysis
-    summary = df.groupby('No_Show_Rate')[['Throughput', 'Magnet_Idle_Pct']].describe()
+    # Analysis Summary
+    summary = df.groupby(['Demand Level', 'Strategy'])['Utilization (%)'].describe()
     print("\n=== SENSITIVITY RESULTS ===")
     print(summary)
     
-    # Visualization: Dual Axis Plot? Or Facet?
-    # Relationship: X=NoShowRate, Y1=Throughput, Y2=IdlePct
-    
-    fig, ax1 = plt.subplots(figsize=(10, 6))
+    # Visualization
+    plt.figure(figsize=(10, 6))
     sns.set_context("talk")
     sns.set_style("whitegrid")
     
-    # Plot Throughput (Left Axis)
-    sns.lineplot(data=df, x='No_Show_Rate', y='Throughput', errorbar='sd', marker='o', ax=ax1, color='#2c3e50', label='Throughput')
-    ax1.set_ylabel('Patients Processed (Mean ± SD)')
-    ax1.set_xlabel('No-Show Probability')
-    ax1.set_ylim(bottom=0)
+    # Custom palette: Standard=Grey, Singles Line=Green
+    palette = {'Standard': '#95a5a6', 'Singles Line': '#2ecc71'}
     
-    # Plot Idle % (Right Axis)
-    ax2 = ax1.twinx()
-    sns.lineplot(data=df, x='No_Show_Rate', y='Magnet_Idle_Pct', errorbar='sd', marker='s', ax=ax2, color='#e74c3c', label='Magnet Idle %')
-    ax2.set_ylabel('Magnet Idle Time (%)', color='#e74c3c')
-    ax2.tick_params(axis='y', labelcolor='#e74c3c')
-    ax2.set_ylim(bottom=0)
+    ax = sns.barplot(x='Demand Level', y='Utilization (%)', hue='Strategy', data=df, palette=palette, errorbar='sd')
     
-    plt.title("Impact of Patient Compliance (No-Shows) on System Efficiency", pad=20)
+    # Add Value Labels
+    for container in ax.containers:
+        ax.bar_label(container, fmt='%.1f%%', padding=3, size=12)
+        
+    plt.title("Impact of 'Singles Line' Strategy by Demand Level\n(15-Hour Shift - Occupied Utilization)", pad=20)
+    plt.ylim(0, 100)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
     
-    # Legend
-    lines, labels = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines + lines2, labels + labels2, loc='center right')
-    ax1.get_legend().remove()
-    
-    outfile = "results/plots/sensitivity_compliance.png"
-    os.makedirs('results/plots', exist_ok=True)
+    plt.tight_layout()
+    outfile = "results/plots/sensitivity_analysis.png"
     plt.savefig(outfile)
     print(f"Saved Plot: {outfile}")
 

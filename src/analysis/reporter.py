@@ -65,9 +65,9 @@ def generate_report(stats, duration, output_dir='results', filename='mri_digital
             'Magnet_ID': m_id,
             'Patients_Served': m.patients_served,
             'Scan_Time_Green': round(m.total_scan_time, 2),
-            'Setup_Time_Brown': round(m.total_setup_time, 2),
-            'Flip_Time_Brown': round(m.total_flip_time, 2),
-            'Exit_Time_Brown': round(m.total_exit_time, 2),
+            'Setup_Time_Yellow': round(m.total_setup_time, 2),
+            'Flip_Time_Yellow': round(m.total_flip_time, 2),
+            'Exit_Time_Yellow': round(m.total_exit_time, 2),
             'Efficiency_Pct': round(efficiency, 2)
         })
     df_magnets = pd.DataFrame(magnet_report)
@@ -99,13 +99,13 @@ def generate_report(stats, duration, output_dir='results', filename='mri_digital
         max_val = df_patients[col].max()
         print(f"  {col.replace('Time_', '').ljust(15)}: Avg={avg:5.1f} | Max={max_val:5.1f}")
     
-    # MAGNET PRODUCTIVITY (Green vs Brown Time)
+    # MAGNET PRODUCTIVITY (Green vs Yellow Time)
     print(f"\nMAGNET PRODUCTIVITY (Value-Added Analysis):")
     for _, m in df_magnets.iterrows():
         print(f" Magnet {m['Magnet_ID']}:")
         print(f"  - Patients Served:  {m['Patients_Served']}")
         print(f"  - Scan Time (Green): {m['Scan_Time_Green']:.1f} mins")
-        print(f"  - Overhead (Brown):  {(m['Setup_Time_Brown'] + m['Flip_Time_Brown'] + m['Exit_Time_Brown']):.1f} mins")
+        print(f"  - Overhead (Yellow):  {(m['Setup_Time_Yellow'] + m['Flip_Time_Yellow'] + m['Exit_Time_Yellow']):.1f} mins")
         print(f"  - Process Efficiency: {m['Efficiency_Pct']}% [The Bowen Metric]")
     
     # SYSTEM TOTALS

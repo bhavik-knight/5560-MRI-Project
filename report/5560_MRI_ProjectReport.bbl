@@ -1,0 +1,113 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nyt/global//global/global}
+    \entry{bowen-presentation}{online}{}
+      \name{author}{1}{}{%
+        {{hash=722c8ef9e317c3e0ce2898f4fe48a0b3}{%
+           family={Bowen},
+           familyi={B\bibinitperiod},
+           given={Chris},
+           giveni={C\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Biomedical Translational Imaging Centre (BIOTIC), Nova Scotia Health}%
+      }
+      \strng{namehash}{722c8ef9e317c3e0ce2898f4fe48a0b3}
+      \strng{fullhash}{722c8ef9e317c3e0ce2898f4fe48a0b3}
+      \strng{bibnamehash}{722c8ef9e317c3e0ce2898f4fe48a0b3}
+      \strng{authorbibnamehash}{722c8ef9e317c3e0ce2898f4fe48a0b3}
+      \strng{authornamehash}{722c8ef9e317c3e0ce2898f4fe48a0b3}
+      \strng{authorfullhash}{722c8ef9e317c3e0ce2898f4fe48a0b3}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Biotic Science Rounds Presentation. Transcript Analysis.}
+      \field{title}{{Solving the MRI Wait List}}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://www.youtube.com/watch?v=I8MNOCuTulE
+      \endverb
+      \verb{url}
+      \verb https://www.youtube.com/watch?v=I8MNOCuTulE
+      \endverb
+    \endentry
+    \entry{nsh-wait-times}{online}{}
+      \name{author}{1}{}{%
+        {{hash=80cd22db4f5ec237b4829c6ed8b576cb}{%
+           family={{Nova Scotia Health}},
+           familyi={N\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Nova Scotia Health Authority}%
+      }
+      \strng{namehash}{80cd22db4f5ec237b4829c6ed8b576cb}
+      \strng{fullhash}{80cd22db4f5ec237b4829c6ed8b576cb}
+      \strng{bibnamehash}{80cd22db4f5ec237b4829c6ed8b576cb}
+      \strng{authorbibnamehash}{80cd22db4f5ec237b4829c6ed8b576cb}
+      \strng{authornamehash}{80cd22db4f5ec237b4829c6ed8b576cb}
+      \strng{authorfullhash}{80cd22db4f5ec237b4829c6ed8b576cb}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{{MRI Wait Times: Understanding the Numbers}}
+      \field{urlday}{2}
+      \field{urlmonth}{4}
+      \field{urlyear}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://waittimes.novascotia.ca/procedure/mri-nova-scotia-health-authority
+      \endverb
+      \verb{url}
+      \verb https://waittimes.novascotia.ca/procedure/mri-nova-scotia-health-authority
+      \endverb
+    \endentry
+    \entry{tatlock-efficiency}{online}{}
+      \name{author}{1}{}{%
+        {{hash=360c55b722554f26a3f5344a57d4ad17}{%
+           family={Tatlock},
+           familyi={T\bibinitperiod},
+           given={Isabella},
+           giveni={I\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Nova Scotia Health \& Dalhousie University}%
+      }
+      \strng{namehash}{360c55b722554f26a3f5344a57d4ad17}
+      \strng{fullhash}{360c55b722554f26a3f5344a57d4ad17}
+      \strng{bibnamehash}{360c55b722554f26a3f5344a57d4ad17}
+      \strng{authorbibnamehash}{360c55b722554f26a3f5344a57d4ad17}
+      \strng{authornamehash}{360c55b722554f26a3f5344a57d4ad17}
+      \strng{authorfullhash}{360c55b722554f26a3f5344a57d4ad17}
+      \field{sortinit}{T}
+      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{04}
+      \field{note}{Student Research Presentation, Dalhousie University Radiologic Technology Program}
+      \field{title}{{Improving MRI Department Efficiency: Enhancing Productivity and Reducing Wait Times}}
+      \field{year}{2025}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

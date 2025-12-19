@@ -7,6 +7,8 @@ import os
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_context("talk")
 
+import src.config as config
+
 def plot_utilization_paradox(run_id=0):
     """
     Source 56, 62: The Utilization Paradox.
@@ -15,19 +17,28 @@ def plot_utilization_paradox(run_id=0):
     print(f"Generating Utilization Paradox Visualization for Run {run_id}...")
     
     # Load Data (using the summary file we just created)
-    df = pd.read_csv('results/magnet_performance.csv')
-    
+    if os.path.exists('results/magnet_performance.csv'):
+        df = pd.read_csv('results/magnet_performance.csv')
+    elif os.path.exists('results/magnet_performance_baseline.csv'):
+        print("Using magnet_performance_baseline.csv for visualization.")
+        df = pd.read_csv('results/magnet_performance_baseline.csv')
+    else:
+        raise FileNotFoundError("Could not find magnet_performance.csv or baseline variant.")
+        
     # Filter for specific run or average
-    run_data = df[df['RunID'] == run_id].iloc[0]
+    if run_id not in df['RunID'].values:
+        print(f"RunID {run_id} not found in data. Using first available run.")
+        run_data = df.iloc[0]
+        run_id = run_data['RunID']
+    else:
+        run_data = df[df['RunID'] == run_id].iloc[0]
     
-    # Calculate Idle Time (Total Duration = 720 mins * 2 Magnets = 1440, wait, this is aggregate per run)
-    # The csv has aggregate for the whole system (2 magnets combined) in current batch logic
-    # Total System Capacity per Run = 720 * 2 = 1440 mins
-    total_capacity = 720 * 2
+    # Calculate Idle Time (Total Duration = Duration * 2 Magnets)
+    total_capacity = config.DEFAULT_DURATION * 2
     
     green_time = run_data['Scan_Value_Added']
-    brown_time = run_data['Scan_Overhead']
-    occupied_time = green_time + brown_time
+    yellow_time = run_data['Scan_Overhead']
+    occupied_time = green_time + yellow_time
     idle_time = total_capacity - occupied_time
     if idle_time < 0: idle_time = 0 # Rounding errors
     
@@ -35,7 +46,7 @@ def plot_utilization_paradox(run_id=0):
     plot_data = pd.DataFrame({
         'Category': ['Total Capacity'],
         'Value-Added (Green)': [green_time],
-        'Overhead (Brown)': [brown_time],
+        'Overhead (Yellow)': [yellow_time],
         'Idle (Grey)': [idle_time]
     })
     
@@ -44,10 +55,10 @@ def plot_utilization_paradox(run_id=0):
     
     plot_data.plot(
         x='Category', 
-        y=['Value-Added (Green)', 'Overhead (Brown)', 'Idle (Grey)'], 
+        y=['Value-Added (Green)', 'Overhead (Yellow)', 'Idle (Grey)'], 
         kind='bar', 
         stacked=True,
-        color=['#2ecc71', '#8B4513', '#bdc3c7'], # Green, Brown, Grey
+        color=['#2ecc71', '#d4ac0d', '#bdc3c7'], # Green, Dark Yellow, Grey
         ax=ax,
         width=0.4
     )
@@ -147,10 +158,10 @@ def plot_icenter_gantt(run_id=0):
     # Color Map
     colors = {
         'scan': '#2ecc71',     # Green
-        'setup': '#8B4513',    # Brown
-        'flip': '#A0522D',     # Brown lighter
-        'handover': '#D2691E', # Brownish orange
-        'exit': '#CD853F'      # Light brown
+        'setup': '#f1c40f',    # Yellow
+        'flip': '#f39c12',     # Darker Orange/Yellow
+        'handover': '#d35400', # Burnt Orange
+        'exit': '#e67e22'      # Carrot Orange
     }
     
     fig, ax = plt.subplots(figsize=(15, 4))
@@ -169,7 +180,7 @@ def plot_icenter_gantt(run_id=0):
     ax.set_yticklabels(['3T Magnet', '1.5T Magnet'])
     ax.set_xlabel('Shift Time (Minutes)')
     ax.set_title(f'Magnet Utilization Timeline (Run {run_id})\nSource 111 Style Replication')
-    ax.set_xlim(0, 720)
+    ax.set_xlim(0, config.DEFAULT_DURATION)
     
     # grid
     ax.grid(axis='x', linestyle='--', alpha=0.5)

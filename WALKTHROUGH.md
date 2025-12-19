@@ -139,18 +139,6 @@ if queue_burden > time_remaining or (env.now > duration - config.MAX_SCAN_TIME a
     break
 ```
 
-**Constants** (`src/config.py`):
-
-- `AVG_CYCLE_TIME = 45` minutes (average patient throughput)
-- `MAX_SCAN_TIME = 70` minutes (longest scan type: Cardiac Infiltrative)
-- `PROB_INPATIENT = 0.10` (10% high-acuity cases)
-
-**Visual Feedback** (`src/visuals/layout.py`):
-
-- Status changes to "CLOSED (Flushing Queue)" in **red text** (200, 0, 0)
-- Displays "Est Clear: XXm" showing remaining queue burden
-- Prevents excessive overtime while ensuring all patients are served
-
 ### Inpatient/High-Acuity Workflow (v3.0 Priority Gating)
 
 **Purpose**: Model complex cases requiring anesthesia and parallel processing, while ensuring they take clinical precedence.
@@ -161,18 +149,6 @@ if queue_burden > time_remaining or (env.now > duration - config.MAX_SCAN_TIME a
 - **Inpatients (Priority 0)**: Jump to the front of the queue, seizing the next available magnet before any waiting outpatient.
 - **Outpatients (Priority 1)**: Follow standard FCFS logic for remaining capacity.
 
-**Patient Classification** (`src/core/workflow.py` - `patient_journey`):
-
-```python
-is_inpatient = random.random() < config.PROB_INPATIENT
-if is_inpatient:
-    patient.color = config.COLOR_INPATIENT  # Dark Pink (233, 30, 99)
-    yield from inpatient_workflow(...)
-else:
-    patient.color = config.COLOR_OUTPATIENT  # Dodger Blue (30, 144, 255)
-    # Standard workflow continues
-```
-
 **Inpatient Path** (`src/core/inpatient_workflow.py`):
 
 1. **Bypass Registration**: Skip Admin TA, go directly to Room 311
@@ -180,18 +156,6 @@ else:
 3. **Parallel Processing**: Anesthesia setup (10-25 min) outside magnet
 4. **Bed Transfer**: Quick transfer (3-8 min) to magnet
 5. **Direct Exit**: Skip change room on exit
-
-**Resource** (`src/core/engine.py`):
-
-```python
-'holding_room': simpy.Resource(env, capacity=1)
-```
-
-**Visual Distinction**:
-
-- **Dark Pink patients**: Bypass queue, visible in Room 311
-- **Blue patients**: Standard workflow through change rooms/waiting areas
-- **Decoupling**: Complex cases don't block routine flow
 
 ### Race Condition Mitigation
 
@@ -202,17 +166,7 @@ else:
 **Implementation** (`src/core/workflow.py`):
 
 ```python
-# OLD: Move to staging, then check
-patient.move_to(*staging_loc)
-while not selected_room:
-    for key in ['change_1', 'change_2', 'change_3']:
-        if resources[key].count < capacity:
-            selected_room = key
-            break
-    if not selected_room:
-        yield env.timeout(0.5)  # PAUSE even if rooms available!
-
-# NEW: Check-first, only move when available
+# Check-first, only move when available
 while not selected_room:
     available_room = resources['get_free_change_room']()  # Helper function
     if available_room:
@@ -225,34 +179,50 @@ while not selected_room:
 patient.move_to(*room_target)  # Move to seized room
 ```
 
-**Helper Functions** (`src/core/engine.py`):
+## 3.6 Version 4.0 Features (Process Optimization Experiments)
 
-```python
-def get_free_change_room():
-    room_keys = ['change_1', 'change_2', 'change_3']
-    random.shuffle(room_keys)  # Fair distribution
-    for key in room_keys:
-        if resources[key].count < resources[key].capacity:
-            return key
-    return None
-```
+### "Singles Line" Intervention (Dynamic Gap Filling)
 
-**Resources** (`src/core/engine.py`):
+**Concept**: Similar to ski resorts, if a magnet becomes unexpectedly idle (gap), the system pulls a "Simple" (Non-IV, non-sedated) patient from the Waiting Room immediately, bypassing complex setups.
 
-```python
-'change_1': simpy.Resource(env, capacity=1),
-'change_2': simpy.Resource(env, capacity=1),
-'change_3': simpy.Resource(env, capacity=1),
-'washroom_1': simpy.Resource(env, capacity=1),
-'washroom_2': simpy.Resource(env, capacity=1),
-```
+**Implementation**:
+- **Gap Monitor**: `monitor_gaps` checks if magnets are idle > 5 mins.
+- **Priority Upgrade**: If Gap Mode is active, Backup Tech searches for `needs_iv=False` patients and prioritizes their prep.
+- **Results**: Tested via `--singles-line` flag. (See `src/experiments/compare_scenarios.py`).
 
-**Result**:
+### Staff Fatigue & Breaks
 
-- Zero sprite overlaps
-- Patients only pause when ALL rooms occupied
-- Fair room distribution (no bias toward Room 1)
-- Gowned patients stay in waiting room until washroom available
+**Concept**: Modeling the impact of staff breaks on system stability.
+
+**Logic**:
+- **Staggered Breaks**: Staff (Admin, Porter, Techs) rotate through 15-30 min breaks.
+- **Coverage**:
+    - **Backups** cover Scan Techs.
+    - **Porters** cover Admin TA.
+    - **Scarcity**: Performance degrades when coverage is active.
+- **Configuration**: `src/core/staff_controller.py`.
+
+### Sequence-Dependent Setup (Batching)
+
+**Hypothesis**: Grouping similar exams reduces "Bed Flip" time (coil swaps).
+
+**SMED Logic** (`src/config.py`):
+1.  **Fast Flip** (Same Protocol): 2 mins (Sanitization only).
+2.  **Slow Flip** (Different Protocol): 7 mins (Sanitization + Coil Swap).
+
+**Experiments**:
+- **Batch Efficiency**: Comparing Random vs. Prostate Block (10 consecutive).
+- **Multimodal**: Comparing Random vs. Neuro Block vs. MSK Block.
+- **Results**: Batching yields ~3 hours of gained capacity per shift.
+
+### Patient Compliance Modeling
+
+**Concept**: Stochastic no-shows and late arrivals disrupting the schedule.
+
+**Parameters**:
+- `PROB_NO_SHOW`: 5-20% chance of slot abandonment.
+- `PROB_LATE`: 15-30% chance of arrival delay.
+- **Impact**: Quantified via `sensitivity_analysis.py`.
 
 ## 4. Workflow Implementation
 
@@ -362,7 +332,7 @@ Simulation data is now structured into rich objects for deep analysis:
 - **PatientMetrics**: Captures the complete journey of every patient, including timestamps and durations for 7 distinct stages.
 - **MagnetMetrics**: Breaks down magnet time into:
   - **Green Time**: Value-added scanning.
-  - **Brown Time**: Necessary overhead (Setup, Exit, Bed Flip).
+  - **Yellow Time**: Necessary overhead (Setup, Exit, Bed Flip).
   - **Idle Time**: True availability gaps.
 
 ### The Reporter (`reporter.py`)
@@ -409,8 +379,8 @@ $$Efficiency = \frac{Scan Time}{Occupied Time} \times 100$$
 # Basic run (default: 120 minutes = 2 hour test)
 uv run main.py
 
-# Full 12 Hour Shift (Standard Experiment)
-uv run main.py --duration 720
+# Full 15 Hour Shift (Standard Experiment)
+uv run main.py --duration 900
 ```
 
 ### Typical Scenarios
@@ -422,9 +392,9 @@ uv run main.py --duration 720
 
 **Full Shift (Standard):**
 
-- Duration: 720 minutes (12 hours)
-- Expected patients: ~22-26
-- **Note**: Simulation will run slightly longer than 720m to clear the queue.
+- Duration: 900 minutes (15 hours)
+- Expected patients: ~30-33
+- **Note**: Simulation will run slightly longer than 900m to clear the queue.
 
 ### Output Files
 
@@ -449,22 +419,21 @@ All saved to `results/` directory:
 
 **Parallel Workflow (Pit Crew Model - Total Dept):**
 
-- Magnet Occupied (Average): 75%
-- Magnet Busy (Value-Added Average): 73%
-- Magnet Idle (Average): 25%
+- Magnet Occupied (Average): 73%
+- Magnet Busy (Value-Added Average): 55%
+- Magnet Idle (Average): 27%
 - **Interpretation**: Lower individual occupied % but significantly higher cumulative value-added time across both bays.
 
 ### Throughput Improvements
 
 - **Serial (Current state for 2 magnets)**: ~32-36 patients per 12-hour shift
-- **Parallel (Pit Crew for 2 magnets)**: ~45-48 patients per 12-hour shift
-- **Gain**: ~30-40% throughput increase while arrivals are capped at 15-min intervals.
-- **Sustainability**: Decoupling prep ensures the department can scale to 10-min arrival intervals (~72 patients/shift) without adding resources.
+- **Parallel (Pit Crew for 2 magnets)**: ~30-33 patients per 15-hour shift (Demand Constrained)
+- **Sustainability**: Decoupling prep ensures the department can scale to 10-min arrival intervals without adding resources.
 
 ### Buffer Effectiveness
 
 - **Waiting Room** acts as decoupling buffer
-- Average wait: 2-3 minutes
+- Average wait: 12 minutes
 - Prevents magnet idle time
 - Enables continuous scanning
 
@@ -655,11 +624,11 @@ uv run python main.py --duration 120 --output exp1_quick
 # Experiment 2: Half Shift (6 hours)
 uv run python main.py --duration 360 --output exp2_half
 
-# Experiment 3: Full Shift (12 hours)
-uv run python main.py --duration 720 --output exp3_full
+# Experiment 3: Full Shift (15 hours)
+uv run python main.py --duration 900 --output exp3_full
 
-# Experiment 4: Extended Shift (16 hours)
-uv run python main.py --duration 960 --output exp4_extended
+# Experiment 4: Extended Shift (24 hours)
+uv run python main.py --duration 1440 --output exp4_extended
 ```
 
 **Note:** All experiments include 60-minute warm-up period automatically.
@@ -709,7 +678,7 @@ print(f"Average flow time: {flow_times['total_time'].mean():.1f} minutes")
 
 ### Production Run Specification
 
-This section documents the final configuration for the 12-hour production simulation run, ensuring reproducibility and steady-state validity.
+This section documents the final configuration for the 15-hour production simulation run, ensuring reproducibility and steady-state validity.
 
 ### Configuration Parameters
 
@@ -717,7 +686,7 @@ This section documents the final configuration for the 12-hour production simula
 
 ```python
 # Time-Based Simulation (Shift Duration Model)
-DEFAULT_DURATION = 120      # 2 hours (standard test shift)
+DEFAULT_DURATION = 900      # 15 hours (shift)
 WARM_UP_DURATION = 60       # 1 hour (prime the system, remove empty-state bias)
 
 # Time Scaling
@@ -735,40 +704,38 @@ AGENT_SPEED = {
 }
 ```
 
-### Total Runtime Calculation
-
 **Simulation Timeline:**
 
 ```
 Phase 1: Warm-Up
 - Duration: 60 minutes
 - Purpose: Prime system to steady state
-- Data: NOT recorded (excluded from statistics)
+- Data: NOT recorded (excluded from stats)
 
 Phase 2: Data Collection
-- Duration: 720 minutes (12 hours)
+- Duration: 900 minutes (15 hours)
 - Purpose: Capture steady-state operations
 - Data: Fully recorded and analyzed
 
-Total Simulation Time: 780 minutes (13 hours)
+Total Simulation Time: 960 minutes (16 hours)
 ```
 
 **Real-Time Duration:**
 
 ```python
 # With SIM_SPEED = 0.25 (1 sim minute = 0.25 real seconds)
-total_sim_minutes = 180 (default)
+total_sim_minutes = 960
 sim_speed = 0.25
 real_time_seconds = total_sim_minutes * sim_speed
 real_time_minutes = real_time_seconds / 60
 
-# Result: 0.75 minutes (45 seconds) real time for default test
+# Result: 4.0 minutes real time for default test
 ```
 
 **Video Recording:**
 
 - If `--record` flag is used, generates `simulation_video.mp4`
-- Video length: ~6.5 minutes
+- Video length: ~4.0 minutes
 - Resolution: 1600×800 pixels
 - Frame rate: 60 FPS (smooth playback)
 
@@ -776,21 +743,21 @@ real_time_minutes = real_time_seconds / 60
 
 **Patient Throughput:**
 
-- Arrival rate: ~15 minutes per patient
-- Warm-up arrivals: ~4 patients (not counted in final stats)
-- Data collection arrivals: ~48 patients (over 12 hours)
-- Expected completions: ~45-48 patients
+- Arrival rate: ~30 minutes per patient
+- Warm-up arrivals: ~2 patients
+- Data collection arrivals: ~30 patients (over 15 hours)
+- Expected completions: ~30-33 patients
 
 **Magnet Utilization (Parallel Workflow):**
 
-- Busy % (Value-Added): 70-75%
-- Occupied %: 75-80%
-- Idle %: 20-25%
+- Busy % (Value-Added): 50-60%
+- Occupied %: 70-75%
+- Idle %: 25-30%
 
 **Buffer Performance:**
 
-- Average wait time: 2-3 minutes
-- Maximum queue length: 2-3 patients
+- Average wait time: 10-15 minutes
+- Maximum queue length: 4-5 patients
 - Demonstrates effective decoupling
 
 ### Execution Commands
@@ -798,13 +765,13 @@ real_time_minutes = real_time_seconds / 60
 **Standard Production Run:**
 
 ```bash
-uv run python main.py --duration 720
+uv run python main.py --duration 900
 ```
 
 **With Video Recording:**
 
 ```bash
-uv run python main.py --duration 720 --record
+uv run python main.py --duration 900 --record
 ```
 
 **Quick Verification (2 hours):**

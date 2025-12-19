@@ -152,7 +152,7 @@ WAITING_ROOM_LOC = (325, 350)
 # ============================================================================
 
 # Time-Based Simulation (Shift Duration Model)
-DEFAULT_DURATION = 720      # 12 hours
+DEFAULT_DURATION = 900      # 15 hours
 WARM_UP_DURATION = 60       # 1 hour
 HEADLESS = False            # Set to True for fast batch runs
 

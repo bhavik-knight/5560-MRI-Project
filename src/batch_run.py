@@ -177,7 +177,7 @@ def process_results(results_list):
     util_occupied = ((total_scan_val + total_scan_ovh) / total_mag_capacity) * 100
     util_productive = (total_scan_val / total_mag_capacity) * 100
     
-    print(f"Utilization (Occupied):   {util_occupied:.1f}% (Green + Brown)")
+    print(f"Utilization (Occupied):   {util_occupied:.1f}% (Green + Yellow)")
     print(f"Utilization (Productive): {util_productive:.1f}% (Green Only)")
     print(f"Operational Overhead:     {(util_occupied - util_productive):.1f}%")
 

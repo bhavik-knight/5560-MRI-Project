@@ -10,7 +10,7 @@ def run_experiment():
     # 1. Baseline Run
     print("\n[1/2] Running Baseline Scenario...")
     # Use standard batch command
-    exit_code = os.system("uv run main.py --mode batch --sims 50 --epochs 1")
+    exit_code = os.system("uv run main.py --mode batch --sims 500 --epochs 1")
     if exit_code != 0:
         print("Error in Baseline Run")
         return
@@ -19,7 +19,7 @@ def run_experiment():
     
     # 2. Singles Line Run
     print("\n[2/2] Running Singles Line Scenario...")
-    exit_code = os.system("uv run main.py --mode batch --sims 50 --epochs 1 --singles-line")
+    exit_code = os.system("uv run main.py --mode batch --sims 500 --epochs 1 --singles-line")
     if exit_code != 0:
         print("Error in Singles Line Run")
         return
@@ -37,8 +37,9 @@ def run_experiment():
     base_green = df_base['Scan_Value_Added'].mean()
     single_green = df_single['Scan_Value_Added'].mean()
     
-    # Metric 2: Utilization % (Capacity = 1440 mins total per run)
-    TOTAL_CAPACITY = 720 * 2
+    # Metric 2: Utilization % (Capacity = Duration * 2 magnets)
+    import src.config as config
+    TOTAL_CAPACITY = config.DEFAULT_DURATION * 2
     base_util = (base_green / TOTAL_CAPACITY) * 100
     single_util = (single_green / TOTAL_CAPACITY) * 100
     

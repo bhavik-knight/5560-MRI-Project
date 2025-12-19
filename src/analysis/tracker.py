@@ -37,8 +37,8 @@ class MagnetMetrics:
         self.id = m_id
         self.patients_served = 0
         self.total_scan_time = 0.0     # Green Time (Value Added)
-        self.total_setup_time = 0.0    # Brown Time (Necessary Non-Value)
-        self.total_flip_time = 0.0     # Brown Time (Necessary Non-Value)
+        self.total_setup_time = 0.0    # Yellow Time (Necessary Non-Value)
+        self.total_flip_time = 0.0     # Yellow Time (Necessary Non-Value)
         self.total_exit_time = 0.0
         self.total_idle_time = 0.0
         self.last_event_time = 0.0
@@ -95,6 +95,13 @@ class SimStats:
         # Smart Gatekeeper Status
         self.generator_active = True
         self.est_clearing_time = 0.0
+
+        # Event Counter
+        self.counts = {}
+        
+        # Headless Monitor Support
+        self.occupied_minutes = {}
+        self.idle_minutes = { 'magnet_3t': 0.0, 'magnet_15t': 0.0 }
 
         
     def log_movement(self, patient_id, zone, timestamp):

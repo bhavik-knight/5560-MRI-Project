@@ -1,0 +1,201 @@
+% ------------------------------------------------------
+% PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+% ------------------------------------------------------
+
+% --- FONT ENCODING AND PACKAGES ---
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{dsfont}
+\usepackage{amssymb}
+
+% Set the default font family to SERIF (Charter look)
+\renewcommand*{\rmdefault}{bch} % Main Roman/Serif font
+\renewcommand*{\sfdefault}{cmss} % Keep a standard Sans Serif for specific needs
+\renewcommand*{\ttdefault}{lmtt} % Latin Modern Teletype (Monospace font with full bold/italic support)
+
+\usepackage{latexsym} 
+\usepackage{booktabs} % For professional tables (toprule, midrule, bottomrule)
+
+% --- DOCUMENT STRUCTURE & LAYOUT ---
+\usepackage[letterpaper,hmargin=2.5cm,vmargin=2.0cm,includeheadfoot]{geometry}
+\usepackage{fancyhdr}
+\setlength{\headheight}{14.5pt}
+\setlength{\parindent}{0em}
+\usepackage{parskip}
+
+% --- TABLES AND FIGURES ---
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{subfig}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{array}
+
+% --- MATH AND CODE ---
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{etoolbox}
+
+
+% --- CODING --- %
+\usepackage{xcolor}
+\lstset{
+	language=Python,
+	basicstyle=\ttfamily\small,
+	keywordstyle=\color{blue},
+	commentstyle=\color{gray},
+	stringstyle=\color{teal},
+	numbers=left,
+	numberstyle=\tiny,
+	stepnumber=1,
+	numbersep=4pt,
+	frame=single,
+	breaklines=true,
+	showstringspaces=true,
+	tabsize=4
+}
+
+
+% --- BIBLIOGRAPHY, LINKS, & MISC ---
+\usepackage[english]{babel}
+\usepackage{url}
+\PassOptionsToPackage{hyphens}{url}
+\urlstyle{rm}
+\gdef\UrlBreaks{\do\/\do\-\do\_\do\.\do\@\do\&\do\%\do\#}
+\usepackage{enumerate}
+\usepackage{lastpage}
+\usepackage{csquotes}
+\usepackage[backend=biber, backref=true, sorting=nyt, style=numeric]{biblatex}
+\addbibresource{references.bib}
+
+\usepackage[pdftex,hypertexnames=true,colorlinks]{hyperref}
+\hypersetup{
+	pdftitle={Your Report Title},
+	pdfsubject={Data Analysis Report},
+	pdfkeywords={Data, Analysis, Clustering},
+	pdfstartview=FitH,
+	pdfpagemode={UseOutlines},
+	bookmarksnumbered=true, bookmarksopen=true, colorlinks,
+	citecolor=blue,
+	filecolor=black,
+	linkcolor=blue,
+	urlcolor=blue
+}
+
+
+% % --- THEOREMS (Assuming standard class definitions) ---
+% \usepackage{ntheorem}
+% \theoremstyle{break}
+% \newtheorem{lemma}{Lemma}
+% \newtheorem{theorem}{Theorem}
+% \newtheorem{remark}{Remark}
+% \newtheorem{definition}{Definition}
+% \newtheorem{proof}{Proof}
+
+% ==== HEADER AND FOOTER ==== %
+\pagestyle{fancy}
+\fancyhf{}
+
+% Top Right: Section Title, Top Left: Subsection Title
+\fancyhead[R]{\nouppercase{\leftmark}} % Section title
+\fancyhead[L]{\nouppercase{\rightmark}} % Subsection title
+
+% Page no. in the center of pages
+\fancyfoot[C]{\thepage~of~\pageref{LastPage}} 
+
+\renewcommand{\headrulewidth}{0.1pt}
+\renewcommand{\footrulewidth}{0.1pt}
+\captionsetup{margin=10pt,font=small,labelfont=bf}
+
+
+% ------------------------------------------------------
+% %	CUSTOM MACROS AND COMMANDS (FIXED AND CLEANED)
+% ------------------------------------------------------
+\makeatletter
+
+%--- chapter heading
+\def\@makechapterhead#1{%
+	\vspace*{10\p@}%
+	{\parindent \z@ \raggedright
+		\interlinepenalty\@M
+		\Huge \bfseries 
+		\thechapter \space\space #1\par\nobreak
+		\vskip 30\p@
+}}
+
+%---chapter heading for \chapter*
+\def\@makeschapterhead#1{%
+	\vspace*{10\p@}%
+	{\parindent \z@ \raggedright
+		\sffamily % Explicitly use sans serif for unnumbered title
+		\interlinepenalty\@M
+		\Huge \bfseries  
+		#1\par\nobreak
+		\vskip 30\p@
+}}
+
+% --- ELIMINATION ENVIRONMENT ---
+\newcounter{elimination@steps}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash$}p{#1}<{$}}
+\def\elimination@num@rights{}
+\def\elimination@num@variables{}
+\def\elimination@col@width{}
+\newenvironment{elimination}[4][0]
+{
+	\setcounter{elimination@steps}{0}
+	\def\elimination@num@rights{#1}
+	\def\elimination@num@variables{#2}
+	\def\elimination@col@width{#3}
+	\renewcommand{\arraystretch}{#4}
+	\start@align\@ne\st@rredtrue\m@ne
+}
+{
+	\endalign
+	\ignorespacesafterend
+}
+\newcommand{\eliminationstep}[2]
+{
+	\ifnum\value{elimination@steps}>0\leadsto\quad\fi
+	\left[
+	\ifnum\elimination@num@rights>0
+	\begin{array}
+		{@{}*{\elimination@num@variables}{R{\elimination@col@width}}
+			|@{}*{\elimination@num@rights}{R{\elimination@col@width}}}
+		\else
+		\begin{array}
+			{@{}*{\elimination@num@variables}{R{\elimination@col@width}}}
+			\fi
+			#1
+		\end{array}
+		\right]
+		& 
+		\begin{array}{l}
+			#2
+		\end{array}
+		&
+		\addtocounter{elimination@steps}{1}
+	}
+	
+	% --- COLVEC ENVIRONMENT ---
+	\def\colvec#1{\expandafter\colvec@i#1,,,,,,,,,\@nil}
+	\def\colvec@i#1,#2,#3,#4,#5,#6,#7,#8,#9\@nil{% 
+		\ifx$#2$ \begin{bmatrix}#1\end{bmatrix} \else
+		\ifx$#3$ \begin{bmatrix}#1\\#2\end{bmatrix} \else
+		\ifx$#4$ \begin{bmatrix}#1\\#2\\#3\end{bmatrix}\else
+		\ifx$#5$ \begin{bmatrix}#1\\#2\\#3\\#4\end{bmatrix}\else
+		\ifx$#6$ \begin{bmatrix}#1\\#2\\#3\\#4\\#5\end{bmatrix}\else
+		\ifx$#7$ \begin{bmatrix}#1\\#2\\#3\\#4\\#5\\#6\end{bmatrix}\else
+		\ifx$#8$ \begin{bmatrix}#1\\#2\\#3\\#4\\#5\\#6\\#7\end{bmatrix}\else
+		\PackageError{Column Vector}{The vector you tried to write is too big, use bmatrix instead}{Try using the bmatrix environment}
+		\fi
+		\fi
+		\fi
+		\fi
+		\fi
+		\fi
+		\fi 
+	} 
+	\makeatother
+	\robustify{\colvec}

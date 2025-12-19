@@ -2,6 +2,8 @@ import os
 import pandas as pd
 from datetime import datetime
 
+import src.config as config
+
 REPORT_PATH = "FINAL_REPORT.md"
 
 def load_data():
@@ -13,10 +15,14 @@ def load_data():
         print("Warning: Sensitivity analysis data not found.")
         data['sensitivity'] = pd.DataFrame() # Empty
         
-    try:
-        # Use baseline or latest magnet performance for general stats
+    # Try loading the main performance file, or fallback to baseline from experiment
+    if os.path.exists("results/magnet_performance.csv"):
         data['magnet'] = pd.read_csv("results/magnet_performance.csv")
-    except FileNotFoundError:
+    elif os.path.exists("results/magnet_performance_baseline.csv"):
+        print("Using baseline experiment data for synthesis.")
+        data['magnet'] = pd.read_csv("results/magnet_performance_baseline.csv")
+    else:
+        print("Error: No magnet performance data found.")
         data['magnet'] = pd.DataFrame()
         
     return data
@@ -30,7 +36,7 @@ def generate_markdown(data):
         avg_prod = df_mag['Scan_Value_Added'].mean()
         avg_ovh = df_mag['Scan_Overhead'].mean()
         avg_gap = df_mag['Scan_Gap'].mean()
-        total_cap_per_run = 720 * 2 # 12 hours * 2 magnets
+        total_cap_per_run = config.DEFAULT_DURATION * 2 # Dynamic Duration * 2 magnets
         
         util_occ = ((avg_prod + avg_ovh) / total_cap_per_run) * 100
         util_prod = (avg_prod / total_cap_per_run) * 100
@@ -56,7 +62,7 @@ def generate_markdown(data):
 ---
 
 ## 1. Abstract
-This project utilized Discrete-Event Simulation (DES) to model the patient flow of a high-volume MRI department. By creating a 'Digital Twin' of the facility, we validated current operations against empirical benchmarks [Source 9] and uncovered the "Utilization Paradox": while magnets appear occupied **{util_occ:.1f}%** of the time, the true productive (scanning) time is only **{util_prod:.1f}%**. This **{util_ovh:.1f}%** operational overhead ("Brown Time") represents the primary opportunity for optimization. A targeted intervention ("Singles Line") was tested but yielded negligible gains (+{delta_150:.1f}%), indicating upstream bottlenecks in Registration are constraining the system before the magnets can be fully saturated.
+This project utilized Discrete-Event Simulation (DES) to model the patient flow of a high-volume MRI department. By creating a 'Digital Twin' of the facility, we validated current operations against empirical benchmarks [Source 9] and uncovered the "Utilization Paradox": while magnets appear occupied **{util_occ:.1f}%** of the time, the true productive (scanning) time is only **{util_prod:.1f}%**. This **{util_ovh:.1f}%** operational overhead ("Yellow Time") represents the primary opportunity for optimization. A targeted intervention ("Singles Line") was tested but yielded negligible gains (+{delta_150:.1f}%), indicating upstream bottlenecks in Registration are constraining the system before the magnets can be fully saturated.
 
 ---
 
@@ -83,11 +89,11 @@ The following distributions confirm the model's accuracy:
 ## 3. Phase 2: The Utilization Paradox
 The core finding of this study is the discrepancy between "Occupied" time and "Value-Added" time.
 
-### The "Brown Time" Cost
-As defined by Source 56, "Brown Time" refers to the non-productive operational overhead—cleaning, setup, and patient transfer—that occurs while the magnet is technically "busy" but not scanning.
+### The "Yellow Time" Cost
+As defined by Source 56, "Yellow Time" refers to the non-productive operational overhead—cleaning, setup, and patient transfer—that occurs while the magnet is technically "busy" but not scanning.
 
 ![Utilization Paradox](results/plots/utilization_paradox.png)
-*Figure 4: The Paradox. The gap between the total bar height (Occupied) and the green component (Scanning) represents the "Brown Time" cost.*
+*Figure 4: The Paradox. The gap between the total bar height (Occupied) and the green component (Scanning) represents the "Yellow Time" cost.*
 
 #### Key Metrics:
 *   **Occupied Utilization**: {util_occ:.1f}% (What the schedule shows)
@@ -115,16 +121,16 @@ The intervention failed to produce statistically significant gains. The maximum 
 **Why?**
 1.  **Upstream Starvation**: The simulation revealed that the magnets were often "starved" by the Registration (Zone 1) process. If patients cannot clear registration fast enough, there is no queue for the "Singles Line" logic to draw from when a gap appears.
 2.  **Stochastic Rarity**: "Simple" patients (Outpatient + No Difficult IV) were not always available exactly when a gap occurred, rendering the logic inactive.
-3.  **Fixed Overhead**: The "Brown Time" (Cleaning/Setup) is fixed per patient. Increasing throughput simply scales this overhead linearly, preventing non-linear efficiency gains.
+3.  **Fixed Overhead**: The "Yellow Time" (Cleaning/Setup) is fixed per patient. Increasing throughput simply scales this overhead linearly, preventing non-linear efficiency gains.
 
 ---
 
 ## 5. Recommendations
 Based on the Digital Twin's data, we propose the following roadmap:
 
-### 1. Optimize "Brown Time" (Primary)
+### 1. Optimize "Yellow Time" (Primary)
 *   **Implementation**: Deploy dedicated environmental services staff or "Pit Crews" to perform bed flips and cleaning parallel to patient exit.
-*   **Expected Impact**: Reducing turnover time by 2 minutes per patient would directly convert "Brown Time" into open slots [Source 56].
+*   **Expected Impact**: Reducing turnover time by 2 minutes per patient would directly convert "Yellow Time" into open slots [Source 56].
 
 ### 2. Electronic Registration (Secondary)
 *   **Implementation**: Adopt Ocean eReferrals or Kiosks to decouple Registration from the physical Admin Desk [Source 142].
