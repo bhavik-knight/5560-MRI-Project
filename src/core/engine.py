@@ -20,7 +20,7 @@ import src.config as config
 from src.core.workflows.patient import run_generator as patient_generator
 from src.core.staff_controller import StaffManager
 
-def run_simulation(duration=None, output_dir='results', record=False, video_format='mp4', singles_line_mode=False, demand_multiplier=1.0, force_type=None):
+def run_simulation(duration=None, output_dir='results', record=False, video_format='mp4', singles_line_mode=False, demand_multiplier=1.0, force_type=None, no_show_prob=None):
     """
     Run the MRI Digital Twin simulation using shift duration model.
     """
@@ -31,7 +31,7 @@ def run_simulation(duration=None, output_dir='results', record=False, video_form
     # ... (skipping lines for brevity) ...
 
     # Start patient generator (runs until duration)
-    env.process(patient_generator(env, staff_dict, resources, stats, renderer, duration, demand_multiplier=demand_multiplier, force_type=force_type))
+    env.process(patient_generator(env, staff_dict, resources, stats, renderer, duration, demand_multiplier=demand_multiplier, force_type=force_type, no_show_prob=no_show_prob))
     
     # Start Gap Monitor if enabled
     if singles_line_mode:

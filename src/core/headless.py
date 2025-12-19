@@ -331,10 +331,12 @@ class HeadlessSimulation:
         duration = self.settings.get('duration', config.DEFAULT_DURATION)
         demand_mult = self.settings.get('demand_multiplier', 1.0)
         force_type = self.settings.get('force_type', None)
+        no_show_prob = self.settings.get('no_show_prob', None)
         env.process(patient_generator(env, staff_dict, resources, stats, renderer, duration, 
                                       patient_class=HeadlessPatient, 
                                       demand_multiplier=demand_mult,
-                                      force_type=force_type))
+                                      force_type=force_type,
+                                      no_show_prob=no_show_prob))
         
         # 8. Run
         env.run(until=duration)

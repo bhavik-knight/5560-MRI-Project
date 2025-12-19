@@ -97,6 +97,13 @@ Examples:
         help='Force all patients to a specific protocol execution (e.g., brain_routine)'
     )
     
+    parser.add_argument(
+        '--no-show-prob',
+        type=float,
+        default=None,
+        help='Override global No-Show probability (0.0 - 1.0)'
+    )
+    
     args = parser.parse_args()
     
     if args.mode == 'batch':
@@ -115,7 +122,8 @@ Examples:
             epochs=args.epochs, 
             singles_line_mode=args.singles_line, 
             demand_multiplier=args.demand,
-            force_type=args.force_type
+            force_type=args.force_type,
+            no_show_prob=args.no_show_prob
         )
         return 0
         
@@ -134,7 +142,8 @@ Examples:
             video_format=video_format,
             singles_line_mode=args.singles_line,
             demand_multiplier=args.demand,
-            force_type=args.force_type
+            force_type=args.force_type,
+            no_show_prob=args.no_show_prob
         )
         
         # Print final summary

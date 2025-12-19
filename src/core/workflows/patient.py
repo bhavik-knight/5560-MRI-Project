@@ -187,7 +187,7 @@ class PatientWorkflow:
         if hasattr(self.admin.renderer, 'remove_sprite'):
              self.admin.renderer.remove_sprite(patient)
 
-def run_generator(env, staff_dict, resources, stats, renderer, duration, patient_class=None, demand_multiplier=1.0, force_type=None):
+def run_generator(env, staff_dict, resources, stats, renderer, duration, patient_class=None, demand_multiplier=1.0, force_type=None, no_show_prob=None, late_prob=None):
     """
     Generator using Modular Workflow.
     """
@@ -198,10 +198,35 @@ def run_generator(env, staff_dict, resources, stats, renderer, duration, patient
     p_id = 0
     workflow = PatientWorkflow(env, resources, stats, renderer, staff_dict)
     
+    # Resolve Probabilities
+    p_no_show = no_show_prob if no_show_prob is not None else config.PROB_NO_SHOW
+    p_late = late_prob if late_prob is not None else config.PROB_LATE
+    
     while True:
         # Check termination (simplified)
         if env.now > duration - 60 and stats.patients_in_system == 0:
              break
+        
+        # 1. Check No-Show
+        if random.random() < p_no_show:
+            if 'no_show' not in stats.counts: stats.counts['no_show'] = 0
+            stats.counts['no_show'] += 1
+            # Penalty: Magnet Idle Time (Gap in schedule)
+            # The system naturally idles because no patient arrives. 
+            # But the 'arrival interval' yield determines the Next Slot.
+            # If we Skip, we essentially leave a gap.
+            # We wait for the 'no_show_wait' penalty OR just the slot time?
+            # Source implies a slot is wasted.
+            # We simulate this by waiting the full slot or a penalty?
+            # Config says 'no_show_wait': 15.
+            yield env.timeout(config.PROCESS_TIMES.get('no_show_wait', 15))
+            
+            # Then we proceed to schedule next patient (Inter-arrival)
+            # Adjust rate by demand_multiplier.
+            base_rate = 1.0 / config.PROCESS_TIMES['mean_inter_arrival']
+            adjusted_rate = base_rate * demand_multiplier
+            yield env.timeout(random.expovariate(adjusted_rate))
+            continue
              
         # Create Patient
         p_id += 1
@@ -215,6 +240,15 @@ def run_generator(env, staff_dict, resources, stats, renderer, duration, patient
             patient.needs_iv = (random.random() < config.PROB_NEEDS_IV)
             patient.is_difficult_iv = (random.random() < config.PROB_DIFFICULT_IV) if patient.needs_iv else False
             patient.clinical_init_done = True
+            
+        # 2. Check Lateness
+        patient.is_late = (random.random() < p_late)
+        if patient.is_late:
+            if 'late_arrival' not in stats.counts: stats.counts['late_arrival'] = 0
+            stats.counts['late_arrival'] += 1
+            # Sample duration
+            min_l, mode_l, max_l = config.PROCESS_TIMES['late_delay']
+            patient.late_duration = random.triangular(min_l, mode_l, max_l)
         
         stats.patients_in_system += 1
         env.process(workflow.run(patient))

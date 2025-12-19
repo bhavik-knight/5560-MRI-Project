@@ -17,7 +17,7 @@ def _worker_task(seed_and_settings):
     sim = HeadlessSimulation(settings, seed)
     return sim.run()
 
-def execute_batch(sims=1000, epochs=1, singles_line_mode=False, demand_multiplier=1.0, force_type=None):
+def execute_batch(sims=1000, epochs=1, singles_line_mode=False, demand_multiplier=1.0, force_type=None, no_show_prob=None):
     """
     Run Monte Carlo simulation batch.
     
@@ -27,12 +27,13 @@ def execute_batch(sims=1000, epochs=1, singles_line_mode=False, demand_multiplie
         singles_line_mode: Enable singles line logic.
         demand_multiplier: Scale patient arrival rate (1.0 = 100%).
         force_type: Force specific protocol (for block scheduling experiments).
+        no_show_prob: Override global No-Show probability.
     """
     config.HEADLESS = True
     total_sims = sims * epochs
     print(f"\nStarting Batch Execution: {total_sims} total simulations ({epochs} epochs x {sims} runs)")
     print(f"Workers: {multiprocessing.cpu_count()}")
-    print(f"Mode: {'Singles Line' if singles_line_mode else 'Baseline'} | Demand: {demand_multiplier*100:.0f}% | Forced Type: {force_type if force_type else 'None'}")
+    print(f"Mode: {'Singles Line' if singles_line_mode else 'Baseline'} | Demand: {demand_multiplier*100:.0f}% | Forced Type: {force_type if force_type else 'None'} | No-Show: {no_show_prob if no_show_prob is not None else 'Default'}")
     
     all_results = []
     start_time = time.time()
@@ -47,7 +48,8 @@ def execute_batch(sims=1000, epochs=1, singles_line_mode=False, demand_multiplie
         tasks = [(base_seed + i, {'duration': config.DEFAULT_DURATION, 
                                   'singles_line_mode': singles_line_mode,
                                   'demand_multiplier': demand_multiplier,
-                                  'force_type': force_type}) for i in range(sims)]
+                                  'force_type': force_type,
+                                  'no_show_prob': no_show_prob}) for i in range(sims)]
         
         # Parallel Execution
         with multiprocessing.Pool() as pool:
