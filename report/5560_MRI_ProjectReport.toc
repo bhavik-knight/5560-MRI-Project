@@ -16,11 +16,11 @@
 \contentsline {section}{\numberline {3}Experimental Results and Analysis}{9}{section.3}%
 \contentsline {subsection}{\numberline {3.1}Baseline Performance}{9}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}Intervention A}{9}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Intervention B}{9}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}Intervention C}{11}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.3}Intervention B}{11}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Intervention C}{12}{subsection.3.4}%
 \contentsline {subsection}{\numberline {3.5}Intervention D}{13}{subsection.3.5}%
 \contentsline {subsection}{\numberline {3.6}Sensitivity Analysis: Patient Compliance}{14}{subsection.3.6}%
-\contentsline {subsection}{\numberline {3.7}Summary of Findings}{14}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.7}Summary of Findings}{15}{subsection.3.7}%
 \contentsline {section}{\numberline {4}Strategic Recommendation: The Hybrid Model}{15}{section.4}%
 \contentsline {section}{\numberline {5}Conclusion}{15}{section.5}%
 \contentsline {section}{\numberline {6}Appendix}{15}{section.6}%

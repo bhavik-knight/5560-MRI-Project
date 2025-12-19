@@ -1,15 +1,17 @@
 [0] Config.pm:307> INFO - This is Biber 2.19
 [0] Config.pm:310> INFO - Logfile is '5560_MRI_ProjectReport.blg'
-[35] biber:340> INFO - === Fri Dec 19, 2025, 09:29:43
-[43] Biber.pm:419> INFO - Reading '5560_MRI_ProjectReport.bcf'
-[73] Biber.pm:979> INFO - Found 3 citekeys in bib section 0
-[80] Biber.pm:4419> INFO - Processing section 0
-[85] Biber.pm:4610> INFO - Looking for bibtex file 'references.bib' for section 0
-[86] bibtex.pm:1713> INFO - LaTeX decoding ...
-[88] bibtex.pm:1519> INFO - Found BibTeX data source 'references.bib'
-[111] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
-[111] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
-[111] Biber.pm:4239> INFO - Sorting list 'nyt/global//global/global' of type 'entry' with template 'nyt' and locale 'en-US'
-[111] Biber.pm:4245> INFO - No sort tailoring available for locale 'en-US'
-[116] bbl.pm:660> INFO - Writing '5560_MRI_ProjectReport.bbl' with encoding 'UTF-8'
-[117] bbl.pm:763> INFO - Output to 5560_MRI_ProjectReport.bbl
+[36] biber:340> INFO - === Fri Dec 19, 2025, 11:20:23
+[44] Biber.pm:419> INFO - Reading '5560_MRI_ProjectReport.bcf'
+[76] Biber.pm:979> INFO - Found 4 citekeys in bib section 0
+[83] Biber.pm:4419> INFO - Processing section 0
+[89] Biber.pm:4610> INFO - Looking for bibtex file 'references.bib' for section 0
+[89] bibtex.pm:1713> INFO - LaTeX decoding ...
+[91] bibtex.pm:1519> INFO - Found BibTeX data source 'references.bib'
+[114] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[114] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[114] Biber.pm:4239> INFO - Sorting list 'nyt/global//global/global' of type 'entry' with template 'nyt' and locale 'en-US'
+[114] Biber.pm:4245> INFO - No sort tailoring available for locale 'en-US'
+[118] bbl.pm:660> INFO - Writing '5560_MRI_ProjectReport.bbl' with encoding 'UTF-8'
+[119] bbl.pm:763> INFO - Output to 5560_MRI_ProjectReport.bbl
+[119] Biber.pm:131> WARN - I didn't find a database entry for '5' (section 0)
+[119] Biber.pm:133> INFO - WARNINGS: 1
